@@ -4,7 +4,7 @@
 
 - It is cross platform so should be able to run on any OS and feel native to that OS.
 - Platform specific functionality (e.g. windows event log) should be conditionally enabled
-- Not all components will run on a given machine so it should be easy to configure what runs where.
+- Services shall be individually configurable
 - Built on the .NET host, it will follow those conventions (e.g. logging, configuration, DI, etc.)
   - <https://learn.microsoft.com/en-us/dotnet/core/extensions/generic-host>
   - <https://learn.microsoft.com/en-us/aspnet/core/fundamentals/host/web-host>

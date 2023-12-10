@@ -1,0 +1,43 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.8.34322.80
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "dig", "dig\dig.csproj", "{977DBC1C-43E0-41C7-B927-3356223B7F57}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{CF378FB3-7F4D-40D5-BEA5-35A4547B2A51}"
+	ProjectSection(SolutionItems) = preProject
+		.editorconfig = .editorconfig
+	EndProjectSection
+EndProject
+Project("{D954291E-2A0B-460D-934E-DC6B0785DB48}") = "shared", "shared\shared.shproj", "{590D8C71-66C4-4436-860D-7D3421539C4A}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "sync", "sync\sync.csproj", "{24A5D59F-06F2-4847-9548-6AEB6EEB7D63}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{977DBC1C-43E0-41C7-B927-3356223B7F57}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{977DBC1C-43E0-41C7-B927-3356223B7F57}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{977DBC1C-43E0-41C7-B927-3356223B7F57}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{977DBC1C-43E0-41C7-B927-3356223B7F57}.Release|Any CPU.Build.0 = Release|Any CPU
+		{24A5D59F-06F2-4847-9548-6AEB6EEB7D63}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{24A5D59F-06F2-4847-9548-6AEB6EEB7D63}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{24A5D59F-06F2-4847-9548-6AEB6EEB7D63}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{24A5D59F-06F2-4847-9548-6AEB6EEB7D63}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {B3DF61C9-8890-43A4-AFE7-E56B34037FC1}
+	EndGlobalSection
+	GlobalSection(SharedMSBuildProjectFiles) = preSolution
+		shared\shared.projitems*{24a5d59f-06f2-4847-9548-6aeb6eeb7d63}*SharedItemsImports = 5
+		shared\shared.projitems*{590d8c71-66c4-4436-860d-7d3421539c4a}*SharedItemsImports = 13
+		shared\shared.projitems*{977dbc1c-43e0-41c7-b927-3356223b7f57}*SharedItemsImports = 5
+	EndGlobalSection
+EndGlobal

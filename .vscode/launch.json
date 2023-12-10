@@ -1,0 +1,40 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      // Use IntelliSense to find out which attributes exist for C# debugging
+      // Use hover for the description of the existing attributes
+      // For further information visit https://github.com/dotnet/vscode-csharp/blob/main/debugger-launchjson.md
+      "name": "dig cli place show",
+      "type": "coreclr",
+      "request": "launch",
+      "preLaunchTask": "build",
+      // If you have changed target frameworks, make sure to update the program path.
+      "program": "${workspaceFolder}/src/dig/bin/Debug/net8.0/dig.dll",
+      "args": ["place", "show", "-t", "45"],
+      "cwd": "${workspaceFolder}/src/dig",
+      // For more information about the 'console' field, see https://aka.ms/VSCode-CS-LaunchJson-Console
+      "console": "integratedTerminal",
+      "stopAtEntry": false
+    },
+    {
+      "name": "dig cli stores sync",
+      "type": "coreclr",
+      "request": "launch",
+      "preLaunchTask": "build",
+      "program": "${workspaceFolder}/src/dig/bin/Debug/net8.0/dig.dll",
+      "args": ["stores", "sync", "-r", "300000002"],
+      "cwd": "${workspaceFolder}/src/dig",
+      "console": "integratedTerminal",
+      "stopAtEntry": false,
+      "env": {
+        "CHIA_ROOT": "E:\\chia\\kang"
+      }
+    },
+    {
+      "name": ".NET Core Attach",
+      "type": "coreclr",
+      "request": "attach"
+    }
+  ]
+}
