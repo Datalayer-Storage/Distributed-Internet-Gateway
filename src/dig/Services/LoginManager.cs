@@ -107,7 +107,7 @@ internal class LoginManager(IDataProtectionProvider provider,
 
         _logger.LogInformation("{ip}", ip);
 
-        var updateIpUri = _configuration.GetValue("App:UserServiceUri", "https://api.datalayer.storage/user/v1/") + "update_user_ip";
+        var updateIpUri = _configuration.GetValue("dig:UserServiceUri", "https://api.datalayer.storage/user/v1/") + "update_user_ip";
         _logger.LogInformation("Contacting {loginUri}", updateIpUri);
 
         using var httpClient = new HttpClient()
@@ -127,7 +127,7 @@ internal class LoginManager(IDataProtectionProvider provider,
 
     private async Task<dynamic> GetMyPlace(string encodedAuth, CancellationToken stoppingToken)
     {
-        var loginUri = _configuration.GetValue("App:UserServiceUri", "https://api.datalayer.storage/user/v1/") + "me";
+        var loginUri = _configuration.GetValue("dig:UserServiceUri", "https://api.datalayer.storage/user/v1/") + "me";
         _logger.LogInformation("Contacting {loginUri}", loginUri);
 
         using var httpClient = new HttpClient()

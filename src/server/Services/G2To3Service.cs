@@ -22,8 +22,8 @@ internal sealed class G2To3Service
     {
         return new WellKnown
         {
-            xch_address = _configuration.GetValue("App:xch_address", "")!,
-            donation_address = _configuration.GetValue("App:donation_address", "")!
+            xch_address = _configuration.GetValue("dig:XchAddress", "")!,
+            donation_address = _configuration.GetValue("dig:DonationAddress", "")!
         };
     }
 

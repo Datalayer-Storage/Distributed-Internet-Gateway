@@ -6,7 +6,7 @@ internal sealed class DnsService(ILogger<DnsService> logger, IConfiguration conf
     public async Task<string?> GetHostUri(CancellationToken stoppingToken)
     {
         // config file takes precedence
-        var host = _configuration["App:MirrorHostUri"];
+        var host = _configuration["dig:MirrorHostUri"];
         if (!string.IsNullOrEmpty(host))
         {
             return host;

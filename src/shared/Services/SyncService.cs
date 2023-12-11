@@ -63,7 +63,7 @@ internal sealed class SyncService(DataLayerProxy dataLayer,
 
     private async Task<bool> AddMirror(string id, ulong reserveAmount, IEnumerable<string> mirrorUris, ulong fee, CancellationToken stoppingToken)
     {
-        var xchWallet = _chiaService.GetWallet(_configuration.GetValue<uint>("App:XchWalletId", 1));
+        var xchWallet = _chiaService.GetWallet(_configuration.GetValue<uint>("dig:XchWalletId", 1));
         var mirrors = await _dataLayer.GetMirrors(id, stoppingToken);
         // add any mirrors that aren't already ours
         if (!mirrors.Any(m => m.Ours))
@@ -78,7 +78,7 @@ internal sealed class SyncService(DataLayerProxy dataLayer,
             else if (balance.SpendableBalance < neededFunds && (neededFunds < balance.PendingChange || neededFunds < balance.ConfirmedWalletBalance))
             {
                 // no more spendable funds but we have change incoming, pause and then see if it has arrived
-                var waitingForChangeDelayMinutes = _configuration.GetValue("App:WaitingForChangeDelayMinutes", 2);
+                var waitingForChangeDelayMinutes = _configuration.GetValue("dig:WaitingForChangeDelayMinutes", 2);
                 _logger.LogWarning("Waiting {WaitingForChangeDelayMinutes} minutes for change", waitingForChangeDelayMinutes);
                 await Task.Delay(TimeSpan.FromMinutes(waitingForChangeDelayMinutes), stoppingToken);
             }

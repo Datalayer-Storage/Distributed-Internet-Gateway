@@ -2,9 +2,6 @@ using Microsoft.Extensions.Logging.Configuration;
 using Microsoft.Extensions.Logging.EventLog;
 using chia.dotnet;
 
-// doing all of this in the mini-api expressjs-like approach
-// instead of the IActionResult approach
-
 var builder = WebApplication.CreateBuilder(args);
 
 if (builder.Environment.IsProduction())
@@ -29,24 +26,40 @@ if (args.Length != 0)
     builder.Configuration.AddConfiguration(config);
 }
 
-// Add services to the container.
-builder.Services.AddControllers();
-
+// this sets up the gateway service
 builder.Services.AddSingleton<ChiaConfig>()
     .AddSingleton<RpcClientHost>()
     .AddSingleton((provider) => new DataLayerProxy(provider.GetRequiredService<RpcClientHost>().GetRpcClient("data_layer"), "dig.server"))
     .AddSingleton<G2To3Service>()
     .AddEndpointsApiExplorer()
     .AddSwaggerGen()
-    .AddMemoryCache();
+    .AddMemoryCache()
+    .AddControllers();
 
-var app = builder.Build();
-var configuration = app.Configuration;
-if (OperatingSystem.IsWindows() && configuration.GetValue("App:windows_service", false))
+// this sets up the sync service - note that it shares some dependencies with the gateway service
+// ChiaConfig, RpcClientHost, and DataLayerProxy
+if (builder.Configuration.GetValue("dig:RunMirrorSyncJob", false))
 {
-    builder.Host.UseWindowsService();
+    builder.Services
+    .AddWindowsService(options =>
+    {
+        options.ServiceName = "Data Layer Mirror Sync Service";
+    })
+    .AddHostedService<SyncPollingService>()
+    .AddSingleton<ChiaService>()
+    .AddSingleton<MirrorService>()
+    .AddSingleton<SyncService>()
+    .AddSingleton<DnsService>()
+    .AddSingleton((provider) => new FullNodeProxy(provider.GetRequiredService<RpcClientHost>().GetRpcClient("full_node"), "dig.server"))
+    .AddSingleton((provider) => new WalletProxy(provider.GetRequiredService<RpcClientHost>().GetRpcClient("wallet"), "dig.server"));
 }
 
+if (builder.Configuration.GetValue("dig:RunAsWindowsService", false))
+{
+    builder.Host.UseWindowsService(); // safe to call on non-windows platforms
+}
+
+var app = builder.Build();
 app.UseCors();
 app.MapControllers();
 app.Run();

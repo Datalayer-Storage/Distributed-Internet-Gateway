@@ -25,7 +25,7 @@ internal class HostManager(DnsService denService,
             _logger.LogInformation("Checking {host}", hostToCheck);
 
             var data = new { hostname = hostToCheck };
-            var checkConnectionUri = _configuration.GetValue("App:MirrorServiceUri", "https://api.datalayer.storage/mirrors/v1/") + "check_connection";
+            var checkConnectionUri = _configuration.GetValue("dig:MirrorServiceUri", "https://api.datalayer.storage/mirrors/v1/") + "check_connection";
             var response = await httpClient.PostAsJsonAsync(checkConnectionUri, data, token);
             response.EnsureSuccessStatusCode();
             var content = await response.Content.ReadAsStringAsync(token);

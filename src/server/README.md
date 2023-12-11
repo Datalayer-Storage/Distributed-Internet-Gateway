@@ -1,4 +1,4 @@
-# DlMirrorSync
+# dig.server
 
 [![.NET](https://github.com/dkackman/DlMirrorSync/actions/workflows/dotnet.yml/badge.svg)](https://github.com/dkackman/DlMirrorSync/actions/workflows/dotnet.yml)
 [![CodeQL](https://github.com/Datalayer-Storage/MirrorSync/actions/workflows/codeql.yml/badge.svg)](https://github.com/Datalayer-Storage/MirrorSync/actions/workflows/codeql.yml)
