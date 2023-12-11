@@ -12,4 +12,7 @@ internal sealed class StoreCommands
 
     [Command("sync", Description = "Sync the list of stores with a remote list.")]
     public SyncStoresCommand Sync { get; init; } = new();
+
+    [Command("check-fee", Description = "Check the fee for adding a mirror.")]
+    public CheckFeeCommand CheckFee { get; init; } = new();
 }
