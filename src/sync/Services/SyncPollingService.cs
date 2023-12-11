@@ -13,8 +13,8 @@ internal sealed class SyncPollingService(SyncService syncService,
             while (!stoppingToken.IsCancellationRequested)
             {
                 // default to once a day
-                var delay = _configuration.GetValue<int>("App:PollingIntervalMinutes", 1440);
-                var uri = _configuration.GetValue("App:MirrorServiceUri", "https://api.datalayer.storage/mirrors/v1/list_all") ?? throw new InvalidOperationException("MirrorServiceUri not found");
+                var delay = _configuration.GetValue("App:PollingIntervalMinutes", 1440);
+                var uri = _configuration.GetValue("App:MirrorServiceUri", "https://api.datalayer.storage/mirrors/v1/") + "list_all" ?? throw new InvalidOperationException("MirrorServiceUri not found");
                 var reserveAmount = _configuration.GetValue<ulong>("App:AddMirrorAmount", 300000001);
                 var addMirrors = _configuration.GetValue("App:MirrorServer", true);
                 var defaultFee =  _configuration.GetValue<ulong>("DlMirrorSync:DefaultFee", 500000);

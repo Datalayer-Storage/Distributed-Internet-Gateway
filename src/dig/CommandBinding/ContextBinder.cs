@@ -42,7 +42,7 @@ internal class ContextBinder(ILogger<ContextBinder> logger)
         }
         catch (Exception e)
         {
-            _logger.LogError(e, "{Message}", e.InnerException?.Message ?? e.Message);
+            _logger.LogError("{Message}", e.InnerException?.Message ?? e.Message);
             context.ExitCode = -1;
         }
     }

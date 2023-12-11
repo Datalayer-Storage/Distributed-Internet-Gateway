@@ -8,6 +8,8 @@ internal class StoreManager(DataLayerProxy dataLayer,
 
     public async Task UnsubscribeAll(bool retain, CancellationToken token = default)
     {
+        _logger.LogInformation("Getting subscriptions (this can take awhile)");
+
         var subscriptions = await _dataLayer.Subscriptions(token);
         foreach (var subscription in subscriptions)
         {
@@ -18,6 +20,8 @@ internal class StoreManager(DataLayerProxy dataLayer,
 
     public async Task UnmirrorAll(ulong fee, CancellationToken token = default)
     {
+        _logger.LogInformation("Getting subscriptions (this can take awhile)");
+
         var subscriptions = await _dataLayer.Subscriptions(token);
         foreach (var subscription in subscriptions)
         {
@@ -33,6 +37,8 @@ internal class StoreManager(DataLayerProxy dataLayer,
 
     public async Task ListAll(bool ours, CancellationToken token = default)
     {
+        _logger.LogInformation("Getting subscriptions (this can take awhile)");
+
         var subscriptions = await _dataLayer.Subscriptions(token);
         _logger.LogInformation("Found {count} subscriptions.\n", subscriptions.Count());
 

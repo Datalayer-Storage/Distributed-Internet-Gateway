@@ -12,8 +12,8 @@ internal sealed class SyncMirrorsCommand()
     [Option("r", "reserve", Default = 300000001UL, ArgumentHelpName = "MOJOS", Description = "The amount to reserve with each mirror coin.")]
     public ulong Reserve { get; init; } = 300000001UL;
 
-    [Option("t", "timeout", Default = 120, ArgumentHelpName = "SECONDS", Description = "Timeout in seconds")]
-    public int Timeout { get; init; } = 120;
+    [Option("t", "timeout", Default = 240, ArgumentHelpName = "SECONDS", Description = "Timeout in seconds")]
+    public int Timeout { get; init; } = 240;
 
     [CommandTarget]
     public async Task<int> Execute(SyncService syncService)
