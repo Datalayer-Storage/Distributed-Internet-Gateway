@@ -8,15 +8,15 @@ internal record WellKnown()
     public string donation_address { get; init; } = "";
 }
 
-internal sealed class G2To3Service
+internal sealed class G2To3Service(DataLayerProxy dataLayer,
+                                    IMemoryCache memoryCache,
+                                    ILogger<G2To3Service> logger,
+                                    IConfiguration configuration)
 {
-    private readonly DataLayerProxy _dataLayer;
-    private readonly IMemoryCache _memoryCache;
-    private readonly ILogger<G2To3Service> _logger;
-    private readonly IConfiguration _configuration;
-
-    public G2To3Service(DataLayerProxy dataLayer, IMemoryCache memoryCache, ILogger<G2To3Service> logger, IConfiguration configuration) =>
-            (_dataLayer, _memoryCache, _logger, _configuration) = (dataLayer, memoryCache, logger, configuration);
+    private readonly DataLayerProxy _dataLayer = dataLayer;
+    private readonly IMemoryCache _memoryCache = memoryCache;
+    private readonly ILogger<G2To3Service> _logger = logger;
+    private readonly IConfiguration _configuration = configuration;
 
     public WellKnown GetWellKnown()
     {
@@ -31,6 +31,7 @@ internal sealed class G2To3Service
     {
         try
         {
+            // memory cache is used to cache the keys for 15 minutes
             var keys = await _memoryCache.GetOrCreateAsync($"{storeId}", async entry =>
             {
                 entry.SlidingExpiration = TimeSpan.FromMinutes(15);
@@ -70,6 +71,7 @@ internal sealed class G2To3Service
         var hexKey = HexUtils.ToHex("index.html");
         var value = await GetValue(storeId, hexKey, cancellationToken) ?? throw new InvalidOperationException("Couldn't retrieve expected key value");
         var decodedValue = HexUtils.FromHex(value);
+        storeId = System.Net.WebUtility.HtmlEncode(storeId); // just in case
         var baseTag = $"<base href=\"/{storeId}/\">"; // Add the base tag
 
         return decodedValue.Replace("<head>", $"<head>\n    {baseTag}");

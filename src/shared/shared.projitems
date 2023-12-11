@@ -15,6 +15,6 @@
     <Compile Include="$(MSBuildThisFileDirectory)Services\ChiaService.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Services\DnsService.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Services\RpcClientHost.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)Services\SyncService.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Services\StoreSyncService.cs" />
   </ItemGroup>
 </Project>

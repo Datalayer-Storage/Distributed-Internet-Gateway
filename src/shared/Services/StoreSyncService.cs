@@ -1,18 +1,18 @@
 using chia.dotnet;
 
-internal sealed class SyncService(DataLayerProxy dataLayer,
+internal sealed class StoreSyncService(DataLayerProxy dataLayer,
                                     ChiaService chiaService,
                                     MirrorService mirrorService,
-                                    ILogger<SyncService> logger,
+                                    ILogger<StoreSyncService> logger,
                                     IConfiguration configuration)
 {
     private readonly DataLayerProxy _dataLayer = dataLayer;
     private readonly ChiaService _chiaService = chiaService;
     private readonly MirrorService _mirrorService = mirrorService;
-    private readonly ILogger<SyncService> _logger = logger;
+    private readonly ILogger<StoreSyncService> _logger = logger;
     private readonly IConfiguration _configuration = configuration;
 
-    public async Task SyncSubscriptions(string uri, ulong reserveAmount, bool addMirrors, ulong defaultFee, CancellationToken stoppingToken)
+    public async Task SyncStores(string uri, ulong reserveAmount, bool addMirrors, ulong defaultFee, CancellationToken stoppingToken)
     {
         using var _ = new ScopedLogEntry(_logger, "Syncing subscriptions.");
         try

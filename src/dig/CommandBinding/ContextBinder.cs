@@ -37,7 +37,7 @@ internal class ContextBinder(ILogger<ContextBinder> logger)
         try
         {
             // now that all the target object's properties have been set, invoke the method
-            var task = method.Invoke(target, GetAsArguments(services, method)) as Task<int> ?? throw new InvalidOperationException($"Could not invoke method {method.Name}");
+            var task = method.Invoke(target, GetAsArguments(services, method)) as Task<int> ?? throw new InvalidOperationException($"Command target method {method.Name} does not return Task<int>");
             context.ExitCode = task.GetAwaiter().GetResult();
         }
         catch (Exception e)

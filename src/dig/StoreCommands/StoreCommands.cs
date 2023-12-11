@@ -11,5 +11,5 @@ internal sealed class StoreCommands
     public ListAllCommand List { get; init; } = new();
 
     [Command("sync", Description = "Sync the list of stores with a remote list.")]
-    public SyncMirrorsCommand Sync { get; init; } = new();
+    public SyncStoresCommand Sync { get; init; } = new();
 }

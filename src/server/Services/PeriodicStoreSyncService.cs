@@ -1,28 +1,29 @@
-internal sealed class SyncPollingService(SyncService syncService,
-                                            ILogger<SyncPollingService> logger,
+internal sealed class PeriodicStoreSyncService(StoreSyncService syncService,
+                                            ILogger<PeriodicStoreSyncService> logger,
                                             IConfiguration configuration) : BackgroundService
 {
-    private readonly SyncService _syncService = syncService;
-    private readonly ILogger<SyncPollingService> _logger = logger;
+    private readonly StoreSyncService _syncService = syncService;
+    private readonly ILogger<PeriodicStoreSyncService> _logger = logger;
     private readonly IConfiguration _configuration = configuration;
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
         try
         {
-            while (!stoppingToken.IsCancellationRequested)
+            // default to once a day
+            var delay = _configuration.GetValue("dig:PollingIntervalMinutes", 1440);
+
+            using var timer = new PeriodicTimer(TimeSpan.FromMinutes(delay));
+            while (await timer.WaitForNextTickAsync(stoppingToken))
             {
-                // default to once a day
-                var delay = _configuration.GetValue("dig:PollingIntervalMinutes", 1440);
                 var uri = _configuration.GetValue("dig:MirrorServiceUri", "https://api.datalayer.storage/mirrors/v1/") + "list_all" ?? throw new InvalidOperationException("MirrorServiceUri not found");
                 var reserveAmount = _configuration.GetValue<ulong>("dig:AddMirrorAmount", 300000001);
                 var addMirrors = _configuration.GetValue("dig:MirrorServer", true);
                 var defaultFee = _configuration.GetValue<ulong>("DlMirrorSync:DefaultFee", 500000);
 
-                await _syncService.SyncSubscriptions(uri, reserveAmount, addMirrors, defaultFee, stoppingToken);
+                await _syncService.SyncStores(uri, reserveAmount, addMirrors, defaultFee, stoppingToken);
 
                 _logger.LogInformation("Waiting {delay} minutes", delay);
-                await Task.Delay(TimeSpan.FromMinutes(delay), stoppingToken);
             }
         }
         catch (OperationCanceledException)

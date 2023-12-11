@@ -41,21 +41,21 @@ builder.Services.AddSingleton<ChiaConfig>()
 if (builder.Configuration.GetValue("dig:RunMirrorSyncJob", false))
 {
     builder.Services
-    .AddWindowsService(options =>
-    {
-        options.ServiceName = "Data Layer Mirror Sync Service";
-    })
-    .AddHostedService<SyncPollingService>()
-    .AddSingleton<ChiaService>()
-    .AddSingleton<MirrorService>()
-    .AddSingleton<SyncService>()
-    .AddSingleton<DnsService>()
-    .AddSingleton((provider) => new FullNodeProxy(provider.GetRequiredService<RpcClientHost>().GetRpcClient("full_node"), "dig.server"))
-    .AddSingleton((provider) => new WalletProxy(provider.GetRequiredService<RpcClientHost>().GetRpcClient("wallet"), "dig.server"));
+        .AddHostedService<PeriodicStoreSyncService>()
+        .AddSingleton<ChiaService>()
+        .AddSingleton<MirrorService>()
+        .AddSingleton<StoreSyncService>()
+        .AddSingleton<DnsService>()
+        .AddSingleton((provider) => new FullNodeProxy(provider.GetRequiredService<RpcClientHost>().GetRpcClient("full_node"), "dig.server"))
+        .AddSingleton((provider) => new WalletProxy(provider.GetRequiredService<RpcClientHost>().GetRpcClient("wallet"), "dig.server"));
 }
 
 if (builder.Configuration.GetValue("dig:RunAsWindowsService", false))
 {
+    builder.Services.AddWindowsService(options =>
+        {
+            options.ServiceName = "Distributed Internet Gateway";
+        });
     builder.Host.UseWindowsService(); // safe to call on non-windows platforms
 }
 
