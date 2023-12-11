@@ -1,6 +1,5 @@
 using chia.dotnet;
 
-
 /// <summary>
 /// Provides methods for managing chia connection details.
 /// </summary>

@@ -16,12 +16,12 @@ internal sealed class PeriodicStoreSyncService(StoreSyncService syncService,
             using var timer = new PeriodicTimer(TimeSpan.FromMinutes(delay));
             while (await timer.WaitForNextTickAsync(stoppingToken))
             {
-                var uri = _configuration.GetValue("dig:MirrorServiceUri", "https://api.datalayer.storage/mirrors/v1/") + "list_all" ?? throw new InvalidOperationException("MirrorServiceUri not found");
+                var mirrorListUri = _configuration.GetValue("dig:MirrorServiceUri", "https://api.datalayer.storage/mirrors/v1/") + "list_all" ?? throw new InvalidOperationException("MirrorServiceUri not found");
                 var reserveAmount = _configuration.GetValue<ulong>("dig:AddMirrorAmount", 300000001);
                 var addMirrors = _configuration.GetValue("dig:MirrorServer", true);
                 var defaultFee = _configuration.GetValue<ulong>("DlMirrorSync:DefaultFee", 500000);
 
-                await _syncService.SyncStores(uri, reserveAmount, addMirrors, defaultFee, stoppingToken);
+                await _syncService.SyncStores(mirrorListUri, reserveAmount, addMirrors, defaultFee, stoppingToken);
 
                 _logger.LogInformation("Waiting {delay} minutes", delay);
             }

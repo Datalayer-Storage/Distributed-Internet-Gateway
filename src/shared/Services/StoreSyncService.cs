@@ -12,7 +12,7 @@ internal sealed class StoreSyncService(DataLayerProxy dataLayer,
     private readonly ILogger<StoreSyncService> _logger = logger;
     private readonly IConfiguration _configuration = configuration;
 
-    public async Task SyncStores(string uri, ulong reserveAmount, bool addMirrors, ulong defaultFee, CancellationToken stoppingToken)
+    public async Task SyncStores(string mirrorListUri, ulong reserveAmount, bool addMirrors, ulong defaultFee, CancellationToken stoppingToken)
     {
         using var _ = new ScopedLogEntry(_logger, "Syncing subscriptions.");
         try
@@ -30,7 +30,7 @@ internal sealed class StoreSyncService(DataLayerProxy dataLayer,
 
             var haveFunds = true;
 
-            await foreach (var id in _mirrorService.FetchLatest(uri, stoppingToken))
+            await foreach (var id in _mirrorService.FetchLatest(mirrorListUri, stoppingToken))
             {
                 // don't subscribe or mirror our owned stores
                 if (!ownedStores.Contains(id))

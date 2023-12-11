@@ -1,5 +1,6 @@
 using Microsoft.Extensions.Logging.Configuration;
 using Microsoft.Extensions.Logging.EventLog;
+using Microsoft.Extensions.Resilience;
 using chia.dotnet;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -30,12 +31,17 @@ if (args.Length != 0)
 builder.Services.AddSingleton<ChiaConfig>()
     .AddSingleton<RpcClientHost>()
     .AddSingleton((provider) => new DataLayerProxy(provider.GetRequiredService<RpcClientHost>().GetRpcClient("data_layer"), "dig.server"))
-    .AddSingleton<G2To3Service>()
     .AddHttpClient()
+    .AddSingleton<G2To3Service>()
     .AddEndpointsApiExplorer()
     .AddSwaggerGen()
     .AddMemoryCache()
     .AddControllers();
+
+builder.Services.AddHttpClient("whats.my.ip", c =>
+{
+    c.BaseAddress = new Uri(builder.Configuration.GetValue("dig:WhatMyIpUri", "https://api.ipify.org")!);
+}).AddStandardResilienceHandler();
 
 // this sets up the sync service - note that it shares some dependencies with the gateway service
 // ChiaConfig, RpcClientHost, and DataLayerProxy
