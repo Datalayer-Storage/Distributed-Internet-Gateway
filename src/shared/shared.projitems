@@ -10,11 +10,11 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="$(MSBuildThisFileDirectory)Services\MirrorService.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)RpcEndpointConfiguration.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)ScopedLogEntry.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Services\ChiaConfig.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Services\ChiaService.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Services\DnsService.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)Services\RpcClientHost.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Services\StoreSyncService.cs" />
   </ItemGroup>
 </Project>

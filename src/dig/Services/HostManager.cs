@@ -2,13 +2,11 @@ using System.Net.Http.Json;
 
 internal class HostManager(DnsService denService,
                         IHttpClientFactory httpClientFactory,
-                        ILogger<HostManager> logger,
-                        IConfiguration configuration)
+                        ILogger<HostManager> logger)
 {
     private readonly DnsService _dnsService = denService;
     private readonly ILogger<HostManager> _logger = logger;
-    private readonly IConfiguration _configuration = configuration;
-    private readonly HttpClient _httpClient = httpClientFactory.CreateClient("datalayer.mirrors");
+    private readonly HttpClient _httpClient = httpClientFactory.CreateClient("datalayer.storage");
 
     public async Task CheckHost(string host, CancellationToken token = default)
     {
@@ -22,8 +20,7 @@ internal class HostManager(DnsService denService,
             _logger.LogInformation("Checking {host}", hostToCheck);
 
             var data = new { hostname = hostToCheck };
-            var checkConnectionUri = _configuration.GetValue("dig:MirrorServiceUri", "https://api.datalayer.storage/mirrors/v1/") + "check_connection";
-            var response = await _httpClient.PostAsJsonAsync(checkConnectionUri, data, token);
+            var response = await _httpClient.PostAsJsonAsync("mirrors/v1/check_connection", data, token);
             response.EnsureSuccessStatusCode();
             var content = await response.Content.ReadAsStringAsync(token);
 

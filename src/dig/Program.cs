@@ -10,19 +10,27 @@ builder.Services.AddSingleton<StoreManager>()
     .AddSingleton<LoginManager>()
     .AddSingleton<ChiaConfig>()
     .AddSingleton<DnsService>()
-    .AddSingleton<RpcClientHost>()
     .AddSingleton<ContextBinder>()
     .AddSingleton<MirrorService>()
     .AddSingleton<ChiaService>()
     .AddSingleton<StoreSyncService>()
     .AddSingleton((provider) => new AppStorage(".distributed-internet-gateway"))
     .AddHttpClient()
-    .AddSingleton((provider) => new DataLayerProxy(provider.GetRequiredService<RpcClientHost>().GetRpcClient("data_layer"), "dig"))
-    .AddSingleton((provider) => new WalletProxy(provider.GetRequiredService<RpcClientHost>().GetRpcClient("wallet"), "dig"))
-    .AddSingleton((provider) => new FullNodeProxy(provider.GetRequiredService<RpcClientHost>().GetRpcClient("full_node"), "dig"))
+    .AddSingleton(provider => new WalletProxy(provider.GetRequiredKeyedService<IRpcClient>("wallet"), "dig.server"))
+    .AddSingleton(provider => new DataLayerProxy(provider.GetRequiredKeyedService<IRpcClient>("data_layer"), "dig.server"))
+    .AddSingleton(provider => new FullNodeProxy(provider.GetRequiredKeyedService<IRpcClient>("full_node"), "dig.server"))
     .AddDataProtection()
     .SetApplicationName("distributed-internet-gateway")
     .SetDefaultKeyLifetime(TimeSpan.FromDays(180)); ;
+
+builder.Services.AddHttpClient("datalayer.storage", c =>
+    {
+        c.BaseAddress = new Uri(builder.Configuration.GetValue("dig:DataLayerStorageUri", "https://api.datalayer.storage")!);
+    });
+
+builder.Services.AddRpcEndpoint("wallet");
+builder.Services.AddRpcEndpoint("data_layer");
+builder.Services.AddRpcEndpoint("full_node");
 
 var host = builder.Build();
 

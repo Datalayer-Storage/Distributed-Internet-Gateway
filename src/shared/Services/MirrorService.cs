@@ -9,7 +9,6 @@ internal sealed class MirrorService(DnsService dnsService,
     private readonly DnsService _dnsService = dnsService;
     private readonly ILogger<MirrorService> _logger = logger;
     private readonly HttpClient _httpClient = httpClientFactory.CreateClient();
-
     private readonly JsonSerializerSettings _settings = new()
     {
         ContractResolver = new DefaultContractResolver

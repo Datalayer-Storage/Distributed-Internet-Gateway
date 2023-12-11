@@ -1,6 +1,5 @@
 using Microsoft.Extensions.Logging.Configuration;
 using Microsoft.Extensions.Logging.EventLog;
-using Microsoft.Extensions.Resilience;
 using chia.dotnet;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -29,18 +28,19 @@ if (args.Length != 0)
 
 // this sets up the gateway service
 builder.Services.AddSingleton<ChiaConfig>()
-    .AddSingleton<RpcClientHost>()
-    .AddSingleton((provider) => new DataLayerProxy(provider.GetRequiredService<RpcClientHost>().GetRpcClient("data_layer"), "dig.server"))
     .AddHttpClient()
     .AddSingleton<G2To3Service>()
+    .AddSingleton(provider => new DataLayerProxy(provider.GetRequiredKeyedService<IRpcClient>("data_layer"), "dig.server"))
     .AddEndpointsApiExplorer()
     .AddSwaggerGen()
     .AddMemoryCache()
     .AddControllers();
 
-builder.Services.AddHttpClient("whats.my.ip", c =>
+builder.Services.AddRpcEndpoint("data_layer")
+    .AddStandardResilienceHandler();
+builder.Services.AddHttpClient("datalayer.storage", c =>
 {
-    c.BaseAddress = new Uri(builder.Configuration.GetValue("dig:WhatMyIpUri", "https://api.ipify.org")!);
+    c.BaseAddress = new Uri(builder.Configuration.GetValue("dig:DataLayerStorageUri", "https://api.datalayer.storage/")!);
 }).AddStandardResilienceHandler();
 
 // this sets up the sync service - note that it shares some dependencies with the gateway service
@@ -53,9 +53,14 @@ if (builder.Configuration.GetValue("dig:RunMirrorSyncJob", false))
         .AddSingleton<MirrorService>()
         .AddSingleton<StoreSyncService>()
         .AddSingleton<DnsService>()
-        .AddSingleton((provider) => new FullNodeProxy(provider.GetRequiredService<RpcClientHost>().GetRpcClient("full_node"), "dig.server"))
-        .AddSingleton((provider) => new WalletProxy(provider.GetRequiredService<RpcClientHost>().GetRpcClient("wallet"), "dig.server"));
+        .AddSingleton(provider => new FullNodeProxy(provider.GetRequiredKeyedService<IRpcClient>("full_node"), "dig.server"))
+        .AddSingleton(provider => new WalletProxy(provider.GetRequiredKeyedService<IRpcClient>("wallet"), "dig.server"));
 }
+
+builder.Services.AddRpcEndpoint("wallet")
+    .AddStandardResilienceHandler();
+builder.Services.AddRpcEndpoint("full_node")
+    .AddStandardResilienceHandler();
 
 if (builder.Configuration.GetValue("dig:RunAsWindowsService", false))
 {

@@ -52,7 +52,7 @@ These settings can be configured in the `appsettings.json` file or via environme
 - __MirrorHostUri__: "" - The host uri to use for mirroring. If empty, will default to the host machine's public IP address.
 - __WaitingForChangeDelayMinutes__: 2 - The number of minutes to wait if spendable balance is 0 but change is owed.
 - __PollingIntervalMinutes__: 1440 - The number of minutes to wait between checking for new singletons.
-- __MirrorServiceUri__: <https://api.datalayer.storage/mirrors/v1/list_all> - The uri to use for retrieving the list of singletons to mirror.
+- __DataLayerStorageUri__: <https://api.datalayer.storage/> - The uri to use for retrieving the list of singletons to mirror.
 - __DefaultFee__: 500000, - The default fee to use for mirroring singletons if the dynamic fee cannot be retrieved.
 - __AddMirrorAmount__: 300000001 - The number of mojos to reserve in the mirror coin for each singleton.
 - __XchWalletId__: 1 - The XCH wallet id to use for paying the fee and reserve amount.

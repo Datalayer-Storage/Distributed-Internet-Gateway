@@ -15,7 +15,7 @@ internal class LoginManager(IDataProtectionProvider provider,
     private readonly DnsService _dnsService = dnsService;
     private readonly ILogger<LoginManager> _logger = logger;
     private readonly IConfiguration _configuration = configuration;
-    private readonly HttpClient _httpClient = httpClientFactory.CreateClient("datalayer.place");
+    private readonly HttpClient _httpClient = httpClientFactory.CreateClient("datalayer.storage");
 
     public async Task Login(CancellationToken stoppingToken = default)
     {
@@ -109,14 +109,11 @@ internal class LoginManager(IDataProtectionProvider provider,
 
         _logger.LogInformation("{ip}", ip);
 
-        var updateIpUri = _configuration.GetValue("dig:UserServiceUri", "https://api.datalayer.storage/user/v1/") + "update_user_ip";
-        _logger.LogInformation("Contacting {loginUri}", updateIpUri);
-
         var encodedAuth = Convert.ToBase64String(Encoding.GetEncoding("ISO-8859-1").GetBytes(accessToken + ":" + secretKey));
         _httpClient.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Basic", encodedAuth);
 
         var data = new { ip_address = ip };
-        var response = await _httpClient.PutAsJsonAsync(updateIpUri, data, stoppingToken);
+        var response = await _httpClient.PutAsJsonAsync("user/v1/update_user_ip", data, stoppingToken);
         response.EnsureSuccessStatusCode();
         var content = await response.Content.ReadAsStringAsync(stoppingToken);
 
@@ -125,12 +122,9 @@ internal class LoginManager(IDataProtectionProvider provider,
 
     private async Task<dynamic> GetMyPlace(string encodedAuth, CancellationToken stoppingToken)
     {
-        var loginUri = _configuration.GetValue("dig:UserServiceUri", "https://api.datalayer.storage/user/v1/") + "me";
-        _logger.LogInformation("Contacting {loginUri}", loginUri);
-
         _httpClient.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Basic", encodedAuth);
 
-        var response = await _httpClient.GetAsync(loginUri, stoppingToken);
+        var response = await _httpClient.GetAsync("user/v1/me", stoppingToken);
         response.EnsureSuccessStatusCode();
         return await response.Content.ReadFromJsonAsync<ExpandoObject>(stoppingToken) ?? throw new Exception("Login failed.");
     }

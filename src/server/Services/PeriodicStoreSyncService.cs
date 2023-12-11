@@ -16,7 +16,7 @@ internal sealed class PeriodicStoreSyncService(StoreSyncService syncService,
             using var timer = new PeriodicTimer(TimeSpan.FromMinutes(delay));
             while (await timer.WaitForNextTickAsync(stoppingToken))
             {
-                var mirrorListUri = _configuration.GetValue("dig:MirrorServiceUri", "https://api.datalayer.storage/mirrors/v1/") + "list_all" ?? throw new InvalidOperationException("MirrorServiceUri not found");
+                var mirrorListUri = _configuration.GetValue("dig:DataLayerStorageUri", "https://api.datalayer.storage/") + "mirrors/v1/list_all";
                 var reserveAmount = _configuration.GetValue<ulong>("dig:AddMirrorAmount", 300000001);
                 var addMirrors = _configuration.GetValue("dig:MirrorServer", true);
                 var defaultFee = _configuration.GetValue<ulong>("DlMirrorSync:DefaultFee", 500000);
