@@ -35,7 +35,7 @@ internal class StoreManager(DataLayerProxy dataLayer,
         }
     }
 
-    public async Task ListAll(bool ours, CancellationToken token = default)
+    public async Task ListAll(bool oursOnly, CancellationToken token = default)
     {
         _logger.LogInformation("Getting subscriptions (this can take awhile)");
 
@@ -46,11 +46,12 @@ internal class StoreManager(DataLayerProxy dataLayer,
         {
             Console.WriteLine($"Subscription: {subscription}");
             var mirrors = await _dataLayer.GetMirrors(subscription, token);
-            mirrors = ours ? mirrors.Where(m => m.Ours) : mirrors;
+            mirrors = oursOnly ? mirrors.Where(m => m.Ours) : mirrors;
 
             foreach (var mirror in mirrors)
             {
-                Console.WriteLine($"  Mirror: {mirror.CoinId}");
+                var ours = mirror.Ours ? "(ours)" : "";
+                Console.WriteLine($"\tMirror {ours}: {mirror.CoinId}");
             }
         }
     }
