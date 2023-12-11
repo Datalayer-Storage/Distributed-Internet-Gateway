@@ -27,9 +27,7 @@
       "cwd": "${workspaceFolder}/src/dig",
       "console": "integratedTerminal",
       "stopAtEntry": false,
-      "env": {
-        "CHIA_ROOT": "E:\\chia\\kang"
-      }
+      "envFile": "${workspaceFolder}/.env"
     },
     {
       "name": "dig cli stores list",
@@ -41,9 +39,19 @@
       "cwd": "${workspaceFolder}/src/dig",
       "console": "integratedTerminal",
       "stopAtEntry": false,
-      "env": {
-        "CHIA_ROOT": "E:\\chia\\kang"
-      }
+      "envFile": "${workspaceFolder}/.env"
+    },
+    {
+      "name": "dig.server",
+      "type": "coreclr",
+      "request": "launch",
+      "preLaunchTask": "build",
+      "program": "${workspaceFolder}/src/server/bin/Debug/net8.0/dig.server.dll",
+      "args": [],
+      "cwd": "${workspaceFolder}/src/server",
+      "console": "integratedTerminal",
+      "stopAtEntry": false,
+      "envFile": "${workspaceFolder}/.env"
     },
     {
       "name": ".NET Core Attach",
