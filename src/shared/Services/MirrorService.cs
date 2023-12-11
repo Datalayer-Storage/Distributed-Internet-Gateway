@@ -2,10 +2,14 @@ using System.Runtime.CompilerServices;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
 
-internal sealed class MirrorService(DnsService dnsService, ILogger<MirrorService> logger)
+internal sealed class MirrorService(DnsService dnsService,
+                                        IHttpClientFactory httpClientFactory,
+                                        ILogger<MirrorService> logger)
 {
     private readonly DnsService _dnsService = dnsService;
     private readonly ILogger<MirrorService> _logger = logger;
+    private readonly HttpClient _httpClient = httpClientFactory.CreateClient("datalayer.mirrors");
+
     private readonly JsonSerializerSettings _settings = new()
     {
         ContractResolver = new DefaultContractResolver
@@ -27,13 +31,12 @@ internal sealed class MirrorService(DnsService dnsService, ILogger<MirrorService
     public async IAsyncEnumerable<string> FetchLatest(string uri, [EnumeratorCancellation] CancellationToken stoppingToken)
     {
         using var _ = new ScopedLogEntry(_logger, $"Fetching latest mirrors from {uri}");
-        using var httpClient = new HttpClient();
         var currentPage = 1;
         var totalPages = 0; // we won't know actual total pages until we get the first page
 
         do
         {
-            var page = await GetPage(httpClient, uri, currentPage, stoppingToken);
+            var page = await GetPage(_httpClient, uri, currentPage, stoppingToken);
             totalPages = page.TotalPages;
 
             foreach (var singleton in page.Mirrors)

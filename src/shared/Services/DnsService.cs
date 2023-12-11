@@ -1,7 +1,10 @@
-internal sealed class DnsService(ILogger<DnsService> logger, IConfiguration configuration)
+internal sealed class DnsService(IHttpClientFactory httpClientFactory,
+                                    ILogger<DnsService> logger,
+                                    IConfiguration configuration)
 {
     private readonly ILogger<DnsService> _logger = logger;
     private readonly IConfiguration _configuration = configuration;
+    private readonly HttpClient _httpClient = httpClientFactory.CreateClient("whats.my.ip");
 
     public async Task<string?> GetHostUri(CancellationToken stoppingToken)
     {
@@ -26,11 +29,8 @@ internal sealed class DnsService(ILogger<DnsService> logger, IConfiguration conf
         try
         {
             _logger.LogInformation("Getting public ip address");
-            using var httpClient = new HttpClient()
-            {
-                Timeout = TimeSpan.FromSeconds(30)
-            };
-            return await httpClient.GetStringAsync("https://api.ipify.org", stoppingToken);
+
+            return await _httpClient.GetStringAsync("https://api.ipify.org", stoppingToken);
         }
         catch (Exception ex)
         {

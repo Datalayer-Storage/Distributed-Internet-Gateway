@@ -6,6 +6,7 @@ using System.Net.Http.Json;
 internal class LoginManager(IDataProtectionProvider provider,
                         AppStorage appStorage,
                         DnsService dnsService,
+                        IHttpClientFactory httpClientFactory,
                         ILogger<LoginManager> logger,
                         IConfiguration configuration)
 {
@@ -14,6 +15,7 @@ internal class LoginManager(IDataProtectionProvider provider,
     private readonly DnsService _dnsService = dnsService;
     private readonly ILogger<LoginManager> _logger = logger;
     private readonly IConfiguration _configuration = configuration;
+    private readonly HttpClient _httpClient = httpClientFactory.CreateClient("datalayer.place");
 
     public async Task Login(CancellationToken stoppingToken = default)
     {
@@ -110,15 +112,11 @@ internal class LoginManager(IDataProtectionProvider provider,
         var updateIpUri = _configuration.GetValue("dig:UserServiceUri", "https://api.datalayer.storage/user/v1/") + "update_user_ip";
         _logger.LogInformation("Contacting {loginUri}", updateIpUri);
 
-        using var httpClient = new HttpClient()
-        {
-            Timeout = TimeSpan.FromSeconds(60)
-        };
         var encodedAuth = Convert.ToBase64String(Encoding.GetEncoding("ISO-8859-1").GetBytes(accessToken + ":" + secretKey));
-        httpClient.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Basic", encodedAuth);
+        _httpClient.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Basic", encodedAuth);
 
         var data = new { ip_address = ip };
-        var response = await httpClient.PutAsJsonAsync(updateIpUri, data, stoppingToken);
+        var response = await _httpClient.PutAsJsonAsync(updateIpUri, data, stoppingToken);
         response.EnsureSuccessStatusCode();
         var content = await response.Content.ReadAsStringAsync(stoppingToken);
 
@@ -130,13 +128,9 @@ internal class LoginManager(IDataProtectionProvider provider,
         var loginUri = _configuration.GetValue("dig:UserServiceUri", "https://api.datalayer.storage/user/v1/") + "me";
         _logger.LogInformation("Contacting {loginUri}", loginUri);
 
-        using var httpClient = new HttpClient()
-        {
-            Timeout = TimeSpan.FromSeconds(60)
-        };
-        httpClient.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Basic", encodedAuth);
+        _httpClient.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Basic", encodedAuth);
 
-        var response = await httpClient.GetAsync(loginUri, stoppingToken);
+        var response = await _httpClient.GetAsync(loginUri, stoppingToken);
         response.EnsureSuccessStatusCode();
         return await response.Content.ReadFromJsonAsync<ExpandoObject>(stoppingToken) ?? throw new Exception("Login failed.");
     }
