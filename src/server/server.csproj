@@ -8,6 +8,7 @@
         <RootNamespace>dig</RootNamespace>
         <PublishSingleFile Condition="'$(Configuration)' == 'Release'">true</PublishSingleFile>
         <AssemblyName>dig.server</AssemblyName>
+        <ServerGarbageCollection>true</ServerGarbageCollection>
     </PropertyGroup>
 
     <ItemGroup>
