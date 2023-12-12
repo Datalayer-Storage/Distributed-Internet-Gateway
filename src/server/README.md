@@ -28,7 +28,7 @@ To manually install as a windows service run `./install.ps1` from an elevated te
 If you are running the single file or standalone versions you can run the following command to sync the singletons:
 
 ```bash
-./DlMirrorSync ["optional path to chia config"]
+./dig ["optional path to chia config"]
 ```
 
 ### Install As a Service
@@ -46,7 +46,7 @@ To install as a `systemd` service run `sudo bash install.sh`
 
 ## Configuration
 
-These settings can be configured in the `appsettings.json` file or via environment variables (prefixed with `DlMirrorSync:`).
+These settings can be configured in the `appsettings.json` file or via environment variables (prefixed with `dig:`).
 
 - __MirrorServer__: true - If true, this node will mirror the singletons from datalayer.storage in addition to subscribing to them.
 - __MirrorHostUri__: "" - The host uri to use for mirroring. If empty, will default to the host machine's public IP address.

@@ -8,7 +8,7 @@ internal sealed class ChiaConfig(ILogger<ChiaConfig> logger, IConfiguration conf
     private readonly ILogger<ChiaConfig> _logger = logger;
     private readonly IConfiguration _configuration = configuration;
 
-    private string GetConfigPath()
+    public string? GetConfigPath()
     {
         // first see if we have a config file path from the command line
         var configPath = _configuration.GetValue("ChiaConfigPath", "");
@@ -18,16 +18,16 @@ internal sealed class ChiaConfig(ILogger<ChiaConfig> logger, IConfiguration conf
         }
 
         // then see if we have a config file path in the appsettings.json or environment variable
-        configPath = _configuration.GetValue("DlMirrorSync:ChiaConfigPath", "");
+        configPath = _configuration.GetValue("dig:ChiaConfigPath", "");
         if (!string.IsNullOrEmpty(configPath))
         {
             return configPath;
         }
 
-        return "";
+        return null;
     }
 
-    private Config GetConfig()
+    public Config GetConfig()
     {
         // first see if we have a config file path in the appsettings.json
         var configPath = GetConfigPath();
