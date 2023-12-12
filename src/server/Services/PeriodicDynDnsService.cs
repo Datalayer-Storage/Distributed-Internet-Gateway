@@ -1,9 +1,11 @@
-internal sealed class PeriodicDynDnsService(StoreSyncService syncService,
-                                            ILogger<PeriodicStoreSyncService> logger,
+internal sealed class PeriodicDynDnsService(LoginManager loginManager,
+                                            DynDnsService dynDnsService,
+                                            ILogger<PeriodicDynDnsService> logger,
                                             IConfiguration configuration) : BackgroundService
 {
-    private readonly StoreSyncService _syncService = syncService;
-    private readonly ILogger<PeriodicStoreSyncService> _logger = logger;
+    private readonly LoginManager _loginManager = loginManager;
+    private readonly DynDnsService _dynDnsService = dynDnsService;
+    private readonly ILogger<PeriodicDynDnsService> _logger = logger;
     private readonly IConfiguration _configuration = configuration;
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -11,20 +13,24 @@ internal sealed class PeriodicDynDnsService(StoreSyncService syncService,
         try
         {
             // default to once a day
-            var delay = _configuration.GetValue("dig:DynDnsSyncIntervalMinutes", 1440);
+            var period = _configuration.GetValue("dig:DynDnsSyncIntervalMinutes", 1440);
 
-            using var timer = new PeriodicTimer(TimeSpan.FromMinutes(delay));
-            while (await timer.WaitForNextTickAsync(stoppingToken))
+            using var timer = new PeriodicTimer(TimeSpan.FromMinutes(period));
+            do
             {
-                var mirrorListUri = _configuration.GetValue("dig:DataLayerStorageUri", "https://api.datalayer.storage/") + "mirrors/v1/list_all";
-                var reserveAmount = _configuration.GetValue<ulong>("dig:AddMirrorAmount", 300000001);
-                var addMirrors = _configuration.GetValue("dig:MirrorServer", true);
-                var defaultFee = _configuration.GetValue<ulong>("dig:DefaultFee", 500000);
+                var (accessToken, secretKey) = _loginManager.GetCredentials();
 
-                await _syncService.SyncStores(mirrorListUri, reserveAmount, addMirrors, defaultFee, stoppingToken);
-
-                _logger.LogInformation("Waiting {delay} minutes", delay);
-            }
+                using var cancellationSource = new CancellationTokenSource(TimeSpan.FromSeconds(60));
+                var result = await _dynDnsService.UpdateIP(accessToken, secretKey, cancellationSource.Token);
+                if (string.IsNullOrEmpty(result))
+                {
+                    _logger.LogWarning("Unable to update IP address.");
+                }
+                else
+                {
+                    _logger.LogInformation("{result}", result.SanitizeForLog());
+                }
+            } while (await timer.WaitForNextTickAsync(stoppingToken));
         }
         catch (OperationCanceledException)
         {

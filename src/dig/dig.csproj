@@ -9,6 +9,7 @@
         <RootNamespace>dig</RootNamespace>
         <AssemblyName>dig</AssemblyName>
         <PublishSingleFile Condition="'$(Configuration)' == 'Release'">true</PublishSingleFile>
+        <UserSecretsId>3aace9bf-0eee-40e8-a6f2-457858d15586</UserSecretsId>
     </PropertyGroup>
 
     <ItemGroup>

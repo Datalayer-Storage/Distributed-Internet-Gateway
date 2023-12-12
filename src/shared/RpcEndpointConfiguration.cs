@@ -28,12 +28,14 @@ internal static class RpcEndpointConfiguration
             var endpoint = chiaConfig.GetEndpoint(name);
 
             client.BaseAddress = endpoint.Uri;
+            client.Timeout = TimeSpan.FromSeconds(120);
         })
         .UseSocketsHttpHandler((socketHandler, provider) =>
         {
             var chiaConfig = provider.GetRequiredService<ChiaConfig>();
             var endpoint = chiaConfig.GetEndpoint(name);
 
+            socketHandler.PooledConnectionLifetime = TimeSpan.FromMinutes(15);
             socketHandler.SslOptions.ClientCertificates = endpoint.GetCert();
             socketHandler.SslOptions.RemoteCertificateValidationCallback += ValidateServerCertificate;
         });

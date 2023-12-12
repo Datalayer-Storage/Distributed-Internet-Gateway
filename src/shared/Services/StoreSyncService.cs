@@ -18,7 +18,7 @@ internal sealed class StoreSyncService(DataLayerProxy dataLayer,
         try
         {
             _logger.LogInformation("Getting fee");
-            var fee = await _chiaService.GetFee(reserveAmount, defaultFee, stoppingToken);
+            var fee = defaultFee;  //await _chiaService.GetFee(reserveAmount, defaultFee, stoppingToken);
 
             _logger.LogInformation("Getting subscriptions");
             var subscriptions = await _dataLayer.Subscriptions(stoppingToken);
@@ -47,7 +47,7 @@ internal sealed class StoreSyncService(DataLayerProxy dataLayer,
                         await _dataLayer.Subscribe(id, Enumerable.Empty<string>(), stoppingToken);
                     }
 
-                    // mirror if we are a mirror server, have a mirror host uri, and have enough funding
+                    // add mirror if we are a mirror server, have a mirror host uri, and have enough funding
                     if (addMirrors && mirrorUris.Any() && haveFunds)
                     {
                         // before mirroring check we have enough funds

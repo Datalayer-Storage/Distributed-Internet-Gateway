@@ -11,10 +11,10 @@ internal sealed class PeriodicStoreSyncService(StoreSyncService syncService,
         try
         {
             // default to once a day
-            var delay = _configuration.GetValue("dig:StoreSyncIntervalMinutes", 1440);
+            var period = _configuration.GetValue("dig:StoreSyncIntervalMinutes", 1440);
 
-            using var timer = new PeriodicTimer(TimeSpan.FromMinutes(delay));
-            while (await timer.WaitForNextTickAsync(stoppingToken))
+            using var timer = new PeriodicTimer(TimeSpan.FromMinutes(period));
+            do
             {
                 var mirrorListUri = _configuration.GetValue("dig:DataLayerStorageUri", "https://api.datalayer.storage/") + "mirrors/v1/list_all";
                 var reserveAmount = _configuration.GetValue<ulong>("dig:AddMirrorAmount", 300000001);
@@ -23,8 +23,8 @@ internal sealed class PeriodicStoreSyncService(StoreSyncService syncService,
 
                 await _syncService.SyncStores(mirrorListUri, reserveAmount, addMirrors, defaultFee, stoppingToken);
 
-                _logger.LogInformation("Waiting {delay} minutes", delay);
-            }
+                _logger.LogInformation("Waiting {delay} minutes", period);
+            } while (await timer.WaitForNextTickAsync(stoppingToken));
         }
         catch (OperationCanceledException)
         {

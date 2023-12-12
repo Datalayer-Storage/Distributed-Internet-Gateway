@@ -37,6 +37,7 @@ builder.Services.AddSingleton<ChiaConfig>()
     .AddMemoryCache()
     .AddControllers();
 
+builder.Services.AddRpcEndpoint("data_layer");
 builder.Services.AddHttpClient("datalayer.storage", c =>
 {
     c.BaseAddress = new Uri(builder.Configuration.GetValue("dig:DataLayerStorageUri", "https://api.datalayer.storage/")!);
@@ -54,6 +55,9 @@ if (builder.Configuration.GetValue("dig:RunMirrorSyncJob", false))
         .AddSingleton<DnsService>()
         .AddSingleton(provider => new FullNodeProxy(provider.GetRequiredKeyedService<IRpcClient>("full_node"), "dig.server"))
         .AddSingleton(provider => new WalletProxy(provider.GetRequiredKeyedService<IRpcClient>("wallet"), "dig.server"));
+
+    builder.Services.AddRpcEndpoint("wallet");
+    builder.Services.AddRpcEndpoint("full_node");
 }
 
 // setup the Dyn Dns service
@@ -61,20 +65,14 @@ if (builder.Configuration.GetValue("dig:RunDynDnsJob", false))
 {
     builder.Services
         .AddHostedService<PeriodicDynDnsService>()
+        .AddSingleton<DynDnsService>()
+        .AddSingleton<DnsService>()
         .AddSingleton<LoginManager>()
         .AddSingleton((provider) => new AppStorage(".distributed-internet-gateway"))
         .AddDataProtection()
         .SetApplicationName("distributed-internet-gateway")
         .SetDefaultKeyLifetime(TimeSpan.FromDays(180));
 }
-
-// setup chia rpc endpoints
-builder.Services.AddRpcEndpoint("data_layer")
-    .AddStandardResilienceHandler();
-builder.Services.AddRpcEndpoint("wallet")
-    .AddStandardResilienceHandler();
-builder.Services.AddRpcEndpoint("full_node")
-    .AddStandardResilienceHandler();
 
 if (builder.Configuration.GetValue("dig:RunAsWindowsService", false))
 {
