@@ -17,6 +17,7 @@ internal sealed class StoreSyncService(DataLayerProxy dataLayer,
         using var _ = new ScopedLogEntry(_logger, "Syncing subscriptions.");
         try
         {
+            _logger.LogInformation("Getting fee");
             var fee = await _chiaService.GetFee(reserveAmount, defaultFee, stoppingToken);
 
             _logger.LogInformation("Getting subscriptions");
