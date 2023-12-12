@@ -19,5 +19,6 @@
         <Compile Include="$(MSBuildThisFileDirectory)Services\DynDnsService.cs" />
         <Compile Include="$(MSBuildThisFileDirectory)Services\AppStorage.cs" />
         <Compile Include="$(MSBuildThisFileDirectory)Services\LoginManager.cs" />
+        <Compile Include="$(MSBuildThisFileDirectory)Utils.cs" />
     </ItemGroup>
 </Project>

@@ -16,7 +16,14 @@ internal sealed class SyncStoresCommand()
     public async Task<int> Execute(StoreSyncService syncService)
     {
         // pass CancellationToken.None as we want this to run as long as it takes
-        await syncService.SyncStores(Uri, Reserve, !SubscribeOnly, Fee, CancellationToken.None);
+        var count = await syncService.SyncStores(Uri, Reserve, !SubscribeOnly, Fee, CancellationToken.None);
+        if (count < 0){
+            Console.WriteLine("The data layer appears busy. Try again later.");
+        }
+        else
+        {
+            Console.WriteLine($"Added {count} stores.");
+        }
         return 0;
     }
 }

@@ -30,7 +30,7 @@ internal class StoreController : ControllerBase
 
             if (keys is not null)
             {
-                var decodedKeys = keys.Select(key => HexUtils.FromHex(key)).ToList();
+                var decodedKeys = keys.Select(HexUtils.FromHex).ToList();
 
                 // the key represents a SPA app, so we want to return the index.html
                 if (decodedKeys != null && decodedKeys.Count > 0 && decodedKeys.Contains("index.html") && showKeys != true)
@@ -93,14 +93,14 @@ internal class StoreController : ControllerBase
 
             if (Utils.TryParseJson(decodedValue, out var json) && json?.type == "multipart")
             {
-                string mimeType = Utils.GetMimeType(fileExtension) ?? "application/octet-stream";
+                string mimeType = GetMimeType(fileExtension) ?? "application/octet-stream";
                 var bytes = await _g2To3Service.GetValuesAsBytes(storeId, json, cancellationToken);
 
                 return Results.File(bytes, mimeType);
             }
             else if (!string.IsNullOrEmpty(fileExtension))
             {
-                string mimeType = Utils.GetMimeType(fileExtension) ?? "application/octet-stream";
+                string mimeType = GetMimeType(fileExtension) ?? "application/octet-stream";
 
                 return File(Convert.FromHexString(rawValue), mimeType);
             }
@@ -135,5 +135,15 @@ internal class StoreController : ControllerBase
             _logger.LogError(ex, "{Message}", ex.Message);
             return StatusCode(StatusCodes.Status503ServiceUnavailable);
         }
+    }
+
+    private static string? GetMimeType(string ext)
+    {
+        if (dig.MimeTypes.TryGetMimeType(ext, out var mimeType))
+        {
+            return mimeType;
+        }
+
+        return null;
     }
 }

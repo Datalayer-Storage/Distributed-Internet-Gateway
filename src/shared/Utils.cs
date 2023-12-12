@@ -3,6 +3,22 @@ using System.Text.RegularExpressions;
 
 internal static class Utils
 {
+    public static Exception GetInnermostException(Exception ex)
+    {
+        if (ex.InnerException == null)
+        {
+            return ex;
+        }
+
+        return GetInnermostException(ex.InnerException);
+    }
+
+    public static string GetInnermostExceptionMessage(this Exception ex)
+    {
+        var innerMost = GetInnermostException(ex);
+        return innerMost.Message;
+    }
+
     public static string SanitizeForLog(this string input)
     {
         return Regex.Replace(input, @"\W", "_");
@@ -13,15 +29,6 @@ internal static class Utils
         return data.StartsWith("data:image", StringComparison.OrdinalIgnoreCase);
     }
 
-    public static string? GetMimeType(string ext)
-    {
-        if (dig.MimeTypes.TryGetMimeType(ext, out var mimeType))
-        {
-            return mimeType;
-        }
-
-        return null;
-    }
     public static bool TryParseJson(string strInput, out dynamic? v)
     {
         try

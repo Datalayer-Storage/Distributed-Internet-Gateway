@@ -14,6 +14,11 @@ internal sealed class ChiaService(WalletProxy wallet,
     {
         try
         {
+            if (!_configuration.GetValue("dig:UseDynamicFee", false))
+            {
+                return defaultFee;
+            }
+
             using var _ = new ScopedLogEntry(_logger, "Getting fee estimate");
             int[] targetTimes = [_configuration.GetValue("dig:FeeEstimateTargetTimeMinutes", 5) * 60];
             var fee = await _fullNode.GetFeeEstimate(cost, targetTimes, stoppingToken);

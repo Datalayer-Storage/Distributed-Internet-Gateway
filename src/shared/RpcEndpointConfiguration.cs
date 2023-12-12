@@ -28,7 +28,7 @@ internal static class RpcEndpointConfiguration
             var endpoint = chiaConfig.GetEndpoint(name);
 
             client.BaseAddress = endpoint.Uri;
-            client.Timeout = TimeSpan.FromSeconds(120);
+            client.Timeout = TimeSpan.FromSeconds(30);
         })
         .UseSocketsHttpHandler((socketHandler, provider) =>
         {

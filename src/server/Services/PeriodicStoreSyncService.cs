@@ -13,21 +13,27 @@ internal sealed class PeriodicStoreSyncService(StoreSyncService syncService,
             var delay = _configuration.GetValue("dig:StoreSyncStartDelaySeconds", 30);
             await Task.Delay(TimeSpan.FromSeconds(delay), stoppingToken);
 
-            // default to once a day
-            var period = _configuration.GetValue("dig:StoreSyncIntervalMinutes", 1440);
-
-            using var timer = new PeriodicTimer(TimeSpan.FromMinutes(period));
-            do
+            while (!stoppingToken.IsCancellationRequested)
             {
+                // set/reset the delay period (default to once a day)
+                var period = _configuration.GetValue("dig:StoreSyncIntervalMinutes", 1440);
+
                 var mirrorListUri = _configuration.GetValue("dig:DataLayerStorageUri", "https://api.datalayer.storage/") + "mirrors/v1/list_all";
                 var reserveAmount = _configuration.GetValue<ulong>("dig:AddMirrorAmount", 300000001);
                 var addMirrors = _configuration.GetValue("dig:MirrorServer", true);
                 var defaultFee = _configuration.GetValue<ulong>("dig:DefaultFee", 500000);
 
-                await _syncService.SyncStores(mirrorListUri, reserveAmount, addMirrors, defaultFee, stoppingToken);
+                var newCount = await _syncService.SyncStores(mirrorListUri, reserveAmount, addMirrors, defaultFee, stoppingToken);
+                if (newCount < 0)
+                {
+                    // try sooner than regular if the DL is busy
+                    period = _configuration.GetValue("dig:DataLayerBusyRetryMinutes", 60);
+                    _logger.LogWarning("The data layer appears busy. Will try again later.");
+                }
 
                 _logger.LogInformation("Waiting {delay} minutes", period);
-            } while (await timer.WaitForNextTickAsync(stoppingToken));
+                await Task.Delay(TimeSpan.FromMinutes(period), stoppingToken);
+            }
         }
         catch (OperationCanceledException)
         {

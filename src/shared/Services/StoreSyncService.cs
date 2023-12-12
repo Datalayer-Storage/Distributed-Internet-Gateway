@@ -12,13 +12,13 @@ internal sealed class StoreSyncService(DataLayerProxy dataLayer,
     private readonly ILogger<StoreSyncService> _logger = logger;
     private readonly IConfiguration _configuration = configuration;
 
-    public async Task SyncStores(string mirrorListUri, ulong reserveAmount, bool addMirrors, ulong defaultFee, CancellationToken stoppingToken)
+    public async Task<int> SyncStores(string mirrorListUri, ulong reserveAmount, bool addMirrors, ulong defaultFee, CancellationToken stoppingToken)
     {
         using var _ = new ScopedLogEntry(_logger, "Syncing subscriptions.");
         try
         {
             _logger.LogInformation("Getting fee");
-            var fee = defaultFee;  //await _chiaService.GetFee(reserveAmount, defaultFee, stoppingToken);
+            var fee = await _chiaService.GetFee(reserveAmount, defaultFee, stoppingToken);
 
             _logger.LogInformation("Getting subscriptions");
             var subscriptions = await _dataLayer.Subscriptions(stoppingToken);
@@ -31,6 +31,7 @@ internal sealed class StoreSyncService(DataLayerProxy dataLayer,
 
             var xchWallet = _chiaService.GetWallet(_configuration.GetValue<uint>("dig:XchWalletId", 1));
             var haveFunds = true;
+            var count = 0;
             await foreach (var id in _mirrorService.FetchLatest(mirrorListUri, stoppingToken))
             {
                 // don't subscribe or mirror our owned stores
@@ -45,6 +46,7 @@ internal sealed class StoreSyncService(DataLayerProxy dataLayer,
                     {
                         _logger.LogInformation("Subscribing to {id}", id);
                         await _dataLayer.Subscribe(id, Enumerable.Empty<string>(), stoppingToken);
+                        count++;
                     }
 
                     // add mirror if we are a mirror server, have a mirror host uri, and have enough funding
@@ -65,12 +67,20 @@ internal sealed class StoreSyncService(DataLayerProxy dataLayer,
                 }
             }
 
-            _logger.LogInformation("Done syncing");
+            _logger.LogInformation("Done syncing {count} new subscriptions.", count);
+            return count;
+        }
+        catch (TaskCanceledException ex)
+        {
+            _logger.LogWarning("Sync subscriptions timed out: {Message}", ex.GetInnermostExceptionMessage());
+            return -1;
         }
         catch (Exception ex)
         {
-            _logger.LogWarning("There was a problem syncing subscriptions: {Message}", ex.InnerException?.Message ?? ex.Message);
+            _logger.LogError("There was a problem syncing subscriptions: {Message}", ex.GetInnermostExceptionMessage());
         }
+
+        return 0;
     }
 
     private async Task<bool> CheckFunds(ulong neededFunds, Wallet xchWallet, CancellationToken stoppingToken)
