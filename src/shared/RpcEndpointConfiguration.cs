@@ -24,11 +24,12 @@ internal static class RpcEndpointConfiguration
         // and configure it to use a custom handler
         return services.AddHttpClient(name, (provider, client) =>
         {
+            var timeout = provider.GetRequiredService<IConfiguration>().GetValue("dig:RpcTimeoutSeconds", 30);
             var chiaConfig = provider.GetRequiredService<ChiaConfig>();
             var endpoint = chiaConfig.GetEndpoint(name);
 
             client.BaseAddress = endpoint.Uri;
-            client.Timeout = TimeSpan.FromSeconds(30);
+            client.Timeout = TimeSpan.FromSeconds(timeout);
         })
         .UseSocketsHttpHandler((socketHandler, provider) =>
         {
