@@ -6,6 +6,7 @@ using System.CommandLine.Parsing;
 
 var builder = Host.CreateApplicationBuilder(args);
 builder.Services.AddSingleton<StoreManager>()
+    .AddSingleton<DynDnsService>()
     .AddSingleton<HostManager>()
     .AddSingleton<LoginManager>()
     .AddSingleton<ChiaConfig>()

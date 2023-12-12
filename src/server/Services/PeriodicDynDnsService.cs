@@ -1,4 +1,4 @@
-internal sealed class PeriodicStoreSyncService(StoreSyncService syncService,
+internal sealed class PeriodicDynDnsService(StoreSyncService syncService,
                                             ILogger<PeriodicStoreSyncService> logger,
                                             IConfiguration configuration) : BackgroundService
 {
@@ -11,7 +11,7 @@ internal sealed class PeriodicStoreSyncService(StoreSyncService syncService,
         try
         {
             // default to once a day
-            var delay = _configuration.GetValue("dig:StoreSyncIntervalMinutes", 1440);
+            var delay = _configuration.GetValue("dig:DynDnsSyncIntervalMinutes", 1440);
 
             using var timer = new PeriodicTimer(TimeSpan.FromMinutes(delay));
             while (await timer.WaitForNextTickAsync(stoppingToken))

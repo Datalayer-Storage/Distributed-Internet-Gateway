@@ -1,5 +1,6 @@
 using Microsoft.Extensions.Logging.Configuration;
 using Microsoft.Extensions.Logging.EventLog;
+using Microsoft.AspNetCore.DataProtection;
 using chia.dotnet;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -36,8 +37,6 @@ builder.Services.AddSingleton<ChiaConfig>()
     .AddMemoryCache()
     .AddControllers();
 
-builder.Services.AddRpcEndpoint("data_layer")
-    .AddStandardResilienceHandler();
 builder.Services.AddHttpClient("datalayer.storage", c =>
 {
     c.BaseAddress = new Uri(builder.Configuration.GetValue("dig:DataLayerStorageUri", "https://api.datalayer.storage/")!);
@@ -57,6 +56,21 @@ if (builder.Configuration.GetValue("dig:RunMirrorSyncJob", false))
         .AddSingleton(provider => new WalletProxy(provider.GetRequiredKeyedService<IRpcClient>("wallet"), "dig.server"));
 }
 
+// setup the Dyn Dns service
+if (builder.Configuration.GetValue("dig:RunDynDnsJob", false))
+{
+    builder.Services
+        .AddHostedService<PeriodicDynDnsService>()
+        .AddSingleton<LoginManager>()
+        .AddSingleton((provider) => new AppStorage(".distributed-internet-gateway"))
+        .AddDataProtection()
+        .SetApplicationName("distributed-internet-gateway")
+        .SetDefaultKeyLifetime(TimeSpan.FromDays(180));
+}
+
+// setup chia rpc endpoints
+builder.Services.AddRpcEndpoint("data_layer")
+    .AddStandardResilienceHandler();
 builder.Services.AddRpcEndpoint("wallet")
     .AddStandardResilienceHandler();
 builder.Services.AddRpcEndpoint("full_node")

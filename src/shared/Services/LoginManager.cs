@@ -91,34 +91,6 @@ internal class LoginManager(IDataProtectionProvider provider,
         }
     }
 
-    public async Task UpdateIP(CancellationToken stoppingToken = default)
-    {
-        var (accessToken, secretKey) = GetCredentials();
-        if (string.IsNullOrEmpty(accessToken) || string.IsNullOrEmpty(secretKey))
-        {
-            _logger.LogWarning("Not logged in.");
-            return;
-        }
-
-        var ip = await _dnsService.GetPublicIPAdress(stoppingToken);
-        if (string.IsNullOrEmpty(ip))
-        {
-            _logger.LogError("Could not retrieve public IP address.");
-            return;
-        }
-
-        _logger.LogInformation("{ip}", ip);
-
-        var encodedAuth = Convert.ToBase64String(Encoding.GetEncoding("ISO-8859-1").GetBytes(accessToken + ":" + secretKey));
-        _httpClient.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Basic", encodedAuth);
-
-        var data = new { ip_address = ip };
-        var response = await _httpClient.PutAsJsonAsync("user/v1/update_user_ip", data, stoppingToken);
-        response.EnsureSuccessStatusCode();
-        var content = await response.Content.ReadAsStringAsync(stoppingToken);
-
-        Console.WriteLine(content);
-    }
 
     private async Task<dynamic> GetMyPlace(string encodedAuth, CancellationToken stoppingToken)
     {
@@ -129,7 +101,7 @@ internal class LoginManager(IDataProtectionProvider provider,
         return await response.Content.ReadFromJsonAsync<ExpandoObject>(stoppingToken) ?? throw new Exception("Login failed.");
     }
 
-    private (string accessToken, string secretKey) GetCredentials()
+    public (string accessToken, string secretKey) GetCredentials()
     {
         var protectedAuth = _appStorage.Load("auth");
         if (string.IsNullOrEmpty(protectedAuth))
