@@ -1,14 +1,14 @@
 using chia.dotnet;
 
-internal sealed class ChiaService
+internal sealed class ChiaService(WalletProxy wallet,
+                                    FullNodeProxy fullNode,
+                                    ILogger<ChiaService> logger,
+                                    IConfiguration configuration)
 {
-    private readonly FullNodeProxy _fullNode;
-    private readonly WalletProxy _wallet;
-    private readonly ILogger<ChiaService> _logger;
-    private readonly IConfiguration _configuration;
-
-    public ChiaService(WalletProxy wallet, FullNodeProxy fullNode, ILogger<ChiaService> logger, IConfiguration configuration) =>
-            (_wallet, _fullNode, _logger, _configuration) = (wallet, fullNode, logger, configuration);
+    private readonly FullNodeProxy _fullNode = fullNode;
+    private readonly WalletProxy _wallet = wallet;
+    private readonly ILogger<ChiaService> _logger = logger;
+    private readonly IConfiguration _configuration = configuration;
 
     public async Task<ulong> GetFee(ulong cost, ulong defaultFee, CancellationToken stoppingToken)
     {

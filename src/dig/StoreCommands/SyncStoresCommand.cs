@@ -15,6 +15,7 @@ internal sealed class SyncStoresCommand()
     [CommandTarget]
     public async Task<int> Execute(StoreSyncService syncService)
     {
+        // pass CancellationToken.None as we want this to run as long as it takes
         await syncService.SyncStores(Uri, Reserve, !SubscribeOnly, Fee, CancellationToken.None);
         return 0;
     }

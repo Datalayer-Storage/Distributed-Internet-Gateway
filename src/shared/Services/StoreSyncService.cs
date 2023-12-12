@@ -27,7 +27,7 @@ internal sealed class StoreSyncService(DataLayerProxy dataLayer,
             var ownedStores = await _dataLayer.GetOwnedStores(stoppingToken);
 
             var mirrorUris = await _mirrorService.GetMyMirrorUris(stoppingToken);
-            _logger.LogInformation("Using mirror uris: {mirrorUris}", string.Join("\n", mirrorUris));
+            _logger.LogInformation("Using mirror uri: {mirrorUris}", string.Join(", ", mirrorUris));
 
             var xchWallet = _chiaService.GetWallet(_configuration.GetValue<uint>("dig:XchWalletId", 1));
             var haveFunds = true;
