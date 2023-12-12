@@ -29,8 +29,8 @@ internal sealed class StoreSyncService(DataLayerProxy dataLayer,
             var mirrorUris = await _mirrorService.GetMyMirrorUris(stoppingToken);
             _logger.LogInformation("Using mirror uris: {mirrorUris}", string.Join("\n", mirrorUris));
 
+            var xchWallet = _chiaService.GetWallet(_configuration.GetValue<uint>("dig:XchWalletId", 1));
             var haveFunds = true;
-
             await foreach (var id in _mirrorService.FetchLatest(mirrorListUri, stoppingToken))
             {
                 // don't subscribe or mirror our owned stores
@@ -47,14 +47,25 @@ internal sealed class StoreSyncService(DataLayerProxy dataLayer,
                         await _dataLayer.Subscribe(id, Enumerable.Empty<string>(), stoppingToken);
                     }
 
-                    // mirror if we are a mirror server, haven't already mirrored and have enough funding
+                    // mirror if we are a mirror server, have a mirror host uri, and have enough funding
                     if (addMirrors && mirrorUris.Any() && haveFunds)
                     {
-                        // if we are out of funds to add mirrors, stop trying but continue subscribing
-                        haveFunds = await AddMirror(id, reserveAmount, mirrorUris, fee, stoppingToken);
+                        // before mirroring check we have enough funds
+                        if (await CheckFunds(reserveAmount + fee, xchWallet, stoppingToken))
+                        {
+                            await AddMirror(id, reserveAmount, fee, mirrorUris, stoppingToken);
+                        }
+                        else
+                        {
+                            _logger.LogWarning("Insufficient funds to add mirror. Pausing mirroring for now.");
+                            // if we are out of funds to add mirrors, stop trying but continue subscribing
+                            haveFunds = false;
+                        }
                     }
                 }
             }
+
+            _logger.LogInformation("Done syncing");
         }
         catch (Exception ex)
         {
@@ -62,35 +73,39 @@ internal sealed class StoreSyncService(DataLayerProxy dataLayer,
         }
     }
 
-    private async Task<bool> AddMirror(string id, ulong reserveAmount, IEnumerable<string> mirrorUris, ulong fee, CancellationToken stoppingToken)
+    private async Task<bool> CheckFunds(ulong neededFunds, Wallet xchWallet, CancellationToken stoppingToken)
     {
-        var xchWallet = _chiaService.GetWallet(_configuration.GetValue<uint>("dig:XchWalletId", 1));
+        var balance = await xchWallet.GetBalance(stoppingToken);
+        if (neededFunds < balance.SpendableBalance)
+        {
+            return true;
+        }
+
+        // we don't have enough spendable funding but see if there is change or an incoming confirmed balance
+        if (neededFunds < balance.PendingChange || neededFunds < balance.ConfirmedWalletBalance)
+        {
+            // there's change - wait for it
+            var waitingForChangeDelayMinutes = _configuration.GetValue("dig:WaitingForChangeDelayMinutes", 2);
+            _logger.LogWarning("Waiting {WaitingForChangeDelayMinutes} minutes for change", waitingForChangeDelayMinutes);
+            await Task.Delay(TimeSpan.FromMinutes(waitingForChangeDelayMinutes), stoppingToken);
+
+            // now get the balance again and see if we have enough funds
+            balance = await xchWallet.GetBalance(stoppingToken);
+        }
+
+        // we've waited return whether we have enough now
+        return neededFunds < balance.SpendableBalance;
+    }
+
+
+    private async Task AddMirror(string id, ulong reserveAmount, ulong fee, IEnumerable<string> mirrorUris, CancellationToken stoppingToken)
+    {
         var mirrors = await _dataLayer.GetMirrors(id, stoppingToken);
         // add any mirrors that aren't already ours
         if (!mirrors.Any(m => m.Ours))
         {
-            var balance = await xchWallet.GetBalance(stoppingToken);
-            var neededFunds = reserveAmount + fee;
-            if (neededFunds < balance.SpendableBalance)
-            {
-                _logger.LogInformation("Adding mirror {id}", id);
-                await _dataLayer.AddMirror(id, reserveAmount, mirrorUris, fee, stoppingToken);
-            }
-            else if (balance.SpendableBalance < neededFunds && (neededFunds < balance.PendingChange || neededFunds < balance.ConfirmedWalletBalance))
-            {
-                // no more spendable funds but we have change incoming, pause and then see if it has arrived
-                var waitingForChangeDelayMinutes = _configuration.GetValue("dig:WaitingForChangeDelayMinutes", 2);
-                _logger.LogWarning("Waiting {WaitingForChangeDelayMinutes} minutes for change", waitingForChangeDelayMinutes);
-                await Task.Delay(TimeSpan.FromMinutes(waitingForChangeDelayMinutes), stoppingToken);
-            }
-            else
-            {
-                _logger.LogWarning("Insufficient funds to add mirror {id}. Balance={ConfirmedWalletBalance}, Cost={reserveAmount}, Fee={fee}", id, balance.ConfirmedWalletBalance, reserveAmount, fee);
-                _logger.LogWarning("Pausing sync for now");
-                return false; // out of money, stop mirror syncing
-            }
+            _logger.LogInformation("Adding mirror {id}", id);
+            await _dataLayer.AddMirror(id, reserveAmount, mirrorUris, fee, stoppingToken);
         }
-
-        return true;
     }
 }
