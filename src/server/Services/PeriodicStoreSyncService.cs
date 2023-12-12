@@ -10,6 +10,9 @@ internal sealed class PeriodicStoreSyncService(StoreSyncService syncService,
     {
         try
         {
+            var delay = _configuration.GetValue("dig:StoreSyncStartDelaySeconds", 30);
+            await Task.Delay(TimeSpan.FromSeconds(delay), stoppingToken);
+
             // default to once a day
             var period = _configuration.GetValue("dig:StoreSyncIntervalMinutes", 1440);
 

@@ -12,6 +12,9 @@ internal sealed class PeriodicDynDnsService(LoginManager loginManager,
     {
         try
         {
+            var delay = _configuration.GetValue("dig:DynDnsSyncStartDelaySeconds", 60);
+            await Task.Delay(TimeSpan.FromSeconds(delay), stoppingToken);
+
             // default to once a day
             var period = _configuration.GetValue("dig:DynDnsSyncIntervalMinutes", 1440);
 
