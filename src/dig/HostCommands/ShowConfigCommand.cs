@@ -20,7 +20,7 @@ internal sealed class ShowConfigCommand()
         hostIp ??= "<error>";
         Console.WriteLine($"hostIp: {hostIp}");
 
-        var hostUri = await dnsService.GetHostUri(cancellationSource.Token) ?? " <error>";
+        var hostUri = await dnsService.GetHostUri(cancellationSource.Token);
         hostUri ??= "<error>";
         Console.WriteLine($"hostUri: {hostUri}");
 
