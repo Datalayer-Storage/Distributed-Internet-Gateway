@@ -97,7 +97,6 @@ internal sealed class StoreSyncService(DataLayerProxy dataLayer,
         return neededFunds < balance.SpendableBalance;
     }
 
-
     private async Task AddMirror(string id, ulong reserveAmount, ulong fee, IEnumerable<string> mirrorUris, CancellationToken stoppingToken)
     {
         var mirrors = await _dataLayer.GetMirrors(id, stoppingToken);
