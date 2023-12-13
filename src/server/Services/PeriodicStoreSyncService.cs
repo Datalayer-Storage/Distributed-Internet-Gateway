@@ -1,3 +1,5 @@
+namespace dig.server;
+
 internal sealed class PeriodicStoreSyncService(StoreSyncService syncService,
                                             ILogger<PeriodicStoreSyncService> logger,
                                             IConfiguration configuration) : BackgroundService

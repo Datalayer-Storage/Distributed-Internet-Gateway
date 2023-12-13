@@ -1,6 +1,8 @@
 using System.CommandLine;
 using System.CommandLine.Builder;
 using System.Reflection;
+namespace dig;
+
 
 internal static class AttributeExtensions
 {

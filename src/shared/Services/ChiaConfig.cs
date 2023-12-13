@@ -1,4 +1,5 @@
 using chia.dotnet;
+namespace dig;
 
 /// <summary>
 /// Provides methods for managing chia connection details.

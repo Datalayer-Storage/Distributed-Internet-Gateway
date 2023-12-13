@@ -1,4 +1,6 @@
 using chia.dotnet;
+namespace dig;
+
 
 internal sealed class CheckChiaCommand()
 {

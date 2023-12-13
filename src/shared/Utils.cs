@@ -1,5 +1,7 @@
 using System.Text.Json;
 using System.Text.RegularExpressions;
+namespace dig;
+
 
 internal static class Utils
 {

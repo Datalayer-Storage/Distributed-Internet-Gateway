@@ -1,3 +1,5 @@
+namespace dig;
+
 internal sealed class CheckHostCommand()
 {
     [Argument(0, Name = "host", Description = "The host to check.", Default = "")]

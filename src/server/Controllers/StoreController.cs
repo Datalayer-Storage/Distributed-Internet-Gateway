@@ -2,7 +2,7 @@ using Microsoft.AspNetCore.Mvc;
 using System.Text.RegularExpressions;
 namespace dig.server;
 
-public class StoreController(GatewayService gatewayService, ILogger<StoreController> logger) : ControllerBase
+public partial class StoreController(GatewayService gatewayService, ILogger<StoreController> logger) : ControllerBase
 {
     private readonly GatewayService _gatewayService = gatewayService;
     private readonly ILogger<StoreController> _logger = logger;
@@ -16,10 +16,10 @@ public class StoreController(GatewayService gatewayService, ILogger<StoreControl
 
             // A referrer indicates that the user is trying to access the store from a website
             // we want to redirect them so that the URL includes the storeId in the path
-            var referer = httpContext.Request.Headers["referer"].ToString();
+            var referer = httpContext.Request.Headers.Referer.ToString();
             if (!string.IsNullOrEmpty(referer) && referer.Contains(storeId))
             {
-                httpContext.Response.Headers["Location"] = $"{referer}/{storeId}";
+                httpContext.Response.Headers.Location = $"{referer}/{storeId}";
                 return Redirect($"{referer}/{storeId}");
             }
 
@@ -68,11 +68,11 @@ public class StoreController(GatewayService gatewayService, ILogger<StoreControl
 
             // A referrer indicates that the user is trying to access the store from a website
             // we want to redirect them so that the URL includes the storeId in the path
-            var referer = httpContext.Request.Headers["referer"].ToString();
+            var referer = httpContext.Request.Headers.Referer.ToString();
             if (!string.IsNullOrEmpty(referer) && !referer.Contains(storeId))
             {
                 key = key.TrimStart('/');
-                httpContext.Response.Headers["Location"] = $"{referer}/{storeId}/{key}";
+                httpContext.Response.Headers.Location = $"{referer}/{storeId}/{key}";
 
                 return Redirect($"{referer}/{storeId}/{key}");
             }
@@ -81,7 +81,7 @@ public class StoreController(GatewayService gatewayService, ILogger<StoreControl
             var rawValue = await _gatewayService.GetValue(storeId, hexKey, cancellationToken);
             if (rawValue is null)
             {
-                _logger.LogInformation($"couldn't find: {key}");
+                _logger.LogInformation("couldn't find: {key}", key);
                 return NotFound();
             }
 
@@ -108,7 +108,7 @@ public class StoreController(GatewayService gatewayService, ILogger<StoreControl
             else if (Utils.IsBase64Image(decodedValue))
             {
                 // figure out the mime type
-                var regex = new Regex(@"[^:]\w+\/[\w-+\d.]+(?=;|,)");
+                var regex = MimeTypeRegex();
                 var match = regex.Match(decodedValue);
 
                 // convert the base64 string to a byte array
@@ -143,4 +143,7 @@ public class StoreController(GatewayService gatewayService, ILogger<StoreControl
 
         return null;
     }
+
+    [GeneratedRegex(@"[^:]\w+\/[\w-+\d.]+(?=;|,)")]
+    private static partial Regex MimeTypeRegex();
 }

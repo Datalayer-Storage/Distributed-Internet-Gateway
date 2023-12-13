@@ -1,3 +1,5 @@
+namespace dig;
+
 [Command("host", Description = "Manage the host.")]
 internal sealed class HostCommands
 {

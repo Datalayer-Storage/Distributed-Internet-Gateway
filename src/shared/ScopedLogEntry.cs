@@ -1,3 +1,4 @@
+namespace dig;
 /// <summary>
 /// Represents a scope for logging information messages.
 /// </summary>

@@ -1,3 +1,5 @@
+namespace dig;
+
 internal sealed class SyncStoresCommand()
 {
     [Argument(0, Name = "uri", Description = "The uri of the remote list.", Default = "https://api.datalayer.storage/mirrors/v1/list_all")]

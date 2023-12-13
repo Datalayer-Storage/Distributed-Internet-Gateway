@@ -1,3 +1,5 @@
+namespace dig;
+
 [Command("stores", Description = "Manage subscriptions and mirrors.")]
 internal sealed class StoreCommands
 {

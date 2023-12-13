@@ -1,4 +1,6 @@
 using chia.dotnet;
+namespace dig;
+
 
 internal class StoreManager(DataLayerProxy dataLayer,
                         ILogger<StoreManager> logger)

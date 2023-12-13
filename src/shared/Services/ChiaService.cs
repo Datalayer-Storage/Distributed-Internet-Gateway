@@ -1,4 +1,5 @@
 using chia.dotnet;
+namespace dig;
 
 internal sealed class ChiaService(WalletProxy wallet,
                                     FullNodeProxy fullNode,

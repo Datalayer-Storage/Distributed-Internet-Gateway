@@ -1,6 +1,7 @@
 using System.Runtime.CompilerServices;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
+namespace dig;
 
 internal sealed class MirrorService(DnsService dnsService,
                                         IHttpClientFactory httpClientFactory,

@@ -1,3 +1,5 @@
+namespace dig;
+
 internal sealed class CheckFeeCommand()
 {
     [Option("t", "timeout", Default = 240, ArgumentHelpName = "SECONDS", Description = "Timeout in seconds")]

@@ -2,6 +2,7 @@ using Microsoft.Extensions.Logging.Configuration;
 using Microsoft.Extensions.Logging.EventLog;
 using Microsoft.AspNetCore.DataProtection;
 using chia.dotnet;
+using dig;
 using dig.server;
 
 var builder = WebApplication.CreateBuilder(args);

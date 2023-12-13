@@ -1,3 +1,5 @@
+namespace dig;
+
 internal sealed class UnsubscribeAllCommand()
 {
     [Option("t", "timeout", Default = 240, ArgumentHelpName = "SECONDS", Description = "Timeout in seconds")]

@@ -1,6 +1,7 @@
 using System.Net.Security;
 using System.Security.Cryptography.X509Certificates;
 using chia.dotnet;
+namespace dig;
 
 internal static class RpcEndpointConfiguration
 {

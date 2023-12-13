@@ -1,3 +1,5 @@
+namespace dig.server;
+
 internal sealed class PeriodicDynDnsService(LoginManager loginManager,
                                             DynDnsService dynDnsService,
                                             ILogger<PeriodicDynDnsService> logger,

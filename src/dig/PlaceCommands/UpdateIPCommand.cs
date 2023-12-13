@@ -1,3 +1,5 @@
+namespace dig;
+
 internal sealed class UpdateIPCommand()
 {
     [Option("t", "timeout", Default = 60, ArgumentHelpName = "SECONDS", Description = "Timeout in seconds")]

@@ -1,6 +1,8 @@
 using System.CommandLine.Invocation;
 using System.CommandLine;
 using System.Reflection;
+namespace dig;
+
 
 internal class ContextBinder(ILogger<ContextBinder> logger)
 {

@@ -1,4 +1,6 @@
 using System.Net.Http.Json;
+namespace dig;
+
 
 internal class HostManager(DnsService denService,
                         IHttpClientFactory httpClientFactory,

@@ -1,3 +1,4 @@
+namespace dig;
 internal class AppStorage(string folderName)
 {
     private readonly string _folderPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), folderName);

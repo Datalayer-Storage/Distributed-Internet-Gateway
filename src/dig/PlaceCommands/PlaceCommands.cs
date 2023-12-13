@@ -1,3 +1,5 @@
+namespace dig;
+
 [Command("place", Description = "Manage datalayer.place.")]
 internal sealed class PlaceCommands
 {

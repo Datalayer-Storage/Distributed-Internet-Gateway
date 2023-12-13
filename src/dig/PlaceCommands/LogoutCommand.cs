@@ -1,3 +1,5 @@
+namespace dig;
+
 internal sealed class LogoutCommand()
 {
     [CommandTarget]

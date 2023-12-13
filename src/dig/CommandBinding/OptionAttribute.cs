@@ -1,3 +1,5 @@
+namespace dig;
+
 [AttributeUsage(AttributeTargets.Property, AllowMultiple = false, Inherited = true)]
 public sealed class OptionAttribute : Attribute
 {
