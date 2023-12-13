@@ -4,10 +4,9 @@ $names = @("dig", "server")
 $src = "src"
 $outputRoot = "./publish"
 $framework = "net8.0"
-$runTimes = @("win-x64") #, "linux-x64", "osx-x64")
+$runTimes = @("win-x64", "linux-x64", "osx-x64", "linux-arm64")
 
 Remove-Item $outputRoot -Recurse -Force
-Remove-Item ./$src/bin/Release -Recurse -Force
 
 function Publish-Project {
     param(
@@ -19,7 +18,7 @@ function Publish-Project {
 
 foreach ($runTime in $runTimes) {    
     foreach ($name in $names) {
-        Publish-Project -name $name -runtime "win-x64"
+        Publish-Project -name $name -runtime $runTime
     }
 
     Compress-Archive -CompressionLevel Optimal -Path $outputRoot/standalone/$runtime/* -DestinationPath $outputRoot/$fullName-$version-$runtime.zip
