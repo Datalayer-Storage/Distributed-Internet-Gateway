@@ -27,7 +27,7 @@ public sealed class GatewayService(DataLayerProxy dataLayer,
         try
         {
             // memory cache is used to cache the keys for 15 minutes
-            var keys = await _memoryCache.GetOrCreateAsync($"{storeId}", async entry =>
+            var keys = await _memoryCache.GetOrCreateAsync(storeId, async entry =>
             {
                 entry.SlidingExpiration = TimeSpan.FromMinutes(15);
                 _logger.LogInformation("Getting keys for {StoreId}", storeId.SanitizeForLog());
