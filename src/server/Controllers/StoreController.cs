@@ -8,7 +8,10 @@ public partial class StoreController(GatewayService gatewayService, ILogger<Stor
     private readonly ILogger<StoreController> _logger = logger;
 
     [HttpGet("{storeId}")]
-    public async Task<IActionResult> GetStore(HttpContext httpContext, string storeId, bool? showKeys, CancellationToken cancellationToken)
+    [ProducesResponseType(StatusCodes.Status307TemporaryRedirect)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<string>))]
+    public async Task<IActionResult> GetStore(string storeId, bool? showKeys, CancellationToken cancellationToken)
     {
         try
         {
@@ -16,10 +19,10 @@ public partial class StoreController(GatewayService gatewayService, ILogger<Stor
 
             // A referrer indicates that the user is trying to access the store from a website
             // we want to redirect them so that the URL includes the storeId in the path
-            var referer = httpContext.Request.Headers.Referer.ToString();
+            var referer = HttpContext.Request.Headers.Referer.ToString();
             if (!string.IsNullOrEmpty(referer) && referer.Contains(storeId))
             {
-                httpContext.Response.Headers.Location = $"{referer}/{storeId}";
+                HttpContext.Response.Headers.Location = $"{referer}/{storeId}";
                 return Redirect($"{referer}/{storeId}");
             }
 
@@ -36,7 +39,7 @@ public partial class StoreController(GatewayService gatewayService, ILogger<Stor
                     return Content(html, "text/html");
                 }
 
-                return Ok();
+                return Ok(decodedKeys);
             }
 
             return NotFound();
@@ -54,7 +57,10 @@ public partial class StoreController(GatewayService gatewayService, ILogger<Stor
     }
 
     [HttpGet("{storeId}/{*catchAll}")]
-    public async Task<IActionResult> GetStoreCatchAll(HttpContext httpContext, string storeId, string catchAll, CancellationToken cancellationToken)
+    [ProducesResponseType(StatusCodes.Status307TemporaryRedirect)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<string>))]
+    public async Task<IActionResult> GetStoreCatchAll(string storeId, string catchAll, CancellationToken cancellationToken)
     {
         try
         {
@@ -68,11 +74,11 @@ public partial class StoreController(GatewayService gatewayService, ILogger<Stor
 
             // A referrer indicates that the user is trying to access the store from a website
             // we want to redirect them so that the URL includes the storeId in the path
-            var referer = httpContext.Request.Headers.Referer.ToString();
+            var referer = HttpContext.Request.Headers.Referer.ToString();
             if (!string.IsNullOrEmpty(referer) && !referer.Contains(storeId))
             {
                 key = key.TrimStart('/');
-                httpContext.Response.Headers.Location = $"{referer}/{storeId}/{key}";
+                HttpContext.Response.Headers.Location = $"{referer}/{storeId}/{key}";
 
                 return Redirect($"{referer}/{storeId}/{key}");
             }

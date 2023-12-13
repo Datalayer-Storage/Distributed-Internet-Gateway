@@ -1,14 +1,7 @@
 using Microsoft.Extensions.Caching.Memory;
-
 using chia.dotnet;
 
 namespace dig.server;
-
-public record WellKnown()
-{
-    public string xch_address { get; init; } = "";
-    public string donation_address { get; init; } = "";
-}
 
 public sealed class GatewayService(DataLayerProxy dataLayer,
                                     IMemoryCache memoryCache,
@@ -43,7 +36,7 @@ public sealed class GatewayService(DataLayerProxy dataLayer,
 
             return keys;
         }
-        catch
+        catch (Exception)
         {
             return null;  // 404 in the api
         }
@@ -100,4 +93,10 @@ public sealed class GatewayService(DataLayerProxy dataLayer,
 
         return Convert.FromHexString(resultHex);
     }
+}
+
+public record WellKnown()
+{
+    public string xch_address { get; init; } = "";
+    public string donation_address { get; init; } = "";
 }
