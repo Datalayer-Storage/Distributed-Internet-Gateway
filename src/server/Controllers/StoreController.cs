@@ -1,14 +1,11 @@
 using Microsoft.AspNetCore.Mvc;
 using System.Text.RegularExpressions;
+namespace dig.server;
 
-internal class StoreController : ControllerBase
+public class StoreController(GatewayService gatewayService, ILogger<StoreController> logger) : ControllerBase
 {
-    private readonly G2To3Service _g2To3Service;
-    private readonly ILogger<StoreController> _logger;
-
-    public StoreController(G2To3Service g2To3Service, ILogger<StoreController> logger) =>
-        (_g2To3Service, _logger) = (g2To3Service, logger);
-
+    private readonly GatewayService _gatewayService = gatewayService;
+    private readonly ILogger<StoreController> _logger = logger;
 
     [HttpGet("{storeId}")]
     public async Task<IActionResult> GetStore(HttpContext httpContext, string storeId, bool? showKeys, CancellationToken cancellationToken)
@@ -26,7 +23,7 @@ internal class StoreController : ControllerBase
                 return Redirect($"{referer}/{storeId}");
             }
 
-            var keys = await _g2To3Service.GetKeys(storeId, cancellationToken);
+            var keys = await _gatewayService.GetKeys(storeId, cancellationToken);
 
             if (keys is not null)
             {
@@ -35,7 +32,7 @@ internal class StoreController : ControllerBase
                 // the key represents a SPA app, so we want to return the index.html
                 if (decodedKeys != null && decodedKeys.Count > 0 && decodedKeys.Contains("index.html") && showKeys != true)
                 {
-                    var html = await _g2To3Service.GetValueAsHtml(storeId, cancellationToken);
+                    var html = await _gatewayService.GetValueAsHtml(storeId, cancellationToken);
                     return Content(html, "text/html");
                 }
 
@@ -81,20 +78,20 @@ internal class StoreController : ControllerBase
             }
 
             var hexKey = HexUtils.ToHex(key);
-            var rawValue = await _g2To3Service.GetValue(storeId, hexKey, cancellationToken);
+            var rawValue = await _gatewayService.GetValue(storeId, hexKey, cancellationToken);
             if (rawValue is null)
             {
                 _logger.LogInformation($"couldn't find: {key}");
                 return NotFound();
             }
-            
+
             var decodedValue = HexUtils.FromHex(rawValue);
             var fileExtension = Path.GetExtension(key);
 
             if (Utils.TryParseJson(decodedValue, out var json) && json?.type == "multipart")
             {
                 string mimeType = GetMimeType(fileExtension) ?? "application/octet-stream";
-                var bytes = await _g2To3Service.GetValuesAsBytes(storeId, json, cancellationToken);
+                var bytes = await _gatewayService.GetValuesAsBytes(storeId, json, cancellationToken);
 
                 return Results.File(bytes, mimeType);
             }

@@ -1,10 +1,13 @@
 using Microsoft.AspNetCore.Mvc;
 
+namespace dig.server;
 
-internal class HomeController : ControllerBase
+[ApiController]
+[Route("/")]
+public class HomeController : ControllerBase
 {
-    [HttpGet("/")]
-    public IActionResult Index()
+    [HttpGet]
+    public IActionResult Get()
     {
         return RedirectToAction("GetWellKnown", "WellKnown");
     }

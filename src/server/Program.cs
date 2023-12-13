@@ -2,6 +2,7 @@ using Microsoft.Extensions.Logging.Configuration;
 using Microsoft.Extensions.Logging.EventLog;
 using Microsoft.AspNetCore.DataProtection;
 using chia.dotnet;
+using dig.server;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -28,14 +29,15 @@ if (args.Length != 0)
 }
 
 // this sets up the gateway service
+builder.Services.AddControllers();
+
 builder.Services.AddSingleton<ChiaConfig>()
     .AddHttpClient()
-    .AddSingleton<G2To3Service>()
+    .AddSingleton<GatewayService>()
     .AddSingleton(provider => new DataLayerProxy(provider.GetRequiredKeyedService<IRpcClient>("data_layer"), "dig.server"))
     .AddEndpointsApiExplorer()
     .AddSwaggerGen()
-    .AddMemoryCache()
-    .AddControllers();
+    .AddMemoryCache();
 
 builder.Services.AddRpcEndpoint("data_layer").AddStandardResilienceHandler();
 builder.Services.AddHttpClient("datalayer.storage", c =>
@@ -83,7 +85,15 @@ if (builder.Configuration.GetValue("dig:RunAsWindowsService", false))
     builder.Host.UseWindowsService(); // safe to call on non-windows platforms
 }
 
+
+
 var app = builder.Build();
+if (app.Environment.IsDevelopment())
+{
+    app.UseSwagger();
+    app.UseSwaggerUI();
+}
 app.UseCors();
 app.MapControllers();
+
 app.Run();

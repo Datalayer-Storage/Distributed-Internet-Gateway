@@ -2,20 +2,22 @@ using Microsoft.Extensions.Caching.Memory;
 
 using chia.dotnet;
 
-internal record WellKnown()
+namespace dig.server;
+
+public record WellKnown()
 {
     public string xch_address { get; init; } = "";
     public string donation_address { get; init; } = "";
 }
 
-internal sealed class G2To3Service(DataLayerProxy dataLayer,
+public sealed class GatewayService(DataLayerProxy dataLayer,
                                     IMemoryCache memoryCache,
-                                    ILogger<G2To3Service> logger,
+                                    ILogger<GatewayService> logger,
                                     IConfiguration configuration)
 {
     private readonly DataLayerProxy _dataLayer = dataLayer;
     private readonly IMemoryCache _memoryCache = memoryCache;
-    private readonly ILogger<G2To3Service> _logger = logger;
+    private readonly ILogger<GatewayService> _logger = logger;
     private readonly IConfiguration _configuration = configuration;
 
     public WellKnown GetWellKnown()
