@@ -84,10 +84,10 @@ internal class StoreController : ControllerBase
             var rawValue = await _g2To3Service.GetValue(storeId, hexKey, cancellationToken);
             if (rawValue is null)
             {
-                Console.WriteLine($"couldn't find: {key}");
-
+                _logger.LogInformation($"couldn't find: {key}");
                 return NotFound();
             }
+            
             var decodedValue = HexUtils.FromHex(rawValue);
             var fileExtension = Path.GetExtension(key);
 

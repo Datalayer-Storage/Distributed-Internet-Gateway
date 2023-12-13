@@ -21,17 +21,22 @@ internal sealed class PeriodicDynDnsService(LoginManager loginManager,
             using var timer = new PeriodicTimer(TimeSpan.FromMinutes(period));
             do
             {
-                var (accessToken, secretKey) = _loginManager.GetCredentials();
-
-                using var cancellationSource = new CancellationTokenSource(TimeSpan.FromSeconds(60));
-                var result = await _dynDnsService.UpdateIP(accessToken, secretKey, cancellationSource.Token);
-                if (string.IsNullOrEmpty(result))
+                var encodedAuth = _loginManager.GetCredentials();
+                if (string.IsNullOrEmpty(encodedAuth))
                 {
-                    _logger.LogWarning("Unable to update IP address.");
+                    _logger.LogWarning("User not logged in.");
                 }
                 else
                 {
-                    _logger.LogInformation("{result}", result.SanitizeForLog());
+                    var result = await _dynDnsService.UpdateIP(encodedAuth, stoppingToken);
+                    if (string.IsNullOrEmpty(result))
+                    {
+                        _logger.LogWarning("Unable to update IP address.");
+                    }
+                    else
+                    {
+                        _logger.LogInformation("{result}", result.SanitizeForLog());
+                    }
                 }
             } while (await timer.WaitForNextTickAsync(stoppingToken));
         }

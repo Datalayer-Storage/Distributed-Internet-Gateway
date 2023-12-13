@@ -6,10 +6,15 @@ internal sealed class UpdateIPCommand()
     [CommandTarget]
     public async Task<int> Execute(LoginManager loginManager, DynDnsService dynDnsService)
     {
-        var (accessToken, secretKey) = loginManager.GetCredentials();
+        var encodedAuth = loginManager.GetCredentials();
+        if (string.IsNullOrEmpty(encodedAuth))
+        {
+            Console.WriteLine("Not logged in.");
+            return 1;
+        }
 
         using var cancellationSource = new CancellationTokenSource(TimeSpan.FromSeconds(Timeout));
-        var result = await dynDnsService.UpdateIP(accessToken, secretKey, cancellationSource.Token);
+        var result = await dynDnsService.UpdateIP(encodedAuth, cancellationSource.Token);
 
         Console.WriteLine(result);
         return 0;

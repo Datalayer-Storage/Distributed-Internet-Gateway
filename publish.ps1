@@ -1,6 +1,6 @@
 $version = "0.2.2"
-$name = "dig"
-$src = "src/dig"
+$name = "server"
+$src = "src/server"
 $outputRoot = "./publish"
 $framework = "net8.0"
 

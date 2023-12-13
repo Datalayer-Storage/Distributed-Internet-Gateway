@@ -10,14 +10,8 @@ internal sealed class DynDnsService(IHttpClientFactory httpClientFactory,
     private readonly DnsService _dnsService = dnsService;
     private readonly ILogger<DynDnsService> _logger = logger;
 
-    public async Task<string?> UpdateIP(string accessToken, string secretKey, CancellationToken stoppingToken = default)
+    public async Task<string?> UpdateIP(string encodedAuth, CancellationToken stoppingToken = default)
     {
-        if (string.IsNullOrEmpty(accessToken) || string.IsNullOrEmpty(secretKey))
-        {
-            _logger.LogWarning("Not logged in.");
-            return null;
-        }
-
         try
         {
             var ip = await _dnsService.GetPublicIPAdress(stoppingToken);
@@ -29,7 +23,6 @@ internal sealed class DynDnsService(IHttpClientFactory httpClientFactory,
 
             _logger.LogInformation("{ip}", ip);
 
-            var encodedAuth = Convert.ToBase64String(Encoding.GetEncoding("ISO-8859-1").GetBytes(accessToken + ":" + secretKey));
             _httpClient.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Basic", encodedAuth);
 
             var data = new { ip_address = ip };

@@ -37,7 +37,7 @@ builder.Services.AddSingleton<ChiaConfig>()
     .AddMemoryCache()
     .AddControllers();
 
-builder.Services.AddRpcEndpoint("data_layer");
+builder.Services.AddRpcEndpoint("data_layer").AddStandardResilienceHandler();
 builder.Services.AddHttpClient("datalayer.storage", c =>
 {
     c.BaseAddress = new Uri(builder.Configuration.GetValue("dig:DataLayerStorageUri", "https://api.datalayer.storage/")!);
@@ -56,7 +56,7 @@ if (builder.Configuration.GetValue("dig:RunMirrorSyncJob", false))
         .AddSingleton(provider => new FullNodeProxy(provider.GetRequiredKeyedService<IRpcClient>("full_node"), "dig.server"))
         .AddSingleton(provider => new WalletProxy(provider.GetRequiredKeyedService<IRpcClient>("wallet"), "dig.server"));
 
-    builder.Services.AddRpcEndpoint("wallet");
+    builder.Services.AddRpcEndpoint("wallet").AddStandardResilienceHandler();
     builder.Services.AddRpcEndpoint("full_node");
 }
 
