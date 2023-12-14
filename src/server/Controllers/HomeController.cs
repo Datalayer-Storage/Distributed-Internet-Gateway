@@ -27,7 +27,7 @@ public class HomeController(DataLayerProxy dataLayer,
 
             return Ok(subscriptions);
         }
-        catch (Exception)
+        catch (TaskCanceledException)
         {
             return StatusCode(StatusCodes.Status503ServiceUnavailable);
         }
