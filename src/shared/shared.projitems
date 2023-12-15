@@ -20,5 +20,11 @@
         <Compile Include="$(MSBuildThisFileDirectory)Services\AppStorage.cs" />
         <Compile Include="$(MSBuildThisFileDirectory)Services\LoginManager.cs" />
         <Compile Include="$(MSBuildThisFileDirectory)Utils.cs" />
+        <Content Include="$(MSBuildThisFileDirectory)appsettings.user.json">
+            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+        </Content>
+        <Content Include="$(MSBuildThisFileDirectory)appsettings.json">
+            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+        </Content>
     </ItemGroup>
 </Project>

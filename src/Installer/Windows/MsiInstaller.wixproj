@@ -1,0 +1,11 @@
+<Project Sdk="WixToolset.Sdk/4.0.2">
+  <PropertyGroup>
+    <OutputName>Decentralized-Internet-Gateway</OutputName>
+    <InstallerPlatform>x64</InstallerPlatform>
+    <SignOutput>true</SignOutput>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="WixToolset.UI.wixext" Version="4.0.2">
+    </PackageReference>
+  </ItemGroup>
+</Project>

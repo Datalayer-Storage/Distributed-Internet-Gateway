@@ -4,10 +4,11 @@ $names = @("dig", "server")
 $src = "src"
 $outputRoot = "./publish"
 $framework = "net8.0"
-$runTimes = @("win-x64", "linux-x64", "osx-x64", "linux-arm64")
+$runTimes = @("win-x64") #, "linux-x64", "osx-x64", "linux-arm64")
 
-Remove-Item $outputRoot -Recurse -Force
-
+if (Test-Path -Path $outputRoot) {
+    Remove-Item $outputRoot -Recurse -Force
+}
 function Publish-Project {
     param(
         [string]$name,        
@@ -23,8 +24,3 @@ foreach ($runTime in $runTimes) {
 
     Compress-Archive -CompressionLevel Optimal -Path $outputRoot/standalone/$runtime/* -DestinationPath $outputRoot/$fullName-$version-$runtime.zip
 }
-# if ([System.Environment]::OSVersion.Platform -eq "Win32NT") {
-#     # build the msi - win-x64 only
-#     dotnet build ./MsiInstaller/MsiInstaller.wixproj -c Release -r win-x64 --output $outputRoot
-#     Move-Item -Path $outputRoot/en-us/*.msi -Destination $outputRoot/$name-$version-service-win-x64.msi
-# }

@@ -1,35 +1,74 @@
 namespace dig;
-internal class AppStorage(string folderName)
+internal class AppStorage
 {
-    private readonly string _folderPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), folderName);
+    private readonly string _folderPath;
 
+    public AppStorage(string folderName)
+    {
+        _folderPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), folderName);
+        try
+        {
+            if (!Directory.Exists(_folderPath))
+            {
+                Directory.CreateDirectory(_folderPath);
+            }
+
+            string sourceFileName = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "appsettings.user.json");
+            if (File.Exists(sourceFileName))
+            {
+                // create the user settings file if it doesn't exit already
+                File.Copy(sourceFileName, Path.Combine(_folderPath, "appsettings.user.json"), false);
+            }
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine(ex.Message);
+        }
+    }
     public void Save(string name, string value)
     {
-        if (!Directory.Exists(_folderPath))
+        try
         {
-            Directory.CreateDirectory(_folderPath);
+            var filePath = Path.Combine(_folderPath, name);
+            File.WriteAllText(filePath, value);
         }
-        var filePath = Path.Combine(_folderPath, name);
-        File.WriteAllText(filePath, value);
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine(ex.Message);
+        }
     }
 
     public void Remove(string name)
     {
-        var filePath = Path.Combine(_folderPath, name);
-        if (File.Exists(filePath))
+        try
         {
-            File.Delete(filePath);
+            var filePath = Path.Combine(_folderPath, name);
+            if (File.Exists(filePath))
+            {
+                File.Delete(filePath);
+            }
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine(ex.Message);
         }
     }
-    
+
     public string Load(string name)
     {
-        var filePath = Path.Combine(_folderPath, name);
-        if (!File.Exists(filePath))
+        try
         {
-            return string.Empty;
+            var filePath = Path.Combine(_folderPath, name);
+            if (File.Exists(filePath))
+            {
+                return File.ReadAllText(filePath);
+            }
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine(ex.Message);
         }
 
-        return File.ReadAllText(filePath);
+        return string.Empty;
     }
 }

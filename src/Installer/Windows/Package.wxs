@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!--
+    This will install dig.server.exe as a Windows Service
+    and use the current user name to set the config file path.
+    The service runs as local system but will use that config file
+
+    sc.exe config "Decentralized-Internet-Gateway" binPath="C:\Program Files\<path to>\dig.server.exe <full path to config file>"
+-->
+
+<!-- Define the variables in "$(var.*) expressions" -->
+<?define Name = "Decentralized Internet Gateway" ?>
+<?define Manufacturer = "DataLayer-Storage" ?>
+<?define UpgradeCode = "03F1BEDD-16CD-436A-A0FC-D332DD75ABA3" ?>
+<?define SourcePath="..\..\..\publish\standalone\win-x64" ?>
+<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs"
+    xmlns:ui="http://wixtoolset.org/schemas/v4/wxs/ui">
+
+    <Package Name="$(Name)" Manufacturer="$(Manufacturer)" Version="!(bind.FileVersion.dig.server.exe)" UpgradeCode="$(var.UpgradeCode)" Compressed="true">
+
+        <!-- UI defintion -->
+        <WixVariable Id="WixUILicenseRtf" Value="LICENSE.rtf" />
+        <ui:WixUI Id="WixUI_Minimal" InstallDirectory="INSTALLFOLDER" />
+
+        <MediaTemplate EmbedCab="yes" />
+        <!-- Allow upgrades and prevent downgrades -->
+        <MajorUpgrade DowngradeErrorMessage="A later version of [ProductName] is already installed. Setup will now exit." />
+
+        <!-- Define the directory structure -->
+        <StandardDirectory Id="ProgramFiles6432Folder">
+            <Directory Name="!(bind.Property.Manufacturer)">
+                <Directory Id="INSTALLFOLDER" Name="!(bind.Property.ProductName)" />
+            </Directory>
+        </StandardDirectory>
+
+        <!-- The files inside this DirectoryRef are linked to the DlMirrorSync directory via INSTALLFOLDER -->
+        <DirectoryRef Id="INSTALLFOLDER">
+            <!-- Create a single component which is the DlMirrorSync.exe file -->
+            <Component Id="AppSettings">
+                <File Id="appsettings.json" Source="$(var.SourcePath)\appsettings.json" KeyPath="true" />
+            </Component>
+            <Component Id="WebConfig">
+                <File Id="web.config" Source="$(var.SourcePath)\web.config" KeyPath="true" />
+            </Component>
+            <Component Id="ServiceExecutable" Bitness="always64">
+                <!-- Copies the dig.server.exe file using the project reference preprocessor variables -->
+                <File Id="dig.server.exe" Source="$(var.SourcePath)\dig.server.exe" KeyPath="true" />
+
+                <!-- Remove all files from the INSTALLFOLDER on uninstall -->
+                <RemoveFile Id="ALLFILES" Name="*.*" On="both" />
+
+                <!-- Tell WiX to install the Service -->
+                <ServiceInstall Id="ServiceInstaller" Type="ownProcess" Name="DecentralizedInternetGateway" DisplayName="$(Name)" Description="The Decentralized Internet Gateway expresses chia as a webite." Start="auto" Account="LocalSystem" ErrorControl="normal" Arguments='"[%HOMEDRIVE][%HOMEPATH]\.chia\mainnet\config\config.yaml"'/>
+
+                <!-- Tell WiX to start the Service -->
+                <ServiceControl Id="StartService" Start="install" Stop="both" Remove="uninstall" Name="DecentralizedInternetGateway" Wait="true"/>
+            </Component>
+            <Component Id="CLI" Bitness="always64">
+                <!-- Copies the dig.server.exe file using the project reference preprocessor variables -->
+                <File Id="dig.exe" Source="$(var.SourcePath)\dig.exe" KeyPath="true" />
+            </Component>
+        </DirectoryRef>
+
+        <!-- Tell WiX to install the files -->
+        <Feature Id="Service" Title="Decentralized Internet Gateway Service Setup" Level="1">
+            <ComponentRef Id="ServiceExecutable" />
+            <ComponentRef Id="AppSettings" />
+            <ComponentRef Id="CLI" />
+            <ComponentRef Id="WebConfig" />
+        </Feature>
+
+    </Package>
+
+</Wix>
