@@ -30,7 +30,6 @@ internal sealed class StoreSyncService(DataLayerProxy dataLayer,
             var mirrorUris = await _mirrorService.GetMyMirrorUris(stoppingToken);
             _logger.LogInformation("Using mirror uri: {mirrorUris}", string.Join(", ", mirrorUris));
 
-            var xchWallet = _chiaService.GetWallet(_configuration.GetValue<uint>("dig:XchWalletId", 1));
             var haveFunds = true;
             var count = 0;
             await foreach (var id in _mirrorService.FetchLatest(mirrorListUri, stoppingToken))
@@ -54,11 +53,7 @@ internal sealed class StoreSyncService(DataLayerProxy dataLayer,
                     if (addMirrors && mirrorUris.Any() && haveFunds)
                     {
                         // before mirroring check we have enough funds
-                        if (await CheckFunds(reserveAmount + fee, xchWallet, stoppingToken))
-                        {
-                            await AddMirror(id, reserveAmount, fee, mirrorUris, stoppingToken);
-                        }
-                        else
+                        if (!await AddMirror(id, reserveAmount, fee, mirrorUris, stoppingToken))
                         {
                             _logger.LogWarning("Insufficient funds to add mirror. Pausing mirroring for now.");
                             // if we are out of funds to add mirrors, stop trying but continue subscribing
@@ -84,38 +79,38 @@ internal sealed class StoreSyncService(DataLayerProxy dataLayer,
         return 0;
     }
 
-    private async Task<bool> CheckFunds(ulong neededFunds, Wallet xchWallet, CancellationToken stoppingToken)
-    {
-        var balance = await xchWallet.GetBalance(stoppingToken);
-        if (neededFunds < balance.SpendableBalance)
-        {
-            return true;
-        }
-
-        // we don't have enough spendable funding but see if there is change or an incoming confirmed balance
-        if (neededFunds < balance.PendingChange || neededFunds < balance.ConfirmedWalletBalance)
-        {
-            // there's change - wait for it
-            var waitingForChangeDelayMinutes = _configuration.GetValue("dig:WaitingForChangeDelayMinutes", 2);
-            _logger.LogWarning("Waiting {WaitingForChangeDelayMinutes} minutes for change", waitingForChangeDelayMinutes);
-            await Task.Delay(TimeSpan.FromMinutes(waitingForChangeDelayMinutes), stoppingToken);
-
-            // now get the balance again and see if we have enough funds
-            balance = await xchWallet.GetBalance(stoppingToken);
-        }
-
-        // we've waited return whether we have enough now
-        return neededFunds < balance.SpendableBalance;
-    }
-
-    private async Task AddMirror(string id, ulong reserveAmount, ulong fee, IEnumerable<string> mirrorUris, CancellationToken stoppingToken)
+    private async Task<bool> AddMirror(string id, ulong reserveAmount, ulong fee, IEnumerable<string> mirrorUris, CancellationToken stoppingToken)
     {
         var mirrors = await _dataLayer.GetMirrors(id, stoppingToken);
         // add any mirrors that aren't already ours
         if (!mirrors.Any(m => m.Ours))
         {
             _logger.LogInformation("Adding mirror {id}", id);
-            await _dataLayer.AddMirror(id, reserveAmount, mirrorUris, fee, stoppingToken);
+            var retryCount = 0;
+            while (retryCount < 2)
+            {
+                try
+                {
+                    // try to add the mirror - this may fail with insufficient funds
+                    await _dataLayer.AddMirror(id, reserveAmount, mirrorUris, fee, stoppingToken);
+                    // if we succeeded, return true
+                    return true;
+                }
+                catch (ResponseException ex)
+                {
+                    // if we get an exception, try to add the mirror again
+                    var waitingForChangeDelayMinutes = _configuration.GetValue("dig:WaitingForChangeDelayMinutes", 2);
+                    _logger.LogWarning("Waiting {WaitingForChangeDelayMinutes} minutes for change", waitingForChangeDelayMinutes);
+                    await Task.Delay(TimeSpan.FromMinutes(waitingForChangeDelayMinutes), stoppingToken);
+                    retryCount++;
+                }
+            }
+
+            // we've tried twice and failed
+            return false;
         }
+
+        // we already have a mirror
+        return true;
     }
 }

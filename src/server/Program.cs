@@ -57,10 +57,7 @@ if (builder.Configuration.GetValue("dig:RunMirrorSyncJob", false))
         .AddSingleton<StoreSyncService>()
         .AddSingleton<DnsService>()
         .AddSingleton(provider => new FullNodeProxy(provider.GetRequiredKeyedService<IRpcClient>("full_node"), "dig.server"))
-        .AddSingleton(provider => new WalletProxy(provider.GetRequiredKeyedService<IRpcClient>("wallet"), "dig.server"));
-
-    builder.Services.AddRpcEndpoint("wallet").AddStandardResilienceHandler();
-    builder.Services.AddRpcEndpoint("full_node");
+        .AddRpcEndpoint("full_node");
 }
 
 // setup the Dyn Dns service

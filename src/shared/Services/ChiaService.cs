@@ -1,13 +1,11 @@
 using chia.dotnet;
 namespace dig;
 
-internal sealed class ChiaService(WalletProxy wallet,
-                                    FullNodeProxy fullNode,
+internal sealed class ChiaService(FullNodeProxy fullNode,
                                     ILogger<ChiaService> logger,
                                     IConfiguration configuration)
 {
     private readonly FullNodeProxy _fullNode = fullNode;
-    private readonly WalletProxy _wallet = wallet;
     private readonly ILogger<ChiaService> _logger = logger;
     private readonly IConfiguration _configuration = configuration;
 
@@ -31,6 +29,4 @@ internal sealed class ChiaService(WalletProxy wallet,
             return defaultFee;
         }
     }
-
-    public Wallet GetWallet(uint walletId) => new(walletId, _wallet);
 }

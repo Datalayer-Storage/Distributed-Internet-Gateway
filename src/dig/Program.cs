@@ -18,7 +18,6 @@ builder.Services.AddSingleton<StoreManager>()
     .AddSingleton<StoreSyncService>()
     .AddSingleton((provider) => new AppStorage(".distributed-internet-gateway"))
     .AddHttpClient()
-    .AddSingleton(provider => new WalletProxy(provider.GetRequiredKeyedService<IRpcClient>("wallet"), "dig.server"))
     .AddSingleton(provider => new DataLayerProxy(provider.GetRequiredKeyedService<IRpcClient>("data_layer"), "dig.server"))
     .AddSingleton(provider => new FullNodeProxy(provider.GetRequiredKeyedService<IRpcClient>("full_node"), "dig.server"))
     .AddDataProtection()
@@ -30,7 +29,6 @@ builder.Services.AddHttpClient("datalayer.storage", c =>
         c.BaseAddress = new Uri(builder.Configuration.GetValue("dig:DataLayerStorageUri", "https://api.datalayer.storage")!);
     });
 
-builder.Services.AddRpcEndpoint("wallet");
 builder.Services.AddRpcEndpoint("data_layer");
 builder.Services.AddRpcEndpoint("full_node");
 

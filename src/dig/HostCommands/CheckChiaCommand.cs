@@ -8,13 +8,12 @@ internal sealed class CheckChiaCommand()
     public int Timeout { get; init; } = 60;
 
     [CommandTarget]
-    public async Task<int> Execute(FullNodeProxy fullNodeProxy, DataLayerProxy dataLayerProxy, WalletProxy walletProxy)
+    public async Task<int> Execute(FullNodeProxy fullNodeProxy, DataLayerProxy dataLayerProxy)
     {
         using var cancellationSource = new CancellationTokenSource(TimeSpan.FromSeconds(Timeout));
 
         await HealthZ(fullNodeProxy, cancellationSource.Token);
         await HealthZ(dataLayerProxy, cancellationSource.Token);
-        await HealthZ(walletProxy, cancellationSource.Token);
 
         return 0;
     }

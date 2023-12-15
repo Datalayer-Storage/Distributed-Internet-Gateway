@@ -55,4 +55,3 @@ These settings can be configured in the `appsettings.json` file or via environme
 - __DataLayerStorageUri__: <https://api.datalayer.storage/> - The uri to use for retrieving the list of singletons to mirror.
 - __DefaultFee__: 500000, - The default fee to use for mirroring singletons if the dynamic fee cannot be retrieved.
 - __AddMirrorAmount__: 300000001 - The number of mojos to reserve in the mirror coin for each singleton.
-- __XchWalletId__: 1 - The XCH wallet id to use for paying the fee and reserve amount.
