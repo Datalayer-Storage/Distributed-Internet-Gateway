@@ -82,9 +82,9 @@
       "type": "coreclr",
       "request": "launch",
       "preLaunchTask": "build",
-      "program": "${workspaceFolder}/src/server/bin/Debug/net8.0/dig.server.dll",
-      "args": [],
-      "cwd": "${workspaceFolder}/src/server",
+      "program": "${workspaceFolder}/src/dig/bin/Debug/net8.0/dig.dll",
+      "args": ["server", "--help"],
+      "cwd": "${workspaceFolder}/src/dig",
       "console": "integratedTerminal",
       "stopAtEntry": false,
       "envFile": "${workspaceFolder}/.env"

@@ -1,5 +1,6 @@
 using chia.dotnet;
 using dig;
+using dig.cli;
 using Microsoft.AspNetCore.DataProtection;
 using System.CommandLine;
 using System.CommandLine.Builder;
