@@ -78,6 +78,18 @@
       "envFile": "${workspaceFolder}/.env"
     },
     {
+      "name": "dig cli server start",
+      "type": "coreclr",
+      "request": "launch",
+      "preLaunchTask": "build",
+      "program": "${workspaceFolder}/src/dig/bin/Debug/net8.0/dig.dll",
+      "args": ["server", "start"],
+      "cwd": "${workspaceFolder}/src/dig",
+      "console": "integratedTerminal",
+      "stopAtEntry": false,
+      "envFile": "${workspaceFolder}/.env"
+    },
+    {
       "name": "dig.server",
       "type": "coreclr",
       "request": "launch",

@@ -19,7 +19,7 @@ internal static class AttributeExtensions
         var assembly = Assembly.GetExecutingAssembly();
         var types = from type in assembly.GetTypes()
                     let attr = type.GetCustomAttribute<CommandAttribute>()
-                    where attr is not null
+                    where attr is not null and { Hidden: false }
                     orderby attr.Name
                     select (type, attr);
 
@@ -31,9 +31,9 @@ internal static class AttributeExtensions
         return builder;
     }
 
-    private static void AddCommands(this Command parent, Type type, CommandAttribute c, IServiceProvider services)
+    private static void AddCommands(this Command parent, Type type, CommandAttribute commandAttr, IServiceProvider services)
     {
-        var command = new Command(c.Name, c.Description);
+        var command = new Command(commandAttr.Name, commandAttr.Description);
 
         // get all the options for the command
         foreach (var (property, optionAttribute) in type.GetAttributedProperties<OptionAttribute>())

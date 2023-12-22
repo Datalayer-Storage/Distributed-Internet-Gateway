@@ -20,7 +20,7 @@ if (OperatingSystem.IsWindows())
 // we can take the path to an appsettings.json file as an argument
 // if not provided, the default appsettings.json will be used and settings
 // will come from there or from environment variables
-if (args.Length != 0)
+if (args.Length != 0 && !string.IsNullOrEmpty(args.First()))
 {
     var configurationBinder = new ConfigurationBuilder()
         .AddJsonFile(args.First());
@@ -83,8 +83,6 @@ if (builder.Configuration.GetValue("dig:RunAsWindowsService", false))
     builder.Host.UseWindowsService(); // safe to call on non-windows platforms
 }
 
-
-
 var app = builder.Build();
 if (app.Environment.IsDevelopment())
 {
@@ -93,5 +91,8 @@ if (app.Environment.IsDevelopment())
 }
 app.UseCors();
 app.MapControllers();
+
+var server = new Server(app.Services.GetRequiredService<ILogger<Server>>());
+server.Start();
 
 app.Run();

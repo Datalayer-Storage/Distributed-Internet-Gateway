@@ -6,4 +6,6 @@ internal class CommandAttribute(string name) : Attribute
     public string Name { get; init; } = name;
 
     public string? Description { get; init; }
+
+    public bool Hidden { get; init; }
 }

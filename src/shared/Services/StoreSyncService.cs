@@ -96,7 +96,7 @@ internal sealed class StoreSyncService(DataLayerProxy dataLayer,
                     // if we succeeded, return true
                     return true;
                 }
-                catch (ResponseException ex)
+                catch (ResponseException)
                 {
                     // if we get an exception, try to add the mirror again
                     var waitingForChangeDelayMinutes = _configuration.GetValue("dig:WaitingForChangeDelayMinutes", 2);
