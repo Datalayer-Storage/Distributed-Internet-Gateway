@@ -6,30 +6,13 @@ namespace dig.server;
 
 [ApiController]
 [Route("/")]
-public class HomeController(DataLayerProxy dataLayer,
-                                IMemoryCache memoryCache) : ControllerBase
+public class HomeController(GatewayService gatewayService) : Controller
 {
-    private readonly DataLayerProxy _dataLayer = dataLayer;
-    private readonly IMemoryCache _memoryCache = memoryCache;
+    private readonly GatewayService _gatewayService = gatewayService;
 
-    [HttpGet]
-    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<string>))]
-    public async Task<IActionResult> Get()
+    public async Task<IActionResult> Index()
     {
-        try
-        {
-            var subscriptions = await _memoryCache.GetOrCreateAsync("subscriptions.list", async entry =>
-            {
-                using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(30));
-                entry.SlidingExpiration = TimeSpan.FromMinutes(15);
-                return await _dataLayer.Subscriptions(cts.Token);
-            });
-
-            return Ok(subscriptions);
-        }
-        catch (TaskCanceledException)
-        {
-            return StatusCode(StatusCodes.Status503ServiceUnavailable);
-        }
+        var stores = await _gatewayService.GetKnownStoresWithNames();
+        return View(stores);
     }
 }

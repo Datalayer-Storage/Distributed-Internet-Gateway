@@ -1,11 +1,14 @@
 using Microsoft.AspNetCore.Mvc;
 using System.Text.RegularExpressions;
+using Microsoft.Extensions.Caching.Memory;
+
 namespace dig.server;
 
-public partial class StoreController(GatewayService gatewayService, ILogger<StoreController> logger) : ControllerBase
+public partial class StoresController(GatewayService gatewayService,
+                                        ILogger<StoresController> logger) : ControllerBase
 {
     private readonly GatewayService _gatewayService = gatewayService;
-    private readonly ILogger<StoreController> _logger = logger;
+    private readonly ILogger<StoresController> _logger = logger;
 
     [HttpGet("{storeId}")]
     [ProducesResponseType(StatusCodes.Status307TemporaryRedirect)]

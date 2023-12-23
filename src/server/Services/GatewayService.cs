@@ -13,13 +13,28 @@ public sealed class GatewayService(DataLayerProxy dataLayer,
     private readonly ILogger<GatewayService> _logger = logger;
     private readonly IConfiguration _configuration = configuration;
 
-    public WellKnown GetWellKnown()
+    public WellKnown GetWellKnown(string baseUri)
     {
-        return new WellKnown
+        return new WellKnown(xch_address: _configuration.GetValue("dig:XchAddress", "")!,
+                              known_stores_endpoint: $"{baseUri}/.well-known/known_stores",
+                              donation_address: _configuration.GetValue("dig:DonationAddress", "")!);
+    }
+
+    public async Task<IEnumerable<string>> GetKnownStores()
+    {
+        return await _memoryCache.GetOrCreateAsync("known-stores.cache", async entry =>
         {
-            xch_address = _configuration.GetValue("dig:XchAddress", "")!,
-            donation_address = _configuration.GetValue("dig:DonationAddress", "")!
-        };
+            using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(30));
+            entry.SlidingExpiration = TimeSpan.FromMinutes(15);
+            return await _dataLayer.Subscriptions(cts.Token);
+        }) ?? Enumerable.Empty<string>();
+    }
+
+    public async Task<IEnumerable<Store>> GetKnownStoresWithNames()
+    {
+        var stores = await GetKnownStores();
+        var storeNames = stores.Select(storeId => new Store(storeId, storeId));
+        return storeNames;
     }
 
     public async Task<IEnumerable<string>?> GetKeys(string storeId, CancellationToken cancellationToken)
@@ -93,10 +108,4 @@ public sealed class GatewayService(DataLayerProxy dataLayer,
 
         return Convert.FromHexString(resultHex);
     }
-}
-
-public record WellKnown()
-{
-    public string xch_address { get; init; } = "";
-    public string donation_address { get; init; } = "";
 }

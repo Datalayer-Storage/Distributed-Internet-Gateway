@@ -30,7 +30,7 @@ if (args.Length != 0 && !string.IsNullOrEmpty(args.First()))
 }
 
 // this sets up the gateway service
-builder.Services.AddControllers();
+builder.Services.AddControllersWithViews();
 
 builder.Services.AddSingleton<ChiaConfig>()
     .AddHttpClient()
