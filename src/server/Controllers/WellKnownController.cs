@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
+
 namespace dig.server;
 
 public class WellKnownController(GatewayService gatewayService) : ControllerBase

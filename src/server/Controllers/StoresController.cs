@@ -1,6 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
 using System.Text.RegularExpressions;
-using Microsoft.Extensions.Caching.Memory;
 
 namespace dig.server;
 
@@ -47,15 +46,10 @@ public partial class StoresController(GatewayService gatewayService,
 
             return NotFound();
         }
-        catch (InvalidOperationException ex)
-        {
-            _logger.LogError(ex, "{Message}", ex.Message);
-            return StatusCode(StatusCodes.Status500InternalServerError);
-        }
         catch (Exception ex)
         {
             _logger.LogError(ex, "{Message}", ex.Message);
-            return StatusCode(StatusCodes.Status503ServiceUnavailable);
+            return StatusCode(StatusCodes.Status500InternalServerError);
         }
     }
 
@@ -126,26 +120,19 @@ public partial class StoresController(GatewayService gatewayService,
 
                 return File(imageBuffer, match.Value);
             }
-            else
-            {
-                return Content(decodedValue);
-            }
-        }
-        catch (InvalidOperationException ex)
-        {
-            _logger.LogError(ex, "{Message}", ex.Message);
-            return StatusCode(StatusCodes.Status500InternalServerError);
+
+            return Content(decodedValue);
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "{Message}", ex.Message);
-            return StatusCode(StatusCodes.Status503ServiceUnavailable);
+            return StatusCode(StatusCodes.Status500InternalServerError);
         }
     }
 
     private static string? GetMimeType(string ext)
     {
-        if (dig.MimeTypes.TryGetMimeType(ext, out var mimeType))
+        if (MimeTypes.TryGetMimeType(ext, out var mimeType))
         {
             return mimeType;
         }

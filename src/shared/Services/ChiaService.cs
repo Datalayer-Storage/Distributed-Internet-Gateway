@@ -13,7 +13,7 @@ internal sealed class ChiaService(FullNodeProxy fullNode,
     {
         try
         {
-            if (!_configuration.GetValue("dig:UseDynamicFee", false))
+            if (!_configuration.GetValue("dig:UseDynamicFee", true))
             {
                 return defaultFee;
             }

@@ -26,7 +26,7 @@ public sealed class GatewayService(DataLayerProxy dataLayer,
 
     private static string GetAssemblyVersion()
     {
-        return Assembly.GetExecutingAssembly().GetName().Version?.ToString() ?? "0.0.0";
+        return Assembly.GetExecutingAssembly().GetName().Version?.ToString() ?? "0.0.0.0";
     }
 
     public async Task<IEnumerable<string>> GetKnownStores()
@@ -42,7 +42,7 @@ public sealed class GatewayService(DataLayerProxy dataLayer,
     public async Task<IEnumerable<Store>> GetKnownStoresWithNames()
     {
         var stores = await GetKnownStores();
-        return stores.Select(storeId => new Store(_storeRegistryService       .GetStoreName(storeId), storeId));
+        return stores.Select(storeId => new Store(_storeRegistryService.GetStoreName(storeId), storeId));
     }
 
     public async Task<IEnumerable<string>?> GetKeys(string storeId, CancellationToken cancellationToken)
