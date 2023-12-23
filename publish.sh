@@ -6,22 +6,33 @@ names=("dig" "server")
 src="src"
 outputRoot="./publish"
 framework="net8.0"
-runTimes=("linux-arm64") # "osx-x64"
 
-rm -rf $outputRoot
-shopt -s globstar
-rm -rf ./$src/**/bin/Release
+# If no runtimes are passed as arguments, use the default ones
+if [ $# -eq 0 ]; then
+    runTimes=("win-x64" "linux-x64" "osx-x64" "linux-arm64")
+else
+    runTimes=("$@")
+fi
+
+if [ -d "$outputRoot" ]; then
+    rm -rf $outputRoot
+fi
 
 publish_project() {
-    name=$1
-    runtime=$2
-    dotnet publish ./$src/$name/$name.csproj -c Release -r $runtime --framework $framework --self-contained true /p:Version=$version /p:PublishReadyToRun=true /p:PublishSingleFile=true /p:PublishTrimmed=false /p:IncludeNativeLibrariesForSelfExtract=True /p:StripSymbols=true /p:PublishDir="bin\Release\$framework\$runtime" --output $outputRoot/standalone/$runtime
+    local name=$1
+    local runtime=$2
+
+    dotnet restore ./$src/$name/$name.csproj -r $runtime
+
+    # fully standalone with embedded dotnet framework
+    dotnet publish ./$src/$name/$name.csproj -c Release -r $runtime --no-restore --framework $framework --self-contained true /p:Version=$version /p:PublishReadyToRun=true /p:PublishSingleFile=true /p:PublishTrimmed=false /p:IncludeNativeLibrariesForSelfExtract=True /p:StripSymbols=true /p:PublishDir="bin/Release/$framework/$runtime" --output $outputRoot/standalone/$runtime
+
+    # single file without embedded dotnet framework
+    dotnet publish ./$src/$name/$name.csproj -c Release -r $runtime --no-restore --framework $framework --self-contained false /p:Version=$version /p:PublishReadyToRun=true /p:PublishSingleFile=true /p:PublishTrimmed=false /p:IncludeNativeLibrariesForSelfExtract=True /p:StripSymbols=true /p:PublishDir="bin/Release/$framework/$runtime" --output $outputRoot/singlefile/$runtime
 }
 
-for runtime in "${runTimes[@]}"; do
+for runTime in "${runTimes[@]}"; do
     for name in "${names[@]}"; do
-        publish_project $name $runtime
+        publish_project $name $runTime
     done
-
-    zip -r $outputRoot/$fullName-$version-$runtime.zip $outputRoot/standalone/$runtime/*
 done

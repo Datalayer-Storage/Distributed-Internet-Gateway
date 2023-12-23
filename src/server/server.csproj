@@ -24,7 +24,10 @@
 
         <PackageReference Include="Swashbuckle.AspNetCore" Version="6.5.0" />
     </ItemGroup>
-
+    <ItemGroup Condition=" '$(Configuration)' == 'Release' ">
+        <Content Update=".\appsettings.Development.json" CopyToOutputDirectory="Never" />
+        <Content Remove=".\appsettings.Development.json" />
+    </ItemGroup>
     <Import Project="..\shared\shared.projitems" Label="Shared" />
 
 </Project>
