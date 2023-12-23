@@ -4,11 +4,13 @@ using chia.dotnet;
 namespace dig.server;
 
 public sealed class GatewayService(DataLayerProxy dataLayer,
+                                    StoreRegistryService storeRegistryService,
                                     IMemoryCache memoryCache,
                                     ILogger<GatewayService> logger,
                                     IConfiguration configuration)
 {
     private readonly DataLayerProxy _dataLayer = dataLayer;
+    private readonly StoreRegistryService _storeRegistryService = storeRegistryService;
     private readonly IMemoryCache _memoryCache = memoryCache;
     private readonly ILogger<GatewayService> _logger = logger;
     private readonly IConfiguration _configuration = configuration;
@@ -33,8 +35,7 @@ public sealed class GatewayService(DataLayerProxy dataLayer,
     public async Task<IEnumerable<Store>> GetKnownStoresWithNames()
     {
         var stores = await GetKnownStores();
-        var storeNames = stores.Select(storeId => new Store(storeId, storeId));
-        return storeNames;
+        return stores.Select(storeId => new Store(_storeRegistryService       .GetStoreName(storeId), storeId));
     }
 
     public async Task<IEnumerable<string>?> GetKeys(string storeId, CancellationToken cancellationToken)

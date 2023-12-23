@@ -1,10 +1,8 @@
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Caching.Memory;
-using chia.dotnet;
 
 namespace dig.server;
 
-[ApiController]
+[ApiExplorerSettings(IgnoreApi = true)]
 [Route("/")]
 public class HomeController(GatewayService gatewayService) : Controller
 {
@@ -13,6 +11,6 @@ public class HomeController(GatewayService gatewayService) : Controller
     public async Task<IActionResult> Index()
     {
         var stores = await _gatewayService.GetKnownStoresWithNames();
-        return View(stores);
+        return View(stores.OrderBy(s => s.verified_name));
     }
 }

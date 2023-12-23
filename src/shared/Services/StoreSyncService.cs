@@ -27,33 +27,33 @@ internal sealed class StoreSyncService(DataLayerProxy dataLayer,
             _logger.LogInformation("Getting owned stores");
             var ownedStores = await _dataLayer.GetOwnedStores(stoppingToken);
 
-            var mirrorUris = await _mirrorService.GetMyMirrorUris(stoppingToken);
-            _logger.LogInformation("Using mirror uri: {mirrorUris}", string.Join(", ", mirrorUris));
+            var myMirrorUris = await _mirrorService.GetMyMirrorUris(stoppingToken);
+            _logger.LogInformation("Using mirror uri: {mirrorUris}", string.Join(", ", myMirrorUris));
 
             var haveFunds = true;
             var count = 0;
-            await foreach (var id in _mirrorService.FetchLatest(mirrorListUri, stoppingToken))
+            await foreach (var store in _mirrorService.FetchLatest(mirrorListUri, stoppingToken))
             {
                 // don't subscribe or mirror our owned stores
-                if (!ownedStores.Contains(id))
+                if (!ownedStores.Contains(store.singleton_id))
                 {
                     // subscribing and mirroring are split into two separate operations
                     // as we might subscribe to a singleton that we don't want to mirror
                     // or subscribe to a singleton but not be able to pay for the mirror etc
 
                     // don't subscribe to a store we already have
-                    if (!subscriptions.Contains(id))
+                    if (!subscriptions.Contains(store.singleton_id))
                     {
-                        _logger.LogInformation("Subscribing to {id}", id);
-                        await _dataLayer.Subscribe(id, Enumerable.Empty<string>(), stoppingToken);
+                        _logger.LogInformation("Subscribing to {id}", store);
+                        await _dataLayer.Subscribe(store.singleton_id, Enumerable.Empty<string>(), stoppingToken);
                         count++;
                     }
 
                     // add mirror if we are a mirror server, have a mirror host uri, and have enough funding
-                    if (addMirrors && mirrorUris.Any() && haveFunds)
+                    if (addMirrors && myMirrorUris.Any() && haveFunds)
                     {
                         // before mirroring check we have enough funds
-                        if (!await AddMirror(id, reserveAmount, fee, mirrorUris, stoppingToken))
+                        if (!await AddMirror(store.singleton_id, reserveAmount, fee, myMirrorUris, stoppingToken))
                         {
                             _logger.LogWarning("Insufficient funds to add mirror. Pausing mirroring for now.");
                             // if we are out of funds to add mirrors, stop trying but continue subscribing

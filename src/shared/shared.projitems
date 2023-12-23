@@ -19,6 +19,8 @@
         <Compile Include="$(MSBuildThisFileDirectory)Services\DynDnsService.cs" />
         <Compile Include="$(MSBuildThisFileDirectory)Services\AppStorage.cs" />
         <Compile Include="$(MSBuildThisFileDirectory)Services\LoginManager.cs" />
+        <Compile Include="$(MSBuildThisFileDirectory)Models\PageRecord.cs" />
+        <Compile Include="$(MSBuildThisFileDirectory)Models\Store.cs" />
         <Compile Include="$(MSBuildThisFileDirectory)Utils.cs" />
         <Content Include="$(MSBuildThisFileDirectory)appsettings.user.json">
             <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>

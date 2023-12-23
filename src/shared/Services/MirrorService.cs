@@ -1,9 +1,10 @@
 using System.Runtime.CompilerServices;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
+
 namespace dig;
 
-internal sealed class MirrorService(DnsService dnsService,
+public sealed class MirrorService(DnsService dnsService,
                                         IHttpClientFactory httpClientFactory,
                                         ILogger<MirrorService> logger)
 {
@@ -28,7 +29,7 @@ internal sealed class MirrorService(DnsService dnsService,
         return [uri];
     }
 
-    public async IAsyncEnumerable<string> FetchLatest(string uri, [EnumeratorCancellation] CancellationToken stoppingToken)
+    public async IAsyncEnumerable<Store> FetchLatest(string uri, [EnumeratorCancellation] CancellationToken stoppingToken)
     {
         using var _ = new ScopedLogEntry(_logger, $"Fetching latest mirrors from {uri}");
         var currentPage = 1;
@@ -41,7 +42,7 @@ internal sealed class MirrorService(DnsService dnsService,
 
             foreach (var singleton in page.Mirrors)
             {
-                yield return singleton.SingletonId;
+                yield return singleton;
             }
 
             currentPage++;
@@ -66,17 +67,4 @@ internal sealed class MirrorService(DnsService dnsService,
             return new PageRecord();
         }
     }
-}
-
-internal record PageRecord
-{
-    public int TotalCount { get; init; }
-    public int Page { get; init; }
-    public int TotalPages { get; init; }
-    public IEnumerable<SingletonRef> Mirrors { get; init; } = new List<SingletonRef>();
-}
-
-internal record SingletonRef
-{
-    public string SingletonId { get; init; } = string.Empty;
 }

@@ -35,6 +35,9 @@ builder.Services.AddControllersWithViews();
 builder.Services.AddSingleton<ChiaConfig>()
     .AddHttpClient()
     .AddSingleton<GatewayService>()
+    .AddSingleton<DnsService>()
+    .AddSingleton<MirrorService>()
+    .AddSingleton<StoreRegistryService>()
     .AddSingleton(provider => new DataLayerProxy(provider.GetRequiredKeyedService<IRpcClient>("data_layer"), "dig.server"))
     .AddEndpointsApiExplorer()
     .AddSwaggerGen()
@@ -94,5 +97,8 @@ app.MapControllers();
 
 var server = new Server(app.Services.GetRequiredService<ILogger<Server>>());
 server.Start();
+
+var registry = app.Services.GetRequiredService<StoreRegistryService>();
+Task.Run(() => registry.Refresh());
 
 app.Run();
