@@ -6,7 +6,15 @@ Chia expressed as a webserver
 
 ## Introduction
 
-DIG is a web 2 gateway for content hosted on the [chia datalayer](https://www.chia.net/datalayer/). 
+DIG is a web 2 gateway for content hosted on the [chia datalayer](https://www.chia.net/datalayer/). Each DIG node will soon(tm) become part of a mesh network of content hosts, that work together to create a fully decentralized, p2p, and verifiable content delivery network. 
+
+## Getting Started
+
+Today you can host a DIG node and mirror data layer stores of your choosing. The following assumes you have a passing familiairty with [running chia](https://docs.chia.net/introduction/). DIG allows access to the dtata layer on the internet, but [chia data layer](https://docs.chia.net/guides/datalayer-user-guide/) stores and synchornizes the data. You will need a chia node with the `data_layer` service running. `data_layer_http` is not required but encouraged. 
+
+### Build
+
+### Install
 
 ___
 
