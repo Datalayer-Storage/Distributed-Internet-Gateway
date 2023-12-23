@@ -1,4 +1,5 @@
 using Microsoft.Extensions.Caching.Memory;
+using System.Reflection;
 using chia.dotnet;
 
 namespace dig.server;
@@ -19,7 +20,13 @@ public sealed class GatewayService(DataLayerProxy dataLayer,
     {
         return new WellKnown(xch_address: _configuration.GetValue("dig:XchAddress", "")!,
                               known_stores_endpoint: $"{baseUri}/.well-known/known_stores",
-                              donation_address: _configuration.GetValue("dig:DonationAddress", "")!);
+                              donation_address: _configuration.GetValue("dig:DonationAddress", "")!,
+                              server_version: GetAssemblyVersion());
+    }
+
+    private static string GetAssemblyVersion()
+    {
+        return Assembly.GetExecutingAssembly().GetName().Version?.ToString() ?? "0.0.0";
     }
 
     public async Task<IEnumerable<string>> GetKnownStores()
