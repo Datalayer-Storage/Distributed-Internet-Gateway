@@ -17,7 +17,7 @@ public class WellKnownController(GatewayService gatewayService) : ControllerBase
         return Ok(result);
     }
 
-    [HttpGet(".well-known/mirrors")]
+    [HttpGet(".well-known/known_stores")]
     public async Task<ActionResult<IEnumerable<string>>> GetMirrors()
     {
         try
