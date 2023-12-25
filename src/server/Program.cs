@@ -99,6 +99,7 @@ else
 app.UseHttpsRedirection();
 app.UseCors();
 app.MapControllers();
+app.UseStaticFiles();
 
 var server = new Server(app.Services.GetRequiredService<ILogger<Server>>());
 server.Start();

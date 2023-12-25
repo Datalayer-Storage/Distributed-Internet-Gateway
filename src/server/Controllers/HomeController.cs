@@ -11,6 +11,10 @@ public class HomeController(GatewayService gatewayService) : Controller
     public async Task<IActionResult> Index()
     {
         var stores = await _gatewayService.GetKnownStoresWithNames();
+        var request = HttpContext.Request;
+
+        ViewBag.WellKnown = _gatewayService.GetWellKnown($"{request.Scheme}://{request.Host}{request.PathBase}");
+
         return View(stores.OrderBy(s => s.verified_name));
     }
 }

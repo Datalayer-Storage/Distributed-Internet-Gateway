@@ -10,12 +10,9 @@ public class WellKnownController(GatewayService gatewayService) : ControllerBase
     public ActionResult<WellKnown> Get()
     {
         var request = HttpContext.Request;
-        var host = request.Host;
-        var protocol = request.Scheme;
-        var pathBase = request.PathBase;
-        var result = _gatewayService.GetWellKnown($"{protocol}://{host}{pathBase}");
+        var wellKnown = _gatewayService.GetWellKnown($"{request.Scheme}://{request.Host}{request.PathBase}");
 
-        return Ok(result);
+        return Ok(wellKnown);
     }
 
     [HttpGet(".well-known/known_stores")]

@@ -38,12 +38,12 @@ public partial class StoresController(GatewayService gatewayService,
                 if (decodedKeys != null && decodedKeys.Count > 0 && decodedKeys.Contains("index.html") && showKeys != true)
                 {
                     var html = await _gatewayService.GetValueAsHtml(storeId, cancellationToken);
-                    if (html is null)
+                    if (html is not null)
                     {
-                        return NotFound();
+                        return Content(html, "text/html");
                     }
 
-                    return Content(html, "text/html");
+                    return NotFound();
                 }
 
                 return Ok(decodedKeys);
