@@ -10,6 +10,8 @@
 *.userosscache
 *.sln.docstates
 
+appsettings.Production.json
+
 .env
 nuget.config
 
