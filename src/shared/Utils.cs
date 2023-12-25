@@ -1,5 +1,7 @@
 using System.Text.Json;
 using System.Text.RegularExpressions;
+using System.Dynamic;
+
 namespace dig;
 
 
@@ -33,22 +35,21 @@ internal static class Utils
 
     public static bool TryParseJson(string strInput, out dynamic? v)
     {
+        v = null;
+
         try
         {
             strInput = strInput.Trim();
             if (strInput.StartsWith('{') && strInput.EndsWith('}') || //For object
                 strInput.StartsWith('[') && strInput.EndsWith(']')) //For array
             {
-                v = JsonSerializer.Deserialize<dynamic>(strInput) ?? throw new Exception("Couldn't deserialize JSON");
-
-                return true;
+                v = JsonSerializer.Deserialize<ExpandoObject>(strInput);
             }
         }
-        catch (Exception)
+        catch
         {
         }
 
-        v = null;
-        return false;
+        return v is not null;
     }
 }

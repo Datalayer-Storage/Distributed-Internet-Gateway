@@ -38,6 +38,11 @@ public partial class StoresController(GatewayService gatewayService,
                 if (decodedKeys != null && decodedKeys.Count > 0 && decodedKeys.Contains("index.html") && showKeys != true)
                 {
                     var html = await _gatewayService.GetValueAsHtml(storeId, cancellationToken);
+                    if (html is null)
+                    {
+                        return NotFound();
+                    }
+
                     return Content(html, "text/html");
                 }
 
@@ -91,14 +96,19 @@ public partial class StoresController(GatewayService gatewayService,
             var decodedValue = HexUtils.FromHex(rawValue);
             var fileExtension = Path.GetExtension(key);
 
-            if (Utils.TryParseJson(decodedValue, out var json) && json?.type == "multipart")
+            if (Utils.TryParseJson(decodedValue, out var json))
             {
-                string mimeType = GetMimeType(fileExtension) ?? "application/octet-stream";
-                var bytes = await _gatewayService.GetValuesAsBytes(storeId, json, cancellationToken);
+                IDictionary<string, object>? expando = json as IDictionary<string, object>;
+                if (expando is not null && expando.TryGetValue("type", out var type) && type?.ToString() == "multipart")
+                {
+                    string mimeType = GetMimeType(fileExtension) ?? "application/octet-stream";
+                    var bytes = await _gatewayService.GetValuesAsBytes(storeId, json, cancellationToken);
 
-                return Results.File(bytes, mimeType);
+                    return Results.File(bytes, mimeType);
+                }
             }
-            else if (!string.IsNullOrEmpty(fileExtension))
+
+            if (!string.IsNullOrEmpty(fileExtension))
             {
                 string mimeType = GetMimeType(fileExtension) ?? "application/octet-stream";
 

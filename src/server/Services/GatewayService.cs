@@ -84,10 +84,15 @@ public sealed class GatewayService(DataLayerProxy dataLayer,
         }
     }
 
-    public async Task<string> GetValueAsHtml(string storeId, CancellationToken cancellationToken)
+    public async Task<string?> GetValueAsHtml(string storeId, CancellationToken cancellationToken)
     {
         var hexKey = HexUtils.ToHex("index.html");
-        var value = await GetValue(storeId, hexKey, cancellationToken) ?? throw new InvalidOperationException("Couldn't retrieve expected key value");
+        var value = await GetValue(storeId, hexKey, cancellationToken);
+        if (value is null)
+        {
+            return null; // 404 in the api
+        }
+
         var decodedValue = HexUtils.FromHex(value);
         storeId = System.Net.WebUtility.HtmlEncode(storeId); // just in case
         var baseTag = $"<base href=\"/{storeId}/\">"; // Add the base tag
