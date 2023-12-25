@@ -1,3 +1,4 @@
+@using System.Globalization
 @model IEnumerable<Store>
 @{
     Layout = "_Layout";
@@ -5,12 +6,25 @@
 
 <h1>Known Store List</h1>
 <cache enabled="true" expires-after="@TimeSpan.FromMinutes(15)">
-    <ul>
+    <div class="list-group list-group-numbered">
         @foreach (var store in Model)
         {
-            <li>
-                <a target="_blank" href="@store.singleton_id">@store.verified_name</a>
-            </li>
+            <div class="list-group-item list-group-item-action d-flex justify-content-between align-items-start">
+                <div class="ms-2 me-auto">
+                    <div class="fw-bold">
+                        <a class="stretched-link" href="@store.singleton_id">@store.display_name</a>
+                        @if (store.is_verified)
+                        {
+                            <span class="text-success ms-2"><i class="bi bi-check-lg"></i></span>
+                        }
+                    </div>
+                    <div class="fw-lighter fs-7 d-inline-block text-truncate">@store.singleton_id</div>
+                </div>
+                @if (store.bytes > 0)
+                {
+                    <span class="badge bg-primary rounded-pill">@store.bytes_display</span>
+                }
+            </div>
         }
-    </ul>
+        </ul>
 </cache>

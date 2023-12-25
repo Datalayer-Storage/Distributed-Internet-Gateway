@@ -42,7 +42,7 @@ public sealed class GatewayService(DataLayerProxy dataLayer,
     public async Task<IEnumerable<Store>> GetKnownStoresWithNames()
     {
         var stores = await GetKnownStores();
-        return stores.Select(storeId => new Store(_storeRegistryService.GetStoreName(storeId), storeId));
+        return stores.Select(_storeRegistryService.GetStore);
     }
 
     public async Task<IEnumerable<string>?> GetKeys(string storeId, CancellationToken cancellationToken)

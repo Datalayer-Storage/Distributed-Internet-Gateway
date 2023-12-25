@@ -101,8 +101,8 @@ app.UseCors();
 app.MapControllers();
 app.UseStaticFiles();
 
-var server = new Server(app.Services.GetRequiredService<ILogger<Server>>());
-server.Start();
+// var server = new Server(app.Services.GetRequiredService<ILogger<Server>>());
+// server.Start();
 
 var registry = app.Services.GetRequiredService<StoreRegistryService>();
 #pragma warning disable CS4014 // Because this call is not awaited, execution of the current method continues before the call is completed

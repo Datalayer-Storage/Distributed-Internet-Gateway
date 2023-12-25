@@ -7,14 +7,14 @@ public sealed class StoreRegistryService(MirrorService mirrorService,
                                             IConfiguration configuration
                                             )
 {
-    private IDictionary<string, string> _storeNames = new ConcurrentDictionary<string, string>();
+    private IDictionary<string, Store> _storeNames = new ConcurrentDictionary<string, Store>();
     private readonly MirrorService _mirrorService = mirrorService;
     private readonly ILogger<StoreRegistryService> _logger = logger;
     private readonly IConfiguration _configuration = configuration;
 
-    public string GetStoreName(string key)
+    public Store GetStore(string key)
     {
-        return _storeNames.TryGetValue(key, out var name) ? name : key;
+        return _storeNames.TryGetValue(key, out var store) ? store : new Store { singleton_id = key };
     }
 
     public async Task Refresh(CancellationToken cancellationToken = default)
@@ -25,7 +25,8 @@ public sealed class StoreRegistryService(MirrorService mirrorService,
 
             await foreach (var store in _mirrorService.FetchLatest(mirrorListUri, cancellationToken))
             {
-                _storeNames[store.singleton_id] = string.IsNullOrEmpty(store.verified_name) ? store.singleton_id : store.verified_name;
+                // if there is no verified_name use the singleton_id as the name
+                _storeNames[store.singleton_id] = store;
             }
         }
         catch (Exception ex)
@@ -33,5 +34,4 @@ public sealed class StoreRegistryService(MirrorService mirrorService,
             _logger.LogError(ex, "{Message}", ex.Message);
         }
     }
-
 }
