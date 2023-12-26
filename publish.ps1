@@ -19,7 +19,7 @@ function Publish-Project {
         [string]$runtime
     )
 
-    dotnet clean ./$src/$name/$name.csproj -c Release -r $runtime -f $framework
+    # dotnet clean ./$src/$name/$name.csproj -c Release -r $runtime -f $framework
 
     dotnet restore ./$src/$name/$name.csproj -r $runtime
 

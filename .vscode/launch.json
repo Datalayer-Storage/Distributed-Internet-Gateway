@@ -23,7 +23,7 @@
       "request": "launch",
       "preLaunchTask": "build",
       "program": "${workspaceFolder}/src/dig/bin/Debug/net8.0/dig.dll",
-      "args": ["stores", "sync", "-r", "300000002"],
+      "args": ["stores", "sync", "-r", "300000002", "--prune", "-f", "5000000"],
       "cwd": "${workspaceFolder}/src/dig",
       "console": "integratedTerminal",
       "stopAtEntry": false,

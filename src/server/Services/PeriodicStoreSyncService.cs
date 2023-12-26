@@ -19,14 +19,14 @@ internal sealed class PeriodicStoreSyncService(StoreSyncService syncService,
             {
                 // set/reset the delay period (default to once a day)
                 var period = _configuration.GetValue("dig:StoreSyncIntervalMinutes", 1440);
-
                 var mirrorListUri = _configuration.GetValue("dig:DataLayerStorageUri", "https://api.datalayer.storage/") + "mirrors/v1/list_all";
                 var reserveAmount = _configuration.GetValue<ulong>("dig:AddMirrorAmount", 300000001);
                 var addMirrors = _configuration.GetValue("dig:MirrorServer", true);
+                var pruneStores = _configuration.GetValue("dig:PruneStores", false);
                 var defaultFee = _configuration.GetValue<ulong>("dig:DefaultFee", 500000);
 
-                var newCount = await _syncService.SyncStores(mirrorListUri, reserveAmount, addMirrors, defaultFee, stoppingToken);
-                if (newCount < 0)
+                var (addedCount, removedCount, message) = await _syncService.SyncStores(mirrorListUri, reserveAmount, addMirrors, pruneStores, defaultFee, stoppingToken);
+                if (message is not null)
                 {
                     // try sooner than regular if the DL is busy
                     period = _configuration.GetValue("dig:DataLayerBusyRetryMinutes", 60);
