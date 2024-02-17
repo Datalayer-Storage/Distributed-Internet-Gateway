@@ -14,6 +14,7 @@ builder.Configuration.AddJsonFile(path, optional: true);
 var appStorage = new AppStorage(".distributed-internet-gateway");
 builder.Configuration.AddJsonFile(appStorage.UserSettingsFilePath, optional: true);
 
+// configure services
 builder.Services.AddSingleton<StoreManager>()
     .AddSingleton<DynDnsService>()
     .AddSingleton<HostManager>()

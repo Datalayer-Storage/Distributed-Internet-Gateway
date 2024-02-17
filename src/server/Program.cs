@@ -43,7 +43,7 @@ builder.Services.AddSingleton<ChiaConfig>()
     .AddSwaggerGen()
     .AddMemoryCache();
 
-builder.Services.AddRpcEndpoint("data_layer").AddStandardResilienceHandler();
+builder.Services.AddRpcEndpoint("data_layer"); //.AddStandardResilienceHandler();
 builder.Services.AddHttpClient("datalayer.storage", c =>
 {
     c.BaseAddress = new Uri(builder.Configuration.GetValue("dig:DataLayerStorageUri", "https://api.datalayer.storage/")!);

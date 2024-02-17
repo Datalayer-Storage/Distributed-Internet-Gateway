@@ -12,5 +12,5 @@ wix extension add -g WixToolset.UI.wixext
 The build command is
 
 ```powwershell
-dotnet build ./MsiInstaller/MsiInstaller.wixproj -c Release -r win-x64 --output $outputRoot
+dotnet build ./Installer/Windows/MsiInstaller.wixproj -c Release -r win-x64 --output $outputRoot
 ```

@@ -15,6 +15,7 @@ internal sealed class ChiaConfig(ILogger<ChiaConfig> logger, IConfiguration conf
         var configPath = _configuration.GetValue("ChiaConfigPath", "");
         if (!string.IsNullOrEmpty(configPath))
         {
+            _logger.LogInformation("Using chia config from command line {configPath}", configPath);
             return configPath;
         }
 
@@ -22,9 +23,11 @@ internal sealed class ChiaConfig(ILogger<ChiaConfig> logger, IConfiguration conf
         configPath = _configuration.GetValue("dig:ChiaConfigPath", "");
         if (!string.IsNullOrEmpty(configPath))
         {
+            _logger.LogInformation("Using chia config {configPath}", configPath);
             return configPath;
         }
 
+        _logger.LogWarning("Using default chia config path that will be user home rooted.");
         return null;
     }
 

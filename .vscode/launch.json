@@ -104,7 +104,9 @@
       "request": "launch",
       "preLaunchTask": "build",
       "program": "${workspaceFolder}/src/server/bin/Debug/net8.0/dig.server.dll",
-      "args": [],
+      "args": [
+        "C:\\Users\\don\\.distributed-internet-gateway\\appsettings.user.json"
+      ],
       "cwd": "${workspaceFolder}/src/server",
       "console": "integratedTerminal",
       "stopAtEntry": false,

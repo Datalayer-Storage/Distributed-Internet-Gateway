@@ -5,11 +5,11 @@
     and use the current user name to set the config file path.
     The service runs as local system but will use that config file
 
-    sc.exe config "Decentralized-Internet-Gateway" binPath="C:\Program Files\<path to>\dig.server.exe <full path to config file>"
+    sc.exe config "Distributed-Internet-Gateway" binPath="C:\Program Files\<path to>\dig.server.exe <full path to config file>"
 -->
 
 <!-- Define the variables in "$(var.*) expressions" -->
-<?define Name = "Decentralized Internet Gateway" ?>
+<?define Name = "Distributed Internet Gateway" ?>
 <?define Manufacturer = "DataLayer-Storage" ?>
 <?define UpgradeCode = "03F1BEDD-16CD-436A-A0FC-D332DD75ABA3" ?>
 <?define SourcePath="..\..\..\publish\standalone\win-x64" ?>
@@ -50,23 +50,27 @@
                 <RemoveFile Id="ALLFILES" Name="*.*" On="both" />
 
                 <!-- Tell WiX to install the Service -->
-                <ServiceInstall Id="ServiceInstaller" Type="ownProcess" Name="DecentralizedInternetGateway" DisplayName="$(Name)" Description="The Decentralized Internet Gateway expresses chia as a webite." Start="auto" Account="LocalSystem" ErrorControl="normal" Arguments='"[%HOMEDRIVE][%HOMEPATH]\.chia\mainnet\config\config.yaml"'/>
+                <ServiceInstall Id="ServiceInstaller" Type="ownProcess" Name="DistributedInternetGateway" DisplayName="$(Name)" Description="The Distributed Internet Gateway expresses chia as a webite." Start="auto" Account="LocalSystem" ErrorControl="normal" Arguments='"[%HOMEDRIVE][%HOMEPATH]\.distributed-internet-gateway\appsettings.user.json"'/>
 
                 <!-- Tell WiX to start the Service -->
-                <ServiceControl Id="StartService" Start="install" Stop="both" Remove="uninstall" Name="DecentralizedInternetGateway" Wait="true"/>
+                <ServiceControl Id="StartService" Start="install" Stop="both" Remove="uninstall" Name="DistributedInternetGateway" Wait="true"/>
             </Component>
             <Component Id="CLI" Bitness="always64">
                 <!-- Copies the dig.server.exe file using the project reference preprocessor variables -->
                 <File Id="dig.exe" Source="$(var.SourcePath)\dig.exe" KeyPath="true" />
             </Component>
+            <Component Id="ChiaConfigPath" Guid="{623464f9-33d3-45df-b4fa-c9ceba5429a5}">
+                <Environment Id="ChiaConfigPathVariable" Name="dig:ChiaConfigPath" Value="[%HOMEDRIVE][%HOMEPATH]\.chia\mainnet\config\config.yaml" Permanent="yes" Part="all" Action="set" System="yes"/>
+            </Component>
         </DirectoryRef>
 
         <!-- Tell WiX to install the files -->
-        <Feature Id="Service" Title="Decentralized Internet Gateway Service Setup" Level="1">
+        <Feature Id="Service" Title="Distributed Internet Gateway Service Setup" Level="1">
             <ComponentRef Id="ServiceExecutable" />
             <ComponentRef Id="AppSettings" />
             <ComponentRef Id="CLI" />
             <ComponentRef Id="WebConfig" />
+            <ComponentRef Id="ChiaConfigPath" />
         </Feature>
 
     </Package>
