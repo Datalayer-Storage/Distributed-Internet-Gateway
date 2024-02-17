@@ -17,6 +17,9 @@ if (OperatingSystem.IsWindows())
     LoggerProviderOptions.RegisterProviderOptions<EventLogSettings, EventLogLoggerProvider>(builder.Services);
 }
 
+var path = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "appsettings.json");
+builder.Configuration.AddJsonFile(path, optional: true);
+
 // we can take the path to an appsettings.json file as an argument
 // if not provided, the default appsettings.json will be used and settings
 // will come from there or from environment variables
