@@ -14,7 +14,7 @@ function Create-WixId([string]$name) {
     return $validId
 }
 
-function Get-SourcePath($file) {
+function Get-SourcePath([string]$file) {
     # Substring to find the last occurrence of
     $substring = "wwwroot"
 
@@ -41,9 +41,10 @@ function Create-WixFileComponent($file, $parentId) {
     $guid = New-Guid
     $relativePath = Get-SourcePath $file.FullName
     return @"
-        <Component Id="$fileId" Guid="$guid">
-            <File Id="file_$fileId" Source="`$(var.SourcePath)\$relativePath" KeyPath="yes" />
-        </Component>
+
+    <Component Id="$fileId" Guid="$guid">
+        <File Id="file_$fileId" Source="`$(var.SourcePath)\$relativePath" KeyPath="yes" />
+    </Component>
 "@
 }
 
@@ -57,6 +58,7 @@ function Create-WixElements($directories, $parentId) {
             $dirId = "$parentId.$dirId" # Ensure unique ID for nested directories
         }
         $wixElements += @"
+
     <Directory Id="$dirId" Name="$dirName">
 "@
         $files = Get-ChildItem -Path $dir.FullName -File
@@ -76,16 +78,14 @@ function Create-WixElements($directories, $parentId) {
 $wixContent = @"
 <?xml version="1.0" encoding="UTF-8"?>
 <?define SourcePath="..\..\..\publish\standalone\win-x64" ?>
-<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs">
-    <Fragment>
+<Include xmlns="http://wixtoolset.org/schemas/v4/wxs">
 "@
 
 # Create the Directory element for the sourceDirectory itself
 $wwwrootDirName = Split-Path -Leaf $sourceDirectory
 $wwwrootDirId = Create-WixId $wwwrootDirName
 $wixContent += @"
-        <DirectoryRef Id="TARGETDIR">
-            <Directory Id="$wwwrootDirId" Name="$wwwrootDirName">
+    <Directory Id="$wwwrootDirId" Name="$wwwrootDirName">
 "@
 
 # Create components for files directly in sourceDirectory
@@ -100,10 +100,8 @@ $wixContent += Create-WixElements $rootDirs $wwwrootDirId
 
 # Close the Directory for sourceDirectory and the WiX file content with footer
 $wixContent += @"
-            </Directory>
-        </DirectoryRef>
-    </Fragment>
-</Wix>
+    </Directory>
+</Include>
 "@
 
 # Output the content to the file
