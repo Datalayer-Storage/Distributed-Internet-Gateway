@@ -1,4 +1,5 @@
 using chia.dotnet;
+
 namespace dig;
 
 internal sealed class ChiaService(FullNodeProxy fullNode,
@@ -21,6 +22,7 @@ internal sealed class ChiaService(FullNodeProxy fullNode,
             using var _ = new ScopedLogEntry(_logger, "Getting fee estimate");
             int[] targetTimes = [_configuration.GetValue("dig:FeeEstimateTargetTimeMinutes", 5) * 60];
             var fee = await _fullNode.GetFeeEstimate(cost, targetTimes, stoppingToken);
+
             return fee.estimates.First();
         }
         catch (Exception ex)

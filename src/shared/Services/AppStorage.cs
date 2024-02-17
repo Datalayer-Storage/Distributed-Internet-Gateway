@@ -17,7 +17,7 @@ internal class AppStorage
             if (File.Exists(sourceFileName))
             {
                 // create the user settings file if it doesn't exit already
-                File.Copy(sourceFileName, Path.Combine(_folderPath, "appsettings.user.json"), false);
+                File.Copy(sourceFileName, UserSettingsFilePath, false);
             }
         }
         catch (Exception ex)
@@ -25,6 +25,9 @@ internal class AppStorage
             System.Diagnostics.Debug.WriteLine(ex.Message);
         }
     }
+
+    public string UserSettingsFilePath => Path.Combine(_folderPath, "appsettings.user.json");
+
     public void Save(string name, string value)
     {
         try

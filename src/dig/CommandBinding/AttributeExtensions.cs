@@ -35,6 +35,10 @@ internal static class AttributeExtensions
     {
         var command = new Command(commandAttr.Name, commandAttr.Description);
 
+        //
+        // this is where all of the attribute values are bound to the command object instance
+        //
+
         // get all the options for the command
         foreach (var (property, optionAttribute) in type.GetAttributedProperties<OptionAttribute>())
         {
@@ -84,7 +88,7 @@ internal static class AttributeExtensions
         if (target is not null)
         {
             var binder = services.GetRequiredService<ContextBinder>();
-            Handler.SetHandler(command, (context) => binder.BindToContext(command, context, target, services));
+            Handler.SetHandler(command, (context) => binder.BindToContext(command, context, target));
         }
 
         parent.AddCommand(command);

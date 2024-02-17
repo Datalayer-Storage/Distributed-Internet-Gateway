@@ -22,10 +22,11 @@ internal sealed class PeriodicStoreSyncService(StoreSyncService syncService,
                 var mirrorListUri = _configuration.GetValue("dig:DataLayerStorageUri", "https://api.datalayer.storage/") + "mirrors/v1/list_all";
                 var reserveAmount = _configuration.GetValue<ulong>("dig:AddMirrorAmount", 300000001);
                 var addMirrors = _configuration.GetValue("dig:MirrorServer", true);
-                var pruneStores = _configuration.GetValue("dig:PruneStores", false);
+                var pruneStores = _configuration.GetValue("dig:PruneStores", true);
+                var knownOnly = _configuration.GetValue("dig:KnownOnly", true);
                 var defaultFee = _configuration.GetValue<ulong>("dig:DefaultFee", 500000);
 
-                var (addedCount, removedCount, message) = await _syncService.SyncStores(mirrorListUri, reserveAmount, addMirrors, pruneStores, defaultFee, stoppingToken);
+                var (addedCount, removedCount, message) = await _syncService.SyncStores(mirrorListUri, reserveAmount, addMirrors, pruneStores, knownOnly, defaultFee, stoppingToken);
                 if (message is not null)
                 {
                     // try sooner than regular if the DL is busy

@@ -6,6 +6,14 @@ using System.CommandLine.Builder;
 using System.CommandLine.Parsing;
 
 var builder = Host.CreateApplicationBuilder(args);
+
+// the non-web app builder doesn't bind to settings files automatically
+var path = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "appsettings.json");
+builder.Configuration.AddJsonFile(path, optional: true);
+
+var appStorage = new AppStorage(".distributed-internet-gateway");
+builder.Configuration.AddJsonFile(appStorage.UserSettingsFilePath, optional: true);
+
 builder.Services.AddSingleton<StoreManager>()
     .AddSingleton<DynDnsService>()
     .AddSingleton<HostManager>()
@@ -16,7 +24,7 @@ builder.Services.AddSingleton<StoreManager>()
     .AddSingleton<MirrorService>()
     .AddSingleton<ChiaService>()
     .AddSingleton<StoreSyncService>()
-    .AddSingleton((provider) => new AppStorage(".distributed-internet-gateway"))
+    .AddSingleton((provider) => appStorage)
     .AddHttpClient()
     .AddSingleton(provider => new DataLayerProxy(provider.GetRequiredKeyedService<IRpcClient>("data_layer"), "dig.server"))
     .AddSingleton(provider => new FullNodeProxy(provider.GetRequiredKeyedService<IRpcClient>("full_node"), "dig.server"))

@@ -24,7 +24,7 @@ public sealed class MirrorService(DnsService dnsService,
         var uri = await _dnsService.GetHostUri(cancellationToken);
         if (string.IsNullOrEmpty(uri))
         {
-            return Enumerable.Empty<string>();
+            return [];
         }
         return [uri];
     }

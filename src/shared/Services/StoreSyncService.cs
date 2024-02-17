@@ -1,4 +1,3 @@
-using System.Security;
 using chia.dotnet;
 
 namespace dig;
@@ -15,7 +14,13 @@ internal sealed class StoreSyncService(DataLayerProxy dataLayer,
     private readonly ILogger<StoreSyncService> _logger = logger;
     private readonly IConfiguration _configuration = configuration;
 
-    public async Task<(int addedCount, int removedCount, string? message)> SyncStores(string mirrorListUri, ulong reserveAmount, bool addMirrors, bool prune, ulong defaultFee, CancellationToken stoppingToken)
+    public async Task<(int addedCount, int removedCount, string? message)> SyncStores(string mirrorListUri,
+                                                                                        ulong reserveAmount,
+                                                                                        bool addMirrors,
+                                                                                        bool prune,
+                                                                                        bool knownOnly,
+                                                                                        ulong defaultFee,
+                                                                                        CancellationToken stoppingToken)
     {
         using var _ = new ScopedLogEntry(_logger, "Syncing subscriptions.");
 
@@ -37,14 +42,14 @@ internal sealed class StoreSyncService(DataLayerProxy dataLayer,
             _logger.LogInformation("Using mirror uri: {mirrorUris}", string.Join(", ", myMirrorUris));
 
             var haveFunds = true;
-            var remoteStoreList = await _mirrorService.FetchLatest(mirrorListUri, stoppingToken).ToListAsync();
-            foreach (var store in remoteStoreList)
+            var remoteStoreList = await _mirrorService.FetchLatest(mirrorListUri, stoppingToken).ToListAsync(cancellationToken: stoppingToken);
+            foreach (var store in remoteStoreList.Where(store => !knownOnly || (knownOnly && store.is_verified)))
             {
                 // don't subscribe or mirror our owned stores
                 if (!ownedStores.Contains(store.singleton_id))
                 {
                     var addResult = await AddStore(store, subscriptions, reserveAmount, fee, haveFunds, addMirrors, myMirrorUris, stoppingToken);
-                    addedStoreCount+= addResult.addedCount;
+                    addedStoreCount += addResult.addedCount;
                     haveFunds = addResult.haveFunds;
                 }
             }
@@ -56,6 +61,12 @@ internal sealed class StoreSyncService(DataLayerProxy dataLayer,
                 {
                     // if we have a subscription that isn't in the remote list, remove it
                     if (!remoteStoreList.Any(store => store.singleton_id == subscription))
+                    {
+                        await RemoveStore(fee, subscription, stoppingToken);
+                        removedCount++;
+                    }
+                    // also remove any unverified stores if we are only interested in known stores
+                    else if (knownOnly && remoteStoreList.Any(store => store.singleton_id == subscription && !store.is_verified))
                     {
                         await RemoveStore(fee, subscription, stoppingToken);
                         removedCount++;
