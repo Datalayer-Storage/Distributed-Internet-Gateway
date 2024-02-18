@@ -10,6 +10,7 @@
     </PropertyGroup>
     <ItemGroup>
         <Compile Include="$(MSBuildThisFileDirectory)Services\MirrorService.cs" />
+        <Compile Include="$(MSBuildThisFileDirectory)Services\IServer.cs" />
         <Compile Include="$(MSBuildThisFileDirectory)RpcEndpointConfiguration.cs" />
         <Compile Include="$(MSBuildThisFileDirectory)ScopedLogEntry.cs" />
         <Compile Include="$(MSBuildThisFileDirectory)Services\ChiaConfig.cs" />

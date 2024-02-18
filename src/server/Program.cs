@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.DataProtection;
 using chia.dotnet;
 using dig;
 using dig.server;
+using EasyPipes;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -37,6 +38,7 @@ builder.Services.AddControllersWithViews();
 
 builder.Services.AddSingleton<ChiaConfig>()
     .AddHttpClient()
+    .AddActivatedSingleton<IServer, ServerService>()
     .AddSingleton<GatewayService>()
     .AddSingleton<DnsService>()
     .AddSingleton<MirrorService>()
@@ -104,8 +106,9 @@ app.UseCors();
 app.MapControllers();
 app.UseStaticFiles();
 
-// var server = new Server(app.Services.GetRequiredService<ILogger<Server>>());
-// server.Start();
+var server = new Server("dig.server.ipc");
+server.RegisterService(app.Services.GetRequiredService<IServer>());
+server.Start();
 
 var registry = app.Services.GetRequiredService<StoreRegistryService>();
 #pragma warning disable CS4014 // Because this call is not awaited, execution of the current method continues before the call is completed
@@ -113,3 +116,4 @@ Task.Run(() => registry.Refresh()); // run this in the background
 #pragma warning restore CS4014 // Because this call is not awaited, execution of the current method continues before the call is completed
 
 app.Run();
+server.Stop();

@@ -1,31 +1,24 @@
-namespace dig;
+using EasyPipes;
 
-using System.IO;
-using System.IO.Pipes;
+namespace dig;
 
 internal sealed class StopCommand()
 {
     [CommandTarget]
     public async Task<int> Execute(ILogger<StopCommand> logger)
     {
-        try
+        await Task.CompletedTask;
+
+        if (ServerProcess.GetIsRunning())
         {
-            using var client = new NamedPipeClientStream(".", "dig.server.ipc", PipeDirection.Out);
-            client.Connect(TimeSpan.FromSeconds(1));
-            using var writer = new StreamWriter(client);
-            await writer.WriteLineAsync("stop");
-            await writer.FlushAsync();
-            Console.WriteLine("Server stopped.");
+            Console.WriteLine($"Stopping server...");
+            ServerProcess.Stop();
+            Console.WriteLine($"Server stopped.");
         }
-        catch (TimeoutException)
+        else
         {
-            Console.WriteLine("Server is not running.");
-            return -1;
-        }
-        catch (Exception ex)
-        {
-            logger.LogError(ex, "Failed to stop server cleanly.");
-            return -1;
+            Console.WriteLine("Server isn't running.");
+            return 1;
         }
 
         return 0;

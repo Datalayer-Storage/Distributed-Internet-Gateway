@@ -1,7 +1,7 @@
 namespace dig;
 
 using System.IO;
-using System.IO.Pipes;
+using EasyPipes;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 
@@ -25,18 +25,23 @@ internal static class ServerProcess
         process.Start();
     }
 
-    public static async Task<bool> GetIsRunning()
+    public static void Stop()
+    {
+        var client = new Client("dig.server.ipc");
+        var server = client.GetServiceProxy<IServer>();
+
+        Console.WriteLine($"Stopping server...");
+        server.Stop();
+    }
+
+    public static bool GetIsRunning()
     {
         try
         {
-            using var client = new NamedPipeClientStream(".", "dig.server.ipc", PipeDirection.InOut);
-            client.Connect(TimeSpan.FromSeconds(1));
-            using var writer = new StreamWriter(client);
-            await writer.WriteLineAsync("hello");
-            await writer.FlushAsync();
-            using StreamReader reader = new(client);
-            var line = await reader.ReadLineAsync();
-            return true;
+            var client = new Client("dig.server.ipc");
+            var server = client.GetServiceProxy<IServer>();
+
+            return server.Ping();
         }
         catch
         {
