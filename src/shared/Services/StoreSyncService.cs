@@ -85,7 +85,6 @@ internal sealed class StoreSyncService(DataLayerProxy dataLayer,
 
     private async Task RemoveStore(ulong fee, string store, CancellationToken stoppingToken)
     {
-        _logger.LogInformation("Pruning {id}", store);
         var mirrors = await _dataLayer.GetMirrors(store, stoppingToken);
 
         foreach (var mirror in mirrors.Where(m => m.Ours))
@@ -93,6 +92,8 @@ internal sealed class StoreSyncService(DataLayerProxy dataLayer,
             _logger.LogInformation("Removing mirror for {subscription}", store);
             await _dataLayer.DeleteMirror(mirror.CoinId, fee, stoppingToken);
         }
+
+        _logger.LogInformation("Unsubscribing from {subscription}", store);
         await _dataLayer.Unsubscribe(store, false, stoppingToken);
     }
 
