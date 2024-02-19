@@ -1,9 +1,9 @@
-namespace dig.cli;
+namespace dig;
 
-[Command("server", Description = "Manage the gateway server.")]
+[Command("server", Description = "Manage the local gateway server.")]
 internal sealed class ServerCommands
 {
-    [Command("check", Description = "Check the server.")]
+    [Command("check", Description = "Check the status of the server.")]
     public CheckServerCommand Check { get; init; } = new();
 
     [Command("start", Description = "Start the server in a new process.")]

@@ -7,7 +7,7 @@ using System.Runtime.InteropServices;
 
 internal static class ServerProcess
 {
-    public static void Start(string? settings)
+    public static void Start(string? settingsFilePath)
     {
         string programName = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? "dig.server.exe" : "dig.server";
         string programPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, programName);
@@ -17,8 +17,8 @@ internal static class ServerProcess
             StartInfo = new ProcessStartInfo
             {
                 FileName = programPath,
-                UseShellExecute = true, // This will make the process not be a child process
-                Arguments = settings is not null ? $"\"{settings}\"" : string.Empty
+                UseShellExecute = true, // This will prevent creating a child process
+                Arguments = settingsFilePath is not null ? $"\"{settingsFilePath}\"" : string.Empty
             }
         };
 
@@ -30,7 +30,6 @@ internal static class ServerProcess
         var client = new Client("dig.server.ipc");
         var server = client.GetServiceProxy<IServer>();
 
-        Console.WriteLine($"Stopping server...");
         server.Stop();
     }
 
