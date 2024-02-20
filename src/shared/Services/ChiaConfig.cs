@@ -1,19 +1,21 @@
 using chia.dotnet;
+
 namespace dig;
 
 /// <summary>
 /// Provides methods for managing chia connection details.
 /// </summary>
-internal sealed class ChiaConfig(ILogger<ChiaConfig> logger, IConfiguration configuration)
+public sealed class ChiaConfig(ILogger<ChiaConfig> logger, IConfiguration configuration)
 {
     private readonly ILogger<ChiaConfig> _logger = logger;
     private readonly IConfiguration _configuration = configuration;
+    private Config? _config;
 
     public string? GetConfigPath()
     {
         // first see if we have a config file path from the command line
         var configPath = _configuration.GetValue("ChiaConfigPath", "");
-        if (!string.IsNullOrEmpty(configPath))
+        if (!string.IsNullOrEmpty(configPath) && File.Exists(configPath))
         {
             _logger.LogInformation("Using chia config from command line {configPath}", configPath);
             return configPath;
@@ -21,28 +23,44 @@ internal sealed class ChiaConfig(ILogger<ChiaConfig> logger, IConfiguration conf
 
         // then see if we have a config file path in the appsettings.json or environment variable
         configPath = _configuration.GetValue("dig:ChiaConfigPath", "");
-        if (!string.IsNullOrEmpty(configPath))
+        if (!string.IsNullOrEmpty(configPath) && File.Exists(configPath))
         {
-            _logger.LogInformation("Using chia config {configPath}", configPath);
+            _logger.LogInformation("Using chia config from configuration {configPath}", configPath);
             return configPath;
         }
 
-        _logger.LogWarning("Using default chia config path that will be user home rooted.");
+        // and finally default to the chia root environment variable or user home
+        _logger.LogWarning("Using default chia config path that will be CHIA_ROOT or user home rooted.");
         return null;
     }
 
-    public Config GetConfig()
+    public Config? GetConfig()
     {
-        // first see if we have a config file path in the appsettings.json
-        var configPath = GetConfigPath();
-        if (!string.IsNullOrEmpty(configPath))
+        if (_config != null)
         {
-            _logger.LogInformation("Using chia config {configPath}", configPath);
-
-            return Config.Open(configPath);
+            return _config;
         }
 
-        return Config.Open();
+        try
+        {
+            // first see if we have a config file path in the appsettings.json
+            var configPath = GetConfigPath();
+            if (!string.IsNullOrEmpty(configPath))
+            {
+                _logger.LogInformation("Using chia config {configPath}", configPath);
+
+                _config = Config.Open(configPath);
+            }
+
+            // this will throw if there is no chia_root or no ~/.chia directory for the server user
+            _config = Config.Open();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to open chia config");
+        }
+
+        return _config;
     }
 
     public EndpointInfo GetEndpoint(string name)
@@ -53,6 +71,7 @@ internal sealed class ChiaConfig(ILogger<ChiaConfig> logger, IConfiguration conf
         if (!string.IsNullOrEmpty(endpointUri))
         {
             _logger.LogInformation("Connecting to {endpointUri}", endpointUri);
+
             return new EndpointInfo()
             {
                 Uri = new Uri(endpointUri),
@@ -61,10 +80,13 @@ internal sealed class ChiaConfig(ILogger<ChiaConfig> logger, IConfiguration conf
                 Key = _configuration.GetValue($"{name}_key", "")!.Replace("\\n", "\n")
             };
         }
-        else
+        else if (GetConfig() != null)
         {
             // if not present see if we can get it from the config file
-            return GetConfig().GetEndpoint(name);
+            return GetConfig()!.GetEndpoint(name);
         }
+
+        // couldn't find a config so just return an empty endpoint
+        return new EndpointInfo();
     }
 }

@@ -1,19 +1,19 @@
 namespace dig;
 internal class AppStorage
 {
-    private readonly string _folderPath;
+    private readonly string _folderPath = string.Empty;
 
     public AppStorage(string folderName)
     {
-        _folderPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), folderName);
         try
         {
+            _folderPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), folderName);
             if (!Directory.Exists(_folderPath))
             {
                 Directory.CreateDirectory(_folderPath);
             }
 
-            string sourceFileName = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "appsettings.user.json");
+            string sourceFileName = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "appsettings.json");
             if (File.Exists(sourceFileName))
             {
                 // create the user settings file if it doesn't exit already

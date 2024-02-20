@@ -34,12 +34,15 @@ internal static class RpcEndpointConfiguration
         })
         .UseSocketsHttpHandler((socketHandler, provider) =>
         {
-            var chiaConfig = provider.GetRequiredService<ChiaConfig>();
-            var endpoint = chiaConfig.GetEndpoint(name);
-
             socketHandler.PooledConnectionLifetime = TimeSpan.FromMinutes(15);
-            socketHandler.SslOptions.ClientCertificates = endpoint.GetCert();
             socketHandler.SslOptions.RemoteCertificateValidationCallback += ValidateServerCertificate;
+
+            var chiaConfig = provider.GetRequiredService<ChiaConfig>();
+            if (chiaConfig.GetConfig() is not null)
+            {
+                var endpoint = chiaConfig.GetEndpoint(name);
+                socketHandler.SslOptions.ClientCertificates = endpoint.GetCert();
+            }
         });
     }
 

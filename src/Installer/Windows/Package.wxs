@@ -13,6 +13,7 @@
 <?define Manufacturer = "DataLayer-Storage" ?>
 <?define UpgradeCode = "03F1BEDD-16CD-436A-A0FC-D332DD75ABA3" ?>
 <?define SourcePath="..\..\..\publish\standalone\win-x64" ?>
+<?define ThirdPartyPath="..\..\..\thirdparty" ?>
 <Wix xmlns="http://wixtoolset.org/schemas/v4/wxs"
     xmlns:ui="http://wixtoolset.org/schemas/v4/wxs/ui">
 
@@ -36,7 +37,9 @@
         <!-- The files inside this DirectoryRef are linked to the DlMirrorSync directory via INSTALLFOLDER -->
         <DirectoryRef Id="INSTALLFOLDER">
             <?include .\wwwroot.wxi ?>
-
+            <Component Id="ServerCoinExe">
+                <File Id="ServerCoin.Exe" Source="$(var.ThirdPartyPath)\server_coin.exe" KeyPath="true" />
+            </Component>
             <Component Id="AppSettings">
                 <File Id="appsettings.json" Source="$(var.SourcePath)\appsettings.json" KeyPath="true" />
             </Component>
@@ -51,7 +54,7 @@
                 <RemoveFile Id="ALLFILES" Name="*.*" On="both" />
 
                 <!-- Tell WiX to install the Service -->
-                <ServiceInstall Id="ServiceInstaller" Type="ownProcess" Name="DistributedInternetGateway" DisplayName="$(Name)" Description="The Distributed Internet Gateway expresses chia as a webite." Start="auto" Account="LocalSystem" ErrorControl="normal" Arguments='"[%HOMEDRIVE][%HOMEPATH]\.distributed-internet-gateway\appsettings.user.json"'/>
+                <ServiceInstall Id="ServiceInstaller" Type="ownProcess" Name="DistributedInternetGateway" DisplayName="$(Name)" Description="The Distributed Internet Gateway expresses chia as a webite." Start="auto" Account="LocalSystem" ErrorControl="normal" Arguments='"[%HOMEDRIVE][%HOMEPATH]\.dig\appsettings.user.json"'/>
 
                 <!-- Tell WiX to start the Service -->
                 <ServiceControl Id="StartService" Start="install" Stop="both" Remove="uninstall" Name="DistributedInternetGateway" Wait="true"/>
@@ -60,9 +63,6 @@
                 <!-- Copies the dig.server.exe file using the project reference preprocessor variables -->
                 <File Id="dig.exe" Source="$(var.SourcePath)\dig.exe" KeyPath="true" />
             </Component>
-            <Component Id="ChiaConfigPath" Guid="{623464f9-33d3-45df-b4fa-c9ceba5429a5}">
-                <Environment Id="ChiaConfigPathVariable" Name="dig:ChiaConfigPath" Value="[%HOMEDRIVE][%HOMEPATH]\.chia\mainnet\config\config.yaml" Permanent="yes" Part="all" Action="set" System="yes"/>
-            </Component>
         </DirectoryRef>
 
         <!-- Tell WiX to install the files -->
@@ -70,8 +70,8 @@
             <ComponentRef Id="ServiceExecutable" />
             <ComponentRef Id="AppSettings" />
             <ComponentRef Id="CLI" />
+            <ComponentRef Id="ServerCoinExe" />
             <ComponentRef Id="WebConfig" />
-            <ComponentRef Id="ChiaConfigPath" />
             <ComponentRef Id="androidchrome192x192png" />
             <ComponentRef Id="androidchrome512x512png" />
             <ComponentRef Id="appletouchiconpng" />

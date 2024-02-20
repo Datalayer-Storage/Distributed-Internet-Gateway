@@ -13,7 +13,12 @@ public class HomeController(GatewayService gatewayService) : Controller
         var request = HttpContext.Request;
         ViewBag.WellKnown = _gatewayService.GetWellKnown($"{request.Scheme}://{request.Host}{request.PathBase}");
 
-        var stores = await _gatewayService.GetKnownStoresWithNames();
-        return View(stores.OrderByDescending(s => s.is_verified).ThenBy(s => s.verified_name));
+        if (_gatewayService.HaveChiaConfig())
+        {
+            var stores = await _gatewayService.GetKnownStoresWithNames();
+            return View(stores.OrderByDescending(s => s.is_verified).ThenBy(s => s.verified_name));
+        }
+
+        return View(Enumerable.Empty<Store>());
     }
 }

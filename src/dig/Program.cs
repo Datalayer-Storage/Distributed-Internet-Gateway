@@ -5,13 +5,13 @@ using System.CommandLine;
 using System.CommandLine.Builder;
 using System.CommandLine.Parsing;
 
+var appStorage = new AppStorage(".dig");
 var builder = Host.CreateApplicationBuilder(args);
 
 // the non-web app builder doesn't bind to settings files automatically
 var path = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "appsettings.json");
 builder.Configuration.AddJsonFile(path, optional: true);
 
-var appStorage = new AppStorage(".distributed-internet-gateway");
 builder.Configuration.AddJsonFile(appStorage.UserSettingsFilePath, optional: true);
 
 // configure services

@@ -15,7 +15,14 @@ internal sealed class ShowConfigCommand()
         Console.WriteLine($"Chia root path setting: {configPath}");
 
         var config = chiaConfig.GetConfig();
-        Console.WriteLine($"Chia root path actual: {config.ChiaRootPath}");
+        if (config is not null)
+        {
+            Console.WriteLine($"Chia root path actual: {config.ChiaRootPath}");
+        }
+        else
+        {
+            Console.WriteLine("Failed to open chia config");
+        }
 
         using var cancellationSource = new CancellationTokenSource(TimeSpan.FromSeconds(Timeout));
         var hostIp = await dnsService.GetPublicIPAdress(cancellationSource.Token);

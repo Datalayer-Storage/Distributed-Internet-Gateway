@@ -5,12 +5,14 @@ using chia.dotnet;
 namespace dig.server;
 
 public sealed class GatewayService(DataLayerProxy dataLayer,
+                                    ChiaConfig chiaConfig,
                                     StoreRegistryService storeRegistryService,
                                     IMemoryCache memoryCache,
                                     ILogger<GatewayService> logger,
                                     IConfiguration configuration)
 {
     private readonly DataLayerProxy _dataLayer = dataLayer;
+    private readonly ChiaConfig _chiaConfig = chiaConfig;
     private readonly StoreRegistryService _storeRegistryService = storeRegistryService;
     private readonly IMemoryCache _memoryCache = memoryCache;
     private readonly ILogger<GatewayService> _logger = logger;
@@ -24,6 +26,11 @@ public sealed class GatewayService(DataLayerProxy dataLayer,
                               server_version: GetAssemblyVersion());
     }
 
+    public bool HaveChiaConfig()
+    {
+        return _chiaConfig.GetConfig() is not null;
+    }
+
     private static string GetAssemblyVersion()
     {
         return Assembly.GetExecutingAssembly().GetName().Version?.ToString() ?? "0.0.0.0";
@@ -33,10 +40,10 @@ public sealed class GatewayService(DataLayerProxy dataLayer,
     {
         return await _memoryCache.GetOrCreateAsync("known-stores.cache", async entry =>
         {
-            using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(30));
+            using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(_configuration.GetValue("dig:RpcTimeoutSeconds", 30)));
             entry.SlidingExpiration = TimeSpan.FromMinutes(15);
             return await _dataLayer.Subscriptions(cts.Token);
-        }) ?? Enumerable.Empty<string>();
+        }) ?? [];
     }
 
     public async Task<IEnumerable<Store>> GetKnownStoresWithNames()

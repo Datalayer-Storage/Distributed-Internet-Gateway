@@ -10,6 +10,8 @@
 *.userosscache
 *.sln.docstates
 
+thirdparty/
+
 appsettings.Production.json
 
 .env

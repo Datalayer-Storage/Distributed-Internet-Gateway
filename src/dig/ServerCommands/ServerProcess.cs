@@ -12,17 +12,26 @@ internal static class ServerProcess
         string programName = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? "dig.server.exe" : "dig.server";
         string programPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, programName);
 
-        using Process process = new()
+#if DEBUG
+        // when installed the cli and server binaries are in the same folder
+        // from the ide the server is in the project folder tree
+        if (!File.Exists(programPath))
         {
-            StartInfo = new ProcessStartInfo
-            {
-                FileName = programPath,
-                UseShellExecute = true, // This will prevent creating a child process
-                Arguments = settingsFilePath is not null ? $"\"{settingsFilePath}\"" : string.Empty
-            }
-        };
+            programPath = programPath.Replace($"{Path.DirectorySeparatorChar}src{Path.DirectorySeparatorChar}dig", $"{Path.DirectorySeparatorChar}src{Path.DirectorySeparatorChar}server");
+        }
+#endif
+        var p = Process.Start(programPath, settingsFilePath!);
+        // using Process process = new()
+        // {
+        //     StartInfo = new ProcessStartInfo
+        //     {
+        //         FileName = programPath,
+        //         UseShellExecute = true, // This will prevent creating a child process
+        //         Arguments = settingsFilePath is not null ? $"\"{settingsFilePath}\"" : string.Empty
+        //     }
+        // };
 
-        process.Start();
+        // var started = process.Start();
     }
 
     public static void Stop()

@@ -5,6 +5,14 @@
 }
 
 <h1>Known Store List</h1>
+@if (Model.Count() == 0)
+{
+    <div class="container list-group-item list-group-item-action d-flex align-items-start">
+        <div class="ms-2 me-auto text-truncate">
+            <div class="fw-bold">No known stores or CHIA_ROOT not set</div>
+        </div>
+    </div>
+}
 <cache enabled="true" expires-after="@TimeSpan.FromMinutes(15)">
     <div class="list-group list-group-numbered">
         @foreach (var store in Model)
