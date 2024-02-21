@@ -13,7 +13,7 @@ internal static class RpcEndpointConfiguration
         services.AddKeyedSingleton<IRpcClient>(name, (provider, key) =>
         {
             var chiaConfig = provider.GetRequiredService<ChiaConfig>();
-            var endpoint = chiaConfig.GetEndpoint(name);
+            var endpoint = chiaConfig.GetEndpoint(name) ?? new EndpointInfo();
 
             var client = provider.GetRequiredService<IHttpClientFactory>()
                 .CreateClient(name);
@@ -27,7 +27,7 @@ internal static class RpcEndpointConfiguration
         {
             var timeout = provider.GetRequiredService<IConfiguration>().GetValue("dig:RpcTimeoutSeconds", 60);
             var chiaConfig = provider.GetRequiredService<ChiaConfig>();
-            var endpoint = chiaConfig.GetEndpoint(name);
+            var endpoint = chiaConfig.GetEndpoint(name) ?? new EndpointInfo();
 
             client.BaseAddress = endpoint.Uri;
             client.Timeout = TimeSpan.FromSeconds(timeout);
@@ -38,9 +38,9 @@ internal static class RpcEndpointConfiguration
             socketHandler.SslOptions.RemoteCertificateValidationCallback += ValidateServerCertificate;
 
             var chiaConfig = provider.GetRequiredService<ChiaConfig>();
-            if (chiaConfig.GetConfig() is not null)
+            var endpoint = chiaConfig.GetEndpoint(name);
+            if (endpoint is not null)
             {
-                var endpoint = chiaConfig.GetEndpoint(name);
                 socketHandler.SslOptions.ClientCertificates = endpoint.GetCert();
             }
         });
