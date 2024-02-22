@@ -25,18 +25,17 @@ builder.Configuration.AddJsonFile(path, optional: true);
 // we can take the path to an appsettings.json file as an argument
 // if not provided, the default appsettings.json will be used and settings
 // will come from there or from environment variables
-if (args.Length != 0 && !string.IsNullOrEmpty(args.First()))
+if (!string.IsNullOrEmpty(args.FirstOrDefault()) && File.Exists(args.First()))
 {
-    if (File.Exists(args.First()))
-    {
-        var configurationBinder = new ConfigurationBuilder().AddJsonFile(args.First());
-        var config = configurationBinder.Build();
-        builder.Configuration.AddConfiguration(config);
-    }
-    else
-    {
-        Console.WriteLine($"WARNING: The file {args.First()} does not exist. Ignoring command line argument.");
-    }
+    builder.Configuration.AddJsonFile(args.First(), optional: true);
+}
+else if (File.Exists(appStorage.UserSettingsFilePath))
+{
+    builder.Configuration.AddJsonFile(appStorage.UserSettingsFilePath, optional: true);
+}
+else
+{
+    Console.WriteLine($"No user or command line settings found. Using defaults.");
 }
 
 // this sets up the gateway service

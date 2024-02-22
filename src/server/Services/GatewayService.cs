@@ -18,23 +18,14 @@ public sealed class GatewayService(DataLayerProxy dataLayer,
     private readonly ILogger<GatewayService> _logger = logger;
     private readonly IConfiguration _configuration = configuration;
 
-    public WellKnown GetWellKnown(string baseUri)
-    {
-        return new WellKnown(xch_address: _configuration.GetValue("dig:XchAddress", "")!,
-                              known_stores_endpoint: $"{baseUri}/.well-known/known_stores",
-                              donation_address: _configuration.GetValue("dig:DonationAddress", "")!,
-                              server_version: GetAssemblyVersion());
-    }
+    public WellKnown GetWellKnown(string baseUri) => new(xch_address: _configuration.GetValue("dig:XchAddress", "")!,
+                                                                  known_stores_endpoint: $"{baseUri}/.well-known/known_stores",
+                                                                  donation_address: _configuration.GetValue("dig:DonationAddress", "")!,
+                                                                  server_version: GetAssemblyVersion());
 
-    public bool HaveChiaConfig()
-    {
-        return _chiaConfig.GetConfig() is not null;
-    }
+    public bool HaveDataLayerConfig() => _chiaConfig.GetEndpoint("data_layer") is not null;
 
-    private static string GetAssemblyVersion()
-    {
-        return Assembly.GetExecutingAssembly().GetName().Version?.ToString() ?? "0.0.0.0";
-    }
+    private static string GetAssemblyVersion() => Assembly.GetExecutingAssembly().GetName().Version?.ToString() ?? "0.0.0.0";
 
     public async Task<IEnumerable<string>> GetKnownStores()
     {

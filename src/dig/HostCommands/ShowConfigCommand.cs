@@ -14,15 +14,9 @@ internal sealed class ShowConfigCommand()
         var configPath = chiaConfig.GetConfigPath() ?? "<Not set>";
         Console.WriteLine($"Chia root path setting: {configPath}");
 
-        var config = chiaConfig.GetConfig();
-        if (config is not null)
-        {
-            Console.WriteLine($"Chia root path actual: {config.ChiaRootPath}");
-        }
-        else
-        {
-            Console.WriteLine("Failed to open chia config");
-        }
+        CheckEndPoint(chiaConfig, "data_layer");
+        CheckEndPoint(chiaConfig, "full_node");
+        CheckEndPoint(chiaConfig, "wallet");
 
         using var cancellationSource = new CancellationTokenSource(TimeSpan.FromSeconds(Timeout));
         var hostIp = await dnsService.GetPublicIPAdress(cancellationSource.Token);
@@ -34,5 +28,18 @@ internal sealed class ShowConfigCommand()
         Console.WriteLine($"hostUri: {hostUri}");
 
         return 0;
+    }
+
+    private static void CheckEndPoint(ChiaConfig chiaConfig, string endpointName)
+    {
+        var endpoint = chiaConfig.GetEndpoint(endpointName);
+        if (endpoint is null)
+        {
+            Console.WriteLine($"Endpoint {endpointName} not configured");
+        }
+        else
+        {
+            Console.WriteLine($"Endpoint: {endpoint}");
+        }
     }
 }
