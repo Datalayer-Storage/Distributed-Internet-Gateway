@@ -1,6 +1,7 @@
 using Microsoft.Extensions.Caching.Memory;
 using System.Reflection;
 using chia.dotnet;
+using System.Web;
 
 namespace dig.server;
 
@@ -33,6 +34,7 @@ public sealed class GatewayService(DataLayerProxy dataLayer,
         {
             using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(_configuration.GetValue("dig:RpcTimeoutSeconds", 30)));
             entry.SlidingExpiration = TimeSpan.FromMinutes(15);
+
             return await _dataLayer.Subscriptions(cts.Token);
         }) ?? [];
     }
@@ -40,6 +42,7 @@ public sealed class GatewayService(DataLayerProxy dataLayer,
     public async Task<IEnumerable<Store>> GetKnownStoresWithNames()
     {
         var stores = await GetKnownStores();
+
         return stores.Select(_storeRegistryService.GetStore);
     }
 
@@ -52,6 +55,7 @@ public sealed class GatewayService(DataLayerProxy dataLayer,
             {
                 entry.SlidingExpiration = TimeSpan.FromMinutes(15);
                 _logger.LogInformation("Getting keys for {StoreId}", storeId.SanitizeForLog());
+
                 return await _dataLayer.GetKeys(storeId, null, cancellationToken);
             });
 
@@ -71,7 +75,8 @@ public sealed class GatewayService(DataLayerProxy dataLayer,
             {
                 entry.SlidingExpiration = TimeSpan.FromMinutes(15);
                 _logger.LogInformation("Getting value for {StoreId} {Key}", storeId.SanitizeForLog(), key.SanitizeForLog());
-                return await _dataLayer.GetValue(storeId, key, null, cancellationToken);
+
+                return await _dataLayer.GetValue(storeId, HttpUtility.UrlDecode(key), null, cancellationToken);
             });
 
             return value;
@@ -104,16 +109,19 @@ public sealed class GatewayService(DataLayerProxy dataLayer,
         var sortedFileNames = new List<string>(multipartFileNames);
         sortedFileNames.Sort((a, b) =>
             {
-                int numberA = int.Parse(a.Split(".part")[1]);
-                int numberB = int.Parse(b.Split(".part")[1]);
+                var numberA = int.Parse(a.Split(".part")[1]);
+                var numberB = int.Parse(b.Split(".part")[1]);
+
                 return numberA.CompareTo(numberB);
             });
 
         var hexPartsPromises = multipartFileNames.Select(async fileName =>
         {
-            var hexKey = HexUtils.ToHex(fileName);
+            var hexKey = HexUtils.ToHex(HttpUtility.UrlDecode(fileName));
+
             return await GetValue(storeId, hexKey, cancellationToken);
         });
+
         var dataLayerResponses = await Task.WhenAll(hexPartsPromises);
         var resultHex = string.Join("", dataLayerResponses);
 

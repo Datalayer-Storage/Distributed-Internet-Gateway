@@ -28,6 +28,7 @@ internal sealed class ChiaService(FullNodeProxy fullNode,
         catch (Exception ex)
         {
             _logger.LogWarning("Could not connect to full node. Using default fee amount: {Message}", ex.InnerException?.Message ?? ex.Message);
+
             return defaultFee;
         }
     }
