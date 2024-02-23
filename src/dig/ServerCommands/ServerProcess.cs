@@ -20,18 +20,13 @@ internal static class ServerProcess
             programPath = programPath.Replace($"{Path.DirectorySeparatorChar}src{Path.DirectorySeparatorChar}dig", $"{Path.DirectorySeparatorChar}src{Path.DirectorySeparatorChar}server");
         }
 #endif
-        var p = Process.Start(programPath, settingsFilePath!);
-        // using Process process = new()
-        // {
-        //     StartInfo = new ProcessStartInfo
-        //     {
-        //         FileName = programPath,
-        //         UseShellExecute = true, // This will prevent creating a child process
-        //         Arguments = settingsFilePath is not null ? $"\"{settingsFilePath}\"" : string.Empty
-        //     }
-        // };
-
-        // var started = process.Start();
+        using Process p = Process.Start(new ProcessStartInfo(programPath, settingsFilePath!)
+        {
+            UseShellExecute = false,
+            CreateNoWindow = true,
+            RedirectStandardOutput = true,
+            RedirectStandardError = true
+        }) ?? throw new Exception("Failed to start server process.");
     }
 
     public static void Stop()

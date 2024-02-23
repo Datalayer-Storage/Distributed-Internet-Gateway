@@ -13,5 +13,5 @@ internal sealed class ServerCommands
     public StopCommand Stop { get; init; } = new();
 
     [Command("restart", Description = "Stop and start the server.")]
-    public ShowCommand Restart { get; init; } = new();
+    public RestartCommand Restart { get; init; } = new();
 }
