@@ -20,13 +20,23 @@ internal static class ServerProcess
             programPath = programPath.Replace($"{Path.DirectorySeparatorChar}src{Path.DirectorySeparatorChar}dig", $"{Path.DirectorySeparatorChar}src{Path.DirectorySeparatorChar}server");
         }
 #endif
-        using Process p = Process.Start(new ProcessStartInfo(programPath, settingsFilePath!)
+        if (!File.Exists(programPath))
+        {
+            throw new Exception($"Could not locate the server executable. Tried {programPath}");
+        }
+
+        Process p = Process.Start(new ProcessStartInfo(programPath, settingsFilePath!)
         {
             UseShellExecute = false,
             CreateNoWindow = true,
             RedirectStandardOutput = true,
             RedirectStandardError = true
         }) ?? throw new Exception("Failed to start server process.");
+
+        if (p.HasExited)
+        {
+            throw new Exception("The server process crashed.");
+        }
     }
 
     public static void Stop()
