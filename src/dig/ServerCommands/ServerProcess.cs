@@ -22,20 +22,25 @@ internal static class ServerProcess
 #endif
         if (!File.Exists(programPath))
         {
-            throw new Exception($"Could not locate the server executable. Tried {programPath}");
+            throw new Exception($"Could not locate the server executable at {programPath}");
         }
 
-        Process p = Process.Start(new ProcessStartInfo(programPath, settingsFilePath!)
+        var p = new Process()
         {
-            UseShellExecute = false,
-            CreateNoWindow = true,
-            RedirectStandardOutput = true,
-            RedirectStandardError = true
-        }) ?? throw new Exception("Failed to start server process.");
+            StartInfo = new ProcessStartInfo(programPath, settingsFilePath!)
+            {
+                UseShellExecute = false,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                CreateNoWindow = true,
+            }
+        };
 
+        p.Start();
+        Thread.Sleep(5000); // wait for the server to start to see if it is successful
         if (p.HasExited)
         {
-            throw new Exception("The server process crashed.");
+            throw new Exception($"The server failed to start.\n{p.StandardOutput.ReadToEnd()}");
         }
     }
 
