@@ -20,6 +20,10 @@ if (OperatingSystem.IsWindows())
 }
 
 var path = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "appsettings.json");
+if (File.Exists(path))
+{
+    Console.WriteLine($"Loading settings from {path}");
+}
 builder.Configuration.AddJsonFile(path, optional: true);
 
 // we can take the path to an appsettings.json file as an argument
@@ -27,15 +31,13 @@ builder.Configuration.AddJsonFile(path, optional: true);
 // will come from there or from environment variables
 if (!string.IsNullOrEmpty(args.FirstOrDefault()) && File.Exists(args.First()))
 {
+    Console.WriteLine($"Loading settings from command line file {args.First()}");
     builder.Configuration.AddJsonFile(args.First(), optional: true);
 }
 else if (File.Exists(appStorage.UserSettingsFilePath))
 {
+    Console.WriteLine($"Loading user settings from {appStorage.UserSettingsFilePath}");
     builder.Configuration.AddJsonFile(appStorage.UserSettingsFilePath, optional: true);
-}
-else
-{
-    Console.WriteLine($"No user or command line settings found. Using defaults.");
 }
 
 // this sets up the gateway service
@@ -61,7 +63,7 @@ builder.Services.AddHttpClient("datalayer.storage", c =>
 
 // this sets up the sync service - note that it shares some dependencies with the gateway service
 // ChiaConfig, RpcClientHost, and DataLayerProxy
-if (builder.Configuration.GetValue("dig:RunMirrorSyncJob", false))
+if (builder.Configuration.GetValue("dig:StoreSyncJobEnabled", false))
 {
     builder.Services
         .AddHostedService<PeriodicStoreSyncService>()
@@ -74,7 +76,7 @@ if (builder.Configuration.GetValue("dig:RunMirrorSyncJob", false))
 }
 
 // setup the Dyn Dns service
-if (builder.Configuration.GetValue("dig:RunDynDnsJob", false))
+if (builder.Configuration.GetValue("dig:DynDnsJobEnabled", false))
 {
     builder.Services
         .AddHostedService<PeriodicDynDnsService>()

@@ -10,8 +10,16 @@ var builder = Host.CreateApplicationBuilder(args);
 
 // the non-web app builder doesn't bind to settings files automatically
 var path = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "appsettings.json");
+if (File.Exists(path))
+{
+    Console.WriteLine($"Loading settings from {path}");
+}
 builder.Configuration.AddJsonFile(path, optional: true);
 
+if (File.Exists(appStorage.UserSettingsFilePath))
+{
+    Console.WriteLine($"Loading user settings from {appStorage.UserSettingsFilePath}");
+}
 builder.Configuration.AddJsonFile(appStorage.UserSettingsFilePath, optional: true);
 
 // configure services
@@ -25,6 +33,7 @@ builder.Services.AddSingleton<StoreManager>()
     .AddSingleton<MirrorService>()
     .AddSingleton<ChiaService>()
     .AddSingleton<StoreSyncService>()
+    .AddSingleton<ServerCoinService>()
     .AddSingleton((provider) => appStorage)
     .AddHttpClient()
     .AddSingleton(provider => new DataLayerProxy(provider.GetRequiredKeyedService<IRpcClient>("data_layer"), "dig.server"))

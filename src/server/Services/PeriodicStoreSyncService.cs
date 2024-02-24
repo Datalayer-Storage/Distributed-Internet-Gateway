@@ -20,10 +20,10 @@ internal sealed class PeriodicStoreSyncService(StoreSyncService syncService,
                 // set/reset the delay period (default to once a day)
                 var period = _configuration.GetValue("dig:StoreSyncIntervalMinutes", 1440);
                 var mirrorListUri = _configuration.GetValue("dig:DataLayerStorageUri", "https://api.datalayer.storage/") + "mirrors/v1/list_all";
-                var reserveAmount = _configuration.GetValue<ulong>("dig:AddMirrorAmount", 300000001);
-                var addMirrors = _configuration.GetValue("dig:MirrorServer", true);
+                var reserveAmount = _configuration.GetValue<ulong>("dig:AddMirrorReserveAmount", 300000001);
+                var addMirrors = _configuration.GetValue("dig:MirrorSubscriptions", true);
                 var pruneStores = _configuration.GetValue("dig:PruneStores", true);
-                var knownOnly = _configuration.GetValue("dig:KnownOnly", true);
+                var knownOnly = _configuration.GetValue("dig:VerifiedStoresOnly", true);
                 var defaultFee = _configuration.GetValue<ulong>("dig:DefaultFee", 500000);
 
                 var (addedCount, removedCount, message) = await _syncService.SyncStores(mirrorListUri, reserveAmount, addMirrors, pruneStores, knownOnly, defaultFee, stoppingToken);

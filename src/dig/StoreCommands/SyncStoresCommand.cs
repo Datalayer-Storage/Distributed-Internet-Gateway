@@ -11,8 +11,8 @@ internal sealed class SyncStoresCommand()
     [Option("p", "prune", Description = "Remove any mirrors/subscriptions that are not in the remote list.")]
     public bool Prune { get; init; }
 
-    [Option("k", "known-only", Description = "Only subscribe to well known mirrors")]
-    public bool KnownOnly { get; init; }
+    [Option("v", "verified-only", Description = "Only subscribe to verified mirrors")]
+    public bool VerifiedStoresOnly { get; init; }
 
     [Option("f", "fee", Default = 0UL, ArgumentHelpName = "MOJOS", Description = "Default fee to use for each mirror transaction.")]
     public ulong Fee { get; init; } = 0UL;
@@ -24,7 +24,7 @@ internal sealed class SyncStoresCommand()
     public async Task<int> Execute(StoreSyncService syncService)
     {
         // pass CancellationToken.None as we want this to run as long as it takes
-        var (addedCount, removedCount, message) = await syncService.SyncStores(Uri, Reserve, !SubscribeOnly, Prune, KnownOnly, Fee, CancellationToken.None);
+        var (addedCount, removedCount, message) = await syncService.SyncStores(Uri, Reserve, !SubscribeOnly, Prune, VerifiedStoresOnly, Fee, CancellationToken.None);
         if (message is not null)
         {
             Console.WriteLine("The data layer appears busy. Try again later.\n\t{0}", message);

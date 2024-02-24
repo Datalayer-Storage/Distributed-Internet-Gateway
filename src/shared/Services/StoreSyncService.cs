@@ -18,7 +18,7 @@ internal sealed class StoreSyncService(DataLayerProxy dataLayer,
                                                                                         ulong reserveAmount,
                                                                                         bool addMirrors,
                                                                                         bool prune,
-                                                                                        bool knownOnly,
+                                                                                        bool verifiedStoresOnly,
                                                                                         ulong defaultFee,
                                                                                         CancellationToken stoppingToken)
     {
@@ -43,7 +43,7 @@ internal sealed class StoreSyncService(DataLayerProxy dataLayer,
 
             var haveFunds = true;
             var remoteStoreList = await _mirrorService.FetchLatest(mirrorListUri, stoppingToken).ToListAsync(cancellationToken: stoppingToken);
-            foreach (var store in remoteStoreList.Where(store => !knownOnly || (knownOnly && store.is_verified)))
+            foreach (var store in remoteStoreList.Where(store => !verifiedStoresOnly || (verifiedStoresOnly && store.is_verified)))
             {
                 // don't subscribe or mirror our owned stores
                 if (!ownedStores.Contains(store.singleton_id))
@@ -66,7 +66,7 @@ internal sealed class StoreSyncService(DataLayerProxy dataLayer,
                         removedCount++;
                     }
                     // also remove any unverified stores if we are only interested in known stores
-                    else if (knownOnly && remoteStoreList.Any(store => store.singleton_id == subscription && !store.is_verified))
+                    else if (verifiedStoresOnly && remoteStoreList.Any(store => store.singleton_id == subscription && !store.is_verified))
                     {
                         await RemoveStore(fee, subscription, stoppingToken);
                         removedCount++;
