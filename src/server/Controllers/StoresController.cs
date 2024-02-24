@@ -89,7 +89,7 @@ public partial class StoresController(GatewayService gatewayService,
             var rawValue = await _gatewayService.GetValue(storeId, hexKey, cancellationToken);
             if (rawValue is null)
             {
-                _logger.LogInformation("couldn't find: {key}", key);
+                _logger.LogInformation("couldn't find: {key}", key.SanitizeForLog());
 
                 return NotFound();
             }
@@ -137,7 +137,7 @@ public partial class StoresController(GatewayService gatewayService,
         catch (Exception ex)
         {
             _logger.LogError(ex, "{Message}", ex.Message);
-            
+
             return StatusCode(StatusCodes.Status500InternalServerError);
         }
     }
