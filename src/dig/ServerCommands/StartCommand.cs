@@ -11,7 +11,7 @@ internal sealed class StartCommand()
     public async Task<int> Execute(ILogger<StartCommand> logger)
     {
         await Task.CompletedTask;
-        
+
         if (Settings is not null && !File.Exists(Settings))
         {
             logger.LogError("Settings file not found {path}.", Settings);
@@ -26,6 +26,7 @@ internal sealed class StartCommand()
 
         try
         {
+            logger.LogInformation("Starting server...");
             ServerProcess.Start(Settings);
             logger.LogInformation("Server started.");
         }
