@@ -95,8 +95,8 @@ public sealed class ChiaConfig
         return new EndpointInfo
         {
             Uri = new Uri($"https://{host}:{port}"),
-            CertPath = Path.Combine(_configuration.GetValue("dig:CertDirectory", "")!, $"{snakeCaseName}/private_{snakeCaseName}.crt"),
-            KeyPath = Path.Combine(_configuration.GetValue("dig:CertDirectory", "")!, $"{snakeCaseName}/private_{snakeCaseName}.key"),
+            CertPath = Path.Combine(_configuration.GetValue("dig:ChiaCertDirectory", "")!, $"{snakeCaseName}/private_{snakeCaseName}.crt"),
+            KeyPath = Path.Combine(_configuration.GetValue("dig:ChiaCertDirectory", "")!, $"{snakeCaseName}/private_{snakeCaseName}.key"),
         };
     }
 

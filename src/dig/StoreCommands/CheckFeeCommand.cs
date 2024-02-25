@@ -17,6 +17,7 @@ internal sealed class CheckFeeCommand()
         {
             Console.WriteLine($"Fee: {fee}");
         }
+
         return 0;
     }
 }

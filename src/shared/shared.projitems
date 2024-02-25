@@ -24,7 +24,7 @@
         <Compile Include="$(MSBuildThisFileDirectory)Models\PageRecord.cs" />
         <Compile Include="$(MSBuildThisFileDirectory)Models\Store.cs" />
         <Compile Include="$(MSBuildThisFileDirectory)Utils.cs" />
-        <Content Include="$(MSBuildThisFileDirectory)appsettings.Development.json">
+        <Content Include="$(MSBuildThisFileDirectory)appsettings.examples.json">
             <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
         </Content>
         <Content Include="$(MSBuildThisFileDirectory)appsettings.json">

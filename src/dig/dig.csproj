@@ -23,8 +23,8 @@
         <PackageReference Include="System.Linq.Async" Version="6.0.1" />
     </ItemGroup>
     <ItemGroup Condition=" '$(Configuration)' == 'Release' ">
-        <Content Update=".\appsettings.Development.json" CopyToOutputDirectory="Never" />
-        <Content Remove=".\appsettings.Development.json" />
+        <Content Update=".\appsettings.examples.json" CopyToOutputDirectory="Never" />
+        <Content Remove=".\appsettings.examples.json" />
     </ItemGroup>
     <Import Project="..\shared\shared.projitems" Label="Shared" />
 
