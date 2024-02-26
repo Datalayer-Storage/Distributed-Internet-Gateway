@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>QR Code for .offer File</title>
+        <style>
+            body,
+            html {
+                margin: 0;
+                padding: 0;
+                height: 100%;
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                flex-direction: column;
+                font-family: Arial, sans-serif;
+                background: #f0f0f0; /* Light background for contrast */
+            }
+            .qr-container {
+                text-align: center;
+                box-sizing: border-box;
+                padding: 10px;
+                border-radius: 15px;
+                background: white;
+                box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+                margin: 20px;
+            }
+            .qr-image {
+                width: 500px;
+                max-width: 90%;
+                height: auto;
+                cursor: pointer;
+                border: solid thin grey;
+                border-radius: 10px;
+                padding: 10px;
+                background: white;
+            }
+            .spinner {
+                display: none;
+            }
+            .toast {
+                visibility: hidden;
+                min-width: 250px;
+                background-color: #444; /* Darker background for better contrast */
+                color: #fff;
+                text-align: center;
+                border-radius: 5px; /* Rounded corners */
+                padding: 16px;
+                position: fixed;
+                z-index: 1;
+                left: 50%;
+                bottom: 30px;
+                font-size: 17px;
+                box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2); /* Subtle shadow for depth */
+                transform: translateX(-50%);
+                transition: visibility 0.3s, opacity 0.3s, bottom 0.3s; /* Smooth transitions for showing and hiding */
+                opacity: 0;
+            }
+            .show {
+                visibility: visible;
+                opacity: 1;
+                bottom: 50px;
+            }
+            .embed-container {
+                width: 100%;
+                margin-top: 20px;
+                margin-left: 37px;
+            }
+            img {
+                width: 100%;
+                height: 100%;
+                object-fit: cover;
+                top: 0;
+                left: 0;
+                z-index: 1;
+            }
+            textarea.embed-code {
+                width: 90%;
+                height: 100px;
+                padding: 10px;
+                border-radius: 10px;
+                border: 1px solid #ccc;
+                background: #f9f9f9; /* Light background */
+                font-family: monospace;
+                font-size: 14px;
+                resize: none;
+                box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.1);
+            }
+            @keyframes spin {
+                to {
+                    transform: translate(-50%, -50%) rotate(360deg);
+                }
+            }
+            @media screen and (max-width: 600px) {
+                html,
+                body {
+                    height: 100%;
+                    width: 100%;
+                }
+                .qr-container {
+                    width: 95%;
+                }
+                .embed-container {
+                    margin-left: 37px;
+                }
+                .qr-image {
+                    max-width: unset;
+                    width: 90%; 
+                    margin: 10px;
+                    min-width: auto;
+                }
+            }
+        </style>
+    </head>
+    <body>
+        <div class='qr-container'>
+            <p>Tap the QR code to download the content:</p>
+            {{QR_CODE_PLACEHOLDER}}
+        </div>
+        <div class='embed-container'>
+            <p>Embed Code:</p>
+            <textarea class='embed-code' id='embedCode' readonly></textarea>
+        </div>
+        <div id='toast' class='toast'>Content copied to clipboard!</div>
+
+        <script>
+            function showToast(message) {
+                const toast = document.getElementById("toast");
+                toast.textContent = message;
+                toast.className = "show";
+                setTimeout(() => {
+                    toast.className = toast.className.replace("show", "");
+                }, 3000);
+            }
+
+            // Set the embed code in the textarea and enable copying on click
+            document.addEventListener("DOMContentLoaded", function () {
+                const embedCodeElement = document.getElementById("embedCode");
+                const embedCode = '{{QR_CODE_PLACEHOLDER}}';
+                embedCodeElement.textContent = embedCode;
+
+                // Function to select and copy embed code to clipboard when the textarea is clicked
+                embedCodeElement.addEventListener("click", function () {
+                    this.select();
+                    document.execCommand("copy");
+                    alert("Embed code copied to clipboard!");
+                });
+            });
+        </script>
+    </body>
+</html>
