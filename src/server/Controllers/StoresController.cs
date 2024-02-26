@@ -139,6 +139,14 @@ public partial class StoresController(GatewayService gatewayService,
 
             if (!string.IsNullOrEmpty(fileExtension))
             {
+                if (fileExtension == ".offer")
+                {
+                    var offerRenderer = new OfferRenderer();
+                    var html = offerRenderer.RenderOffer(decodedValue);
+
+                    return Content(html, "text/html");
+                }
+
                 string mimeType = GetMimeType(fileExtension) ?? "application/octet-stream";
 
                 return File(Convert.FromHexString(rawValue), mimeType);
