@@ -9,6 +9,47 @@ public partial class StoresController(GatewayService gatewayService,
     private readonly GatewayService _gatewayService = gatewayService;
     private readonly ILogger<StoresController> _logger = logger;
 
+    public async Task<IActionResult> GetDefaultIndexHtml(string storeId, CancellationToken cancellationToken)
+    {
+        var keys = await _gatewayService.GetKeys(storeId, cancellationToken);
+
+        if (keys is not null)
+        {
+            var decodedKeys = keys.Select(HexUtils.FromHex).ToList();
+
+            // the key represents a SPA app, so we want to return the index.html
+            if (decodedKeys != null && decodedKeys.Count > 0 && decodedKeys.Contains("index.html"))
+            {
+                var html = await _gatewayService.GetValueAsHtml(storeId, cancellationToken);
+                if (html is not null)
+                {
+                    return Content(html, "text/html");
+                }
+
+                return NotFound();
+            }
+
+            var htmlContent = $"<html><body><h1>Index of {storeId}</h1>";
+
+            if (decodedKeys.Count > 0) {
+                htmlContent += "<ul>";
+                foreach (var key in decodedKeys) {
+                    var link = $"{Request.Scheme}://{Request.Host}/{storeId}/{key}";
+                    htmlContent += $"<li><a href='{link}'>{key}</a></li>";
+                }
+                htmlContent += "</ul>";
+            } else {
+                htmlContent += "<p>This store is empty.</p>";
+            }
+
+            htmlContent += "</body></html>";
+            
+            return Content(htmlContent, "text/html");
+        }
+
+        return NotFound();
+    }
+
     [HttpGet("{storeId}")]
     [ProducesResponseType(StatusCodes.Status307TemporaryRedirect)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -28,28 +69,7 @@ public partial class StoresController(GatewayService gatewayService,
                 return Redirect($"{referer}/{storeId}");
             }
 
-            var keys = await _gatewayService.GetKeys(storeId, cancellationToken);
-
-            if (keys is not null)
-            {
-                var decodedKeys = keys.Select(HexUtils.FromHex).ToList();
-
-                // the key represents a SPA app, so we want to return the index.html
-                if (decodedKeys != null && decodedKeys.Count > 0 && decodedKeys.Contains("index.html") && showKeys != true)
-                {
-                    var html = await _gatewayService.GetValueAsHtml(storeId, cancellationToken);
-                    if (html is not null)
-                    {
-                        return Content(html, "text/html");
-                    }
-
-                    return NotFound();
-                }
-
-                return Ok(decodedKeys);
-            }
-
-            return NotFound();
+            return await GetDefaultIndexHtml(storeId, cancellationToken);
         }
         catch (Exception ex)
         {
@@ -83,6 +103,14 @@ public partial class StoresController(GatewayService gatewayService,
                 HttpContext.Response.Headers.Location = $"{referer}/{storeId}/{key}";
 
                 return Redirect($"{referer}/{storeId}/{key}");
+            }
+
+            // info.html is a synthetic key that we use to display the store's contents
+            // even though index.html returns the same, if the store overrides index.html
+            // the user can still get a list of keys at info.html
+            if (key == "info.html")
+            {
+                return await GetDefaultIndexHtml(storeId, cancellationToken);
             }
 
             var hexKey = HexUtils.ToHex(key);
