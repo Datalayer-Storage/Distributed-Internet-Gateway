@@ -43,12 +43,13 @@ else if (File.Exists(appStorage.UserSettingsFilePath))
 // this sets up the gateway service
 builder.Services.AddControllersWithViews();
 
+// these are the services needed by the gateway
 builder.Services.AddSingleton<ChiaConfig>()
     .AddHttpClient()
     .AddActivatedSingleton<IServer, ServerService>()
+    .AddSingleton<MirrorService>()
     .AddSingleton<GatewayService>()
     .AddSingleton<DnsService>()
-    .AddSingleton<MirrorService>()
     .AddSingleton<StoreRegistryService>()
     .AddSingleton(provider => new DataLayerProxy(provider.GetRequiredKeyedService<IRpcClient>("data_layer"), "dig.server"))
     .AddEndpointsApiExplorer()
@@ -68,8 +69,9 @@ if (builder.Configuration.GetValue("dig:StoreSyncJobEnabled", false))
     builder.Services
         .AddHostedService<PeriodicStoreSyncService>()
         .AddSingleton<ChiaService>()
-        .AddSingleton<MirrorService>()
+        .AddSingleton<StoreService>()
         .AddSingleton<StoreSyncService>()
+        .AddSingleton<ServerCoinService>()
         .AddSingleton<DnsService>()
         .AddSingleton(provider => new FullNodeProxy(provider.GetRequiredKeyedService<IRpcClient>("full_node"), "dig.server"))
         .AddRpcEndpoint("full_node");
@@ -113,7 +115,7 @@ app.UseCors();
 app.MapControllers();
 app.UseStaticFiles();
 
-// this is the IPC server that the command line talk to
+// this is the IPC server that the command line talks to
 var server = new Server("dig.server.ipc");
 server.RegisterService(app.Services.GetRequiredService<IServer>());
 server.Start();

@@ -19,14 +19,14 @@ public sealed class MirrorService(DnsService dnsService,
         }
     };
 
-    public async Task<IEnumerable<string>> GetMyMirrorUris(CancellationToken cancellationToken)
+    public async Task<string?> GetMyMirrorUri(CancellationToken cancellationToken)
     {
         var uri = await _dnsService.GetHostUri(cancellationToken);
         if (string.IsNullOrEmpty(uri))
         {
-            return [];
+            return null;
         }
-        return [uri];
+        return uri;
     }
 
     public async IAsyncEnumerable<Store> FetchLatest(string uri, [EnumeratorCancellation] CancellationToken stoppingToken)

@@ -10,15 +10,11 @@ internal sealed class DeleteCoinCommand()
     [Option("c", "coin", ArgumentHelpName = "COIN_ID", Description = "Coin ID to delete.")]
     public string Coin { get; init; } = string.Empty;
 
-    [Option("f", "fee", ArgumentHelpName = "MOJOS", Description = "Fee override")]
+    [Option("f", "fee", ArgumentHelpName = "MOJOS", Description = "Fee override.")]
     public ulong? Fee { get; init; }
 
     [CommandTarget]
-    public async Task<int> Execute(ServerCoinService serverCoinService,
-                                    DnsService dnsService,
-                                    ChiaService chiaService,
-                                    ILogger<StartCommand> logger,
-                                    IConfiguration configuration)
+    public async Task<int> Execute(ServerCoinService serverCoinService, ChiaService chiaService, IConfiguration configuration)
     {
         if (string.IsNullOrEmpty(Store))
         {
@@ -32,18 +28,10 @@ internal sealed class DeleteCoinCommand()
             return -1;
         }
 
-        var fee = await ServerCoinCommands.ResolveFee(Fee, 10000, chiaService, configuration);
+        using CancellationTokenSource cts = new(10000);
+        var fee = await chiaService.ResolveFee(Fee, configuration.GetValue<ulong>("dig:ServerCoinReserveAmount", 300000), cts.Token);
 
-        try
-        {
-            Console.WriteLine(serverCoinService.DeleteServer(Store, Coin, fee));
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine(ex);
-            Console.WriteLine("Failed to delete server coin.");
-            return -1;
-        }
+        Console.WriteLine(serverCoinService.DeleteServer(Store, Coin, fee));
 
         return 0;
     }

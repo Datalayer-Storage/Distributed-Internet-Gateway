@@ -14,17 +14,44 @@ internal sealed class SyncStoresCommand()
     [Option("v", "verified-only", Description = "Only subscribe to verified mirrors")]
     public bool VerifiedStoresOnly { get; init; }
 
-    [Option("f", "fee", Default = 0UL, ArgumentHelpName = "MOJOS", Description = "Default fee to use for each mirror transaction.")]
-    public ulong Fee { get; init; } = 0UL;
+    [Option("f", "fee", ArgumentHelpName = "MOJOS", Description = "Fee override.")]
+    public ulong? Fee { get; init; }
 
-    [Option("r", "reserve", Default = 300000001UL, ArgumentHelpName = "MOJOS", Description = "The amount to reserve with each mirror coin.")]
-    public ulong Reserve { get; init; } = 300000001UL;
+    [Option("m", "mirror-reserve", Default = 300000001UL, ArgumentHelpName = "MOJOS", Description = "The amount to reserve with each mirror coin.")]
+    public ulong? MirrorReserve { get; init; } = 300000001UL;
+
+    [Option("r", "server-reserve", Default = 300000001UL, ArgumentHelpName = "MOJOS", Description = "The amount to reserve with each server coin.")]
+    public ulong? ServerReserve { get; init; } = 300000001UL;
 
     [CommandTarget]
-    public async Task<int> Execute(StoreSyncService syncService)
+    public async Task<int> Execute(StoreSyncService syncService, ChiaService chiaService, IConfiguration configuration)
     {
+        ulong mirrorCoinReserve = MirrorReserve ?? configuration.GetValue<ulong>("dig:AddMirrorReserveAmount", 0);
+        if (mirrorCoinReserve == 0)
+        {
+            Console.WriteLine("Mirror reserve amount is required.");
+            return -1;
+        }
+
+        ulong serverCoinReserve = ServerReserve ?? configuration.GetValue<ulong>("dig:ServerCoinReserveAmount", 0);
+        if (serverCoinReserve == 0)
+        {
+            Console.WriteLine("Server reserve amount is required.");
+            return -1;
+        }
+
+        using var cts = new CancellationTokenSource(10000);
+        var fee = await chiaService.ResolveFee(Fee, mirrorCoinReserve, cts.Token);
+
         // pass CancellationToken.None as we want this to run as long as it takes
-        var (addedCount, removedCount, message) = await syncService.SyncStores(Uri, Reserve, !SubscribeOnly, Prune, VerifiedStoresOnly, Fee, CancellationToken.None);
+        var (addedCount, removedCount, message) = await syncService.SyncStores(Uri,
+                                                                                mirrorCoinReserve,
+                                                                                serverCoinReserve,
+                                                                                !SubscribeOnly,
+                                                                                Prune,
+                                                                                VerifiedStoresOnly,
+                                                                                fee,
+                                                                                CancellationToken.None);
         if (message is not null)
         {
             Console.WriteLine("The data layer appears busy. Try again later.\n\t{0}", message);

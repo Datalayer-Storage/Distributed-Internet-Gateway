@@ -10,6 +10,16 @@ internal sealed class ChiaService(FullNodeProxy fullNode,
     private readonly ILogger<ChiaService> _logger = logger;
     private readonly IConfiguration _configuration = configuration;
 
+    public async Task<ulong> ResolveFee(ulong? fee, ulong cost, CancellationToken stoppingToken)
+    {
+        if (fee.HasValue)
+        {
+            return fee.Value;
+        }
+
+        return await GetFee(cost, _configuration.GetValue<ulong>("dig:DefaultFee", 0), stoppingToken);
+    }
+
     public async Task<ulong> GetFee(ulong cost, ulong defaultFee, CancellationToken stoppingToken)
     {
         try

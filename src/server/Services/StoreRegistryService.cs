@@ -3,11 +3,10 @@ using System.Collections.Concurrent;
 namespace dig.server;
 
 public sealed class StoreRegistryService(MirrorService mirrorService,
-                                            ILogger<StoreRegistryService> logger,
-                                            IConfiguration configuration
-                                            )
+                                            ILogger<StoreRegistryService> logger, 
+                                            IConfiguration configuration)
 {
-    private IDictionary<string, Store> _storeNames = new ConcurrentDictionary<string, Store>();
+    private readonly IDictionary<string, Store> _storeNames = new ConcurrentDictionary<string, Store>();
     private readonly MirrorService _mirrorService = mirrorService;
     private readonly ILogger<StoreRegistryService> _logger = logger;
     private readonly IConfiguration _configuration = configuration;

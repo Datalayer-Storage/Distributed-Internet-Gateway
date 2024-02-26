@@ -1,18 +1,19 @@
 namespace dig;
 
-internal sealed class UnmirrorAllCommand()
+internal sealed class UnmirrorAllCommand
 {
     [Option("t", "timeout", Default = 240, ArgumentHelpName = "SECONDS", Description = "Timeout in seconds")]
     public int Timeout { get; init; } = 240;
 
-    [Option("f", "fee", Default = 0UL, ArgumentHelpName = "MOJOS", Description = "Fee to use for each removal transaction.")]
-    public ulong Fee { get; init; } = 0UL;
+    [Option("f", "fee", ArgumentHelpName = "MOJOS", Description = "Fee override.")]
+    public ulong? Fee { get; init; }
 
     [CommandTarget]
-    public async Task<int> Execute(StoreManager storeManager)
+    public async Task<int> Execute(StoreManager storeManager, ChiaService chiaService, IConfiguration configuration)
     {
-        using var cancellationSource = new CancellationTokenSource(TimeSpan.FromSeconds(Timeout));
-        await storeManager.UnmirrorAll(Fee, cancellationSource.Token);
+        using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(Timeout));
+        var fee = await chiaService.ResolveFee(Fee, configuration.GetValue<ulong>("dig:AddMirrorReserveAmount", 0), cts.Token);
+        await storeManager.UnmirrorAll(fee, cts.Token);
         return 0;
     }
 }

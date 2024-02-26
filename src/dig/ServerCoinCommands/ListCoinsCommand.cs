@@ -21,30 +21,21 @@ internal sealed class ListCoinsCommand()
 
         await Task.CompletedTask;
 
-        try
+        var coins = serverCoinService.GetCoins(Store);
+        if (coins.Any())
         {
-            var coins = serverCoinService.GetCoins(Store);
-            if (coins.Any())
+            foreach (dynamic coin in coins)
             {
-                foreach (dynamic coin in coins)
+                if (OwnedOnly && coin.ours != true)
                 {
-                    if (OwnedOnly && coin.ours != true)
-                    {
-                        continue;
-                    }
-                    Console.WriteLine(JsonConvert.SerializeObject(coin, Formatting.Indented));
+                    continue;
                 }
-            }
-            else
-            {
-                Console.WriteLine("No coins found.");
+                Console.WriteLine(JsonConvert.SerializeObject(coin, Formatting.Indented));
             }
         }
-        catch (Exception ex)
+        else
         {
-            Console.WriteLine(ex);
-            Console.WriteLine("Failed to get coins.");
-            return -1;
+            Console.WriteLine("No coins found.");
         }
 
         return 0;

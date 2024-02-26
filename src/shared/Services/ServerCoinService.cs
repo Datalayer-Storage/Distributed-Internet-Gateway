@@ -16,7 +16,9 @@ internal sealed class ServerCoinService(ChiaConfig chiaConfig,
     {
         List<string> args = ["add_server", "--storeId", storeId, "--url", serverUrl, "--amount", mojoReserveAmount.ToString(), "--fee", fee.ToString()];
 
-        return RunCommand(args) == "true";
+        var result = RunCommand(args).Trim();
+
+        return result == "true";
     }
 
     public string DeleteServer(string storeId, string coinId, ulong fee)
@@ -54,7 +56,7 @@ internal sealed class ServerCoinService(ChiaConfig chiaConfig,
             throw new Exception($"Could not locate the server coin executable at {programPath}");
         }
 
-#warning servcer coin only works with chia_root local node
+#warning server coin only works with chia_root local node
 
         // var fullNode = _chiaConfig.GetEndpoint("full_node") ?? throw new Exception("Full node endpoint not found");
         // var wallet = _chiaConfig.GetEndpoint("wallet") ?? throw new Exception("Wallet endpoint not found");

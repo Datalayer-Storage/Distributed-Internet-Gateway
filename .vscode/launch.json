@@ -18,13 +18,13 @@
       "stopAtEntry": false
     },
     {
-      "name": "dig cli coin add",
+      "name": "dig cli stores add",
       "type": "coreclr",
       "request": "launch",
       "preLaunchTask": "build",
       "program": "${workspaceFolder}/src/dig/bin/Debug/net8.0/dig.dll",
       "args": [
-        "coins",
+        "stores",
         "add",
         "-s",
         "1baa3e432ed02887120e6027c1dacaefd4bda619f3a9f859ad8adefc9dee2b90"
@@ -52,18 +52,16 @@
       "envFile": "${workspaceFolder}/.env"
     },
     {
-      "name": "dig cli delete coin",
+      "name": "dig cli remove store",
       "type": "coreclr",
       "request": "launch",
       "preLaunchTask": "build",
       "program": "${workspaceFolder}/src/dig/bin/Debug/net8.0/dig.dll",
       "args": [
-        "coins",
-        "delete",
+        "stores",
+        "remove",
         "-s",
-        "1baa3e432ed02887120e6027c1dacaefd4bda619f3a9f859ad8adefc9dee2b90",
-        "-c",
-        "5f0e1420024bcb96d097536971a4eb20b1adf485762fbdff9875a4e5ed6d69ae"
+        "1baa3e432ed02887120e6027c1dacaefd4bda619f3a9f859ad8adefc9dee2b90"
       ],
       "cwd": "${workspaceFolder}/src/dig",
       "console": "integratedTerminal",
@@ -79,9 +77,9 @@
       "args": [
         "stores",
         "sync",
-        "-r",
+        "--mirror-reserve",
         "300000002",
-        "-f",
+        "--fee",
         "5000000",
         "--prune",
         "--known-only"
