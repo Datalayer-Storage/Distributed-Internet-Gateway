@@ -31,19 +31,23 @@ public partial class StoresController(GatewayService gatewayService,
 
             var htmlContent = $"<html><body><h1>Index of {storeId}</h1>";
 
-            if (decodedKeys.Count > 0) {
+            if (decodedKeys.Count > 0)
+            {
                 htmlContent += "<ul>";
-                foreach (var key in decodedKeys) {
+                foreach (var key in decodedKeys)
+                {
                     var link = $"{Request.Scheme}://{Request.Host}/{storeId}/{key}";
                     htmlContent += $"<li><a href='{link}'>{key}</a></li>";
                 }
                 htmlContent += "</ul>";
-            } else {
+            }
+            else
+            {
                 htmlContent += "<p>This store is empty.</p>";
             }
 
             htmlContent += "</body></html>";
-            
+
             return Content(htmlContent, "text/html");
         }
 
@@ -139,15 +143,13 @@ public partial class StoresController(GatewayService gatewayService,
 
             if (!string.IsNullOrEmpty(fileExtension))
             {
-                if (fileExtension == ".offer")
-                {
-                    var offerRenderer = new OfferRenderer();
-                    var html = offerRenderer.RenderOffer(decodedValue);
-
-                    return Content(html, "text/html");
-                }
-
+                string? renderContents = RenderFactory.Render(decodedValue, fileExtension);
                 string mimeType = GetMimeType(fileExtension) ?? "application/octet-stream";
+
+                if (renderContents is not null)
+                {
+                    return Content(renderContents, "text/html");
+                }
 
                 return File(Convert.FromHexString(rawValue), mimeType);
             }
