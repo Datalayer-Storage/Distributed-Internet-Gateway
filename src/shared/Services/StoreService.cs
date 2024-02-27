@@ -72,8 +72,12 @@ internal sealed class StoreService(DataLayerProxy dataLayer,
             // add mirror if we are a mirror server, have a mirror host uri, and have enough funding
             if (addMirrors)
             {
+                var mirrorUriBuilder = new UriBuilder(url)
+                {
+                    Port = 8575 //TODO config setting to override
+                };
                 // before mirroring check we have enough funds
-                if (!await AddMirror(storeId, mirrorReserveAmount, fee, url, CancellationToken.None))
+                if (!await AddMirror(storeId, mirrorReserveAmount, fee, mirrorUriBuilder.ToString(), CancellationToken.None))
                 {
                     _logger.LogWarning("Insufficient funds to add mirror.");
                     // if we are out of funds to add mirrors, stop trying but continue subscribing
@@ -81,7 +85,11 @@ internal sealed class StoreService(DataLayerProxy dataLayer,
                 }
             }
 
-            if (!await AddServer(storeId, mirrorReserveAmount, fee, url, CancellationToken.None))
+            var serverUriBuilder = new UriBuilder(url)
+            {
+                Port = 41410 //TODO config setting to override
+            };
+            if (!await AddServer(storeId, serverReserveAmount, fee, serverUriBuilder.ToString(), CancellationToken.None))
             {
                 _logger.LogWarning("Insufficient funds to add server.");
                 // if we are out of funds to add servers, stop trying but continue subscribing
