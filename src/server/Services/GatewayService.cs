@@ -3,7 +3,6 @@ using System.Reflection;
 using chia.dotnet;
 using System.Web;
 using System.Text.Json;
-using System.Security.Policy;
 
 namespace dig.server;
 
@@ -43,8 +42,6 @@ public class GatewayService
 
     public Task<bool> InvalidateStore(string storeId)
     {
-        _logger.LogInformation("Invalidating store {storeId}", storeId.SanitizeForLog());
-        _logger.LogInformation("!!!!!@@@@@@@@@@@@@@@@@@@@@@!!!!!!!!!!!!!!!!!!!@@@@@@@@@@@@@@@");
         _fileCache.InvalidateStore(storeId);
         return Task.FromResult(true);
     }

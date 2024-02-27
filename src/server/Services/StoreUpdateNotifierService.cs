@@ -36,7 +36,7 @@ namespace dig.server
                 }
 
                 var rootHash = await _dataLayer.GetRoot(storeId, default);
-                _logger.LogInformation($"!!!!!!!!!!!!!!!!!!!! Retrieved root hash {rootHash.Hash} for storeId {storeId}.");
+                _logger.LogInformation($"Retrieved root hash {rootHash.Hash} for storeId {storeId}.");
 
                 if (rootHash != null)
                 {

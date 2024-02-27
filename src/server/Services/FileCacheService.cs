@@ -32,6 +32,7 @@ public class FileCacheService
 
     public void InvalidateStore(string storeId)
     {
+        _logger.LogInformation("Invalidating store {storeId}", storeId);
         var storeDirectory = Path.Combine(_cacheDirectory, storeId);
         if (Directory.Exists(storeDirectory))
         {
