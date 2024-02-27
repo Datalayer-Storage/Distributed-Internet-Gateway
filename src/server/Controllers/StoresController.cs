@@ -9,56 +9,11 @@ public partial class StoresController(GatewayService gatewayService,
     private readonly GatewayService _gatewayService = gatewayService;
     private readonly ILogger<StoresController> _logger = logger;
 
-    public async Task<IActionResult> GetDefaultIndexHtml(string storeId, CancellationToken cancellationToken)
-    {
-        var keys = await _gatewayService.GetKeys(storeId, cancellationToken);
-
-        if (keys is not null)
-        {
-            var decodedKeys = keys.Select(HexUtils.FromHex).ToList();
-
-            // the key represents a SPA app, so we want to return the index.html
-            if (decodedKeys != null && decodedKeys.Count > 0 && decodedKeys.Contains("index.html"))
-            {
-                var html = await _gatewayService.GetValueAsHtml(storeId, cancellationToken);
-                if (html is not null)
-                {
-                    return Content(html, "text/html");
-                }
-
-                return NotFound();
-            }
-
-            var htmlContent = $"<html><body><h1>Index of {storeId}</h1>";
-
-            if (decodedKeys.Count > 0)
-            {
-                htmlContent += "<ul>";
-                foreach (var key in decodedKeys)
-                {
-                    var link = $"{Request.Scheme}://{Request.Host}/{storeId}/{key}";
-                    htmlContent += $"<li><a href='{link}'>{key}</a></li>";
-                }
-                htmlContent += "</ul>";
-            }
-            else
-            {
-                htmlContent += "<p>This store is empty.</p>";
-            }
-
-            htmlContent += "</body></html>";
-
-            return Content(htmlContent, "text/html");
-        }
-
-        return NotFound();
-    }
-
     [HttpGet("{storeId}")]
     [ProducesResponseType(StatusCodes.Status307TemporaryRedirect)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<string>))]
-    public async Task<IActionResult> GetStore(string storeId, bool? showKeys, CancellationToken cancellationToken)
+    public async Task<IActionResult> GetStore(string storeId, CancellationToken cancellationToken)
     {
         try
         {
@@ -73,7 +28,29 @@ public partial class StoresController(GatewayService gatewayService,
                 return Redirect($"{referer}/{storeId}");
             }
 
-            return await GetDefaultIndexHtml(storeId, cancellationToken);
+            var keys = await _gatewayService.GetKeys(storeId, cancellationToken);
+
+            if (keys is not null)
+            {
+                var decodedKeys = keys.Select(HexUtils.FromHex).ToList();
+
+                // the key represents a SPA app, so we want to return the index.html
+                if (decodedKeys != null && decodedKeys.Count > 0 && decodedKeys.Contains("index.html"))
+                {
+                    var html = await _gatewayService.GetValueAsHtml(storeId, cancellationToken);
+                    if (html is not null)
+                    {
+                        return Content(html, "text/html");
+                    }
+                }
+
+               string htmlContent = IndexRenderer.Render(storeId, decodedKeys, Request);
+
+                return Content(htmlContent, "text/html");
+            }
+
+            return NotFound();
+
         }
         catch (Exception ex)
         {
@@ -114,7 +91,14 @@ public partial class StoresController(GatewayService gatewayService,
             // the user can still get a list of keys at info.html
             if (key == "info.html")
             {
-                return await GetDefaultIndexHtml(storeId, cancellationToken);
+                var keys = await _gatewayService.GetKeys(storeId, cancellationToken);
+                if (keys is not null)
+                {
+                    var decodedKeys = keys.Select(HexUtils.FromHex).ToList();
+                    string htmlContent = IndexRenderer.Render(storeId, decodedKeys, Request);
+
+                    return Content(htmlContent, "text/html");
+                }
             }
 
             var hexKey = HexUtils.ToHex(key);
@@ -143,7 +127,7 @@ public partial class StoresController(GatewayService gatewayService,
 
             if (!string.IsNullOrEmpty(fileExtension))
             {
-                string? renderContents = RenderFactory.Render(decodedValue, fileExtension);
+                string? renderContents = RenderFactory.Render(storeId, decodedValue, fileExtension, Request);
                 string mimeType = GetMimeType(fileExtension) ?? "application/octet-stream";
 
                 if (renderContents is not null)

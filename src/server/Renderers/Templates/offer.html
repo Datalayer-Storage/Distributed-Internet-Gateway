@@ -125,15 +125,6 @@
         <div id='toast' class='toast'>Content copied to clipboard!</div>
 
         <script>
-            function showToast(message) {
-                const toast = document.getElementById("toast");
-                toast.textContent = message;
-                toast.className = "show";
-                setTimeout(() => {
-                    toast.className = toast.className.replace("show", "");
-                }, 3000);
-            }
-
             // Set the embed code in the textarea and enable copying on click
             document.addEventListener("DOMContentLoaded", function () {
                 const embedCodeElement = document.getElementById("embedCode");

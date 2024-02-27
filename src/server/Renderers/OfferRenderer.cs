@@ -2,8 +2,10 @@ using QRCoder;
 
 public class OfferRenderer : IRenderer
 {
-    public string Render(string fileContents) 
+    public string Render(string storeId, object contents, HttpRequest request) 
     {
+        var fileContents = contents.ToString();
+
         QRCodeGenerator qrGenerator = new QRCodeGenerator();
         QRCodeData qrCodeData = qrGenerator.CreateQrCode(fileContents, QRCodeGenerator.ECCLevel.L);
         PngByteQRCode qrCode = new PngByteQRCode(qrCodeData);

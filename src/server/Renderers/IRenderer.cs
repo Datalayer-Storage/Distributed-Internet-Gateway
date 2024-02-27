@@ -1,4 +1,4 @@
 public interface IRenderer
 {
-    string Render(string fileContents);
+    string Render(string storeId, object contents, HttpRequest request);
 }

@@ -1,9 +1,9 @@
 public class RenderFactory
 {
-    public static string? Render(string fileContents, string fileExtension)
+    public static string? Render(string storeId, object fileContents, string fileExtension, HttpRequest request)
     {
         var renderer = GetRendererForFileExtension(fileExtension);
-        return renderer?.Render(fileContents);
+        return renderer?.Render(storeId, fileContents, request);
     }
 
     private static IRenderer? GetRendererForFileExtension(string fileExtension)
