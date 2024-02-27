@@ -17,7 +17,13 @@ public class GatewayService
     private FileCacheService _fileCache;
     private readonly StoreUpdateNotifierService _storeUpdateNotifierService;
 
-    public GatewayService(DataLayerProxy dataLayer, ChiaConfig chiaConfig, StoreRegistryService storeRegistryService, IMemoryCache memoryCache, ILogger<GatewayService> logger, IConfiguration configuration)
+    public GatewayService(DataLayerProxy dataLayer,
+                            ChiaConfig chiaConfig,
+                            StoreRegistryService storeRegistryService,
+                            AppStorage appStorage,
+                            IMemoryCache memoryCache,
+                            ILogger<GatewayService> logger,
+                            IConfiguration configuration)
     {
         _dataLayer = dataLayer;
         _chiaConfig = chiaConfig;
@@ -25,7 +31,7 @@ public class GatewayService
         _memoryCache = memoryCache;
         _logger = logger;
         _configuration = configuration;
-        _fileCache = new FileCacheService(@"C:\Temp\store-cache", _logger);
+        _fileCache = new FileCacheService(Path.Combine(appStorage.UserSettingsFolder, "store-cache"), _logger);
         _storeUpdateNotifierService = new StoreUpdateNotifierService(dataLayer, memoryCache, logger);
 
         _storeUpdateNotifierService.StartWatcher(storeId => InvalidateStore(storeId), TimeSpan.FromSeconds(15));
@@ -79,12 +85,12 @@ public class GatewayService
                 if (fsCacheValue is not null)
                 {
                     _logger.LogInformation("Got value for {StoreId} {Key} from file cache", storeId.SanitizeForLog(), storeId.SanitizeForLog());
-                    return  JsonSerializer.Deserialize<string[]>(fsCacheValue);
+                    return JsonSerializer.Deserialize<string[]>(fsCacheValue);
                 }
 
                 var datalayerValue = await _dataLayer.GetKeys(storeId, null, cancellationToken);
                 await _fileCache.SetValueAsync(cacheKey, JsonSerializer.Serialize(datalayerValue ?? []));
-                 _logger.LogInformation("Got value for {StoreId} {Key} from DataLayer", storeId.SanitizeForLog(), storeId.SanitizeForLog());
+                _logger.LogInformation("Got value for {StoreId} {Key} from DataLayer", storeId.SanitizeForLog(), storeId.SanitizeForLog());
                 return datalayerValue;
             });
 
@@ -119,7 +125,7 @@ public class GatewayService
 
                 var datalayerValue = await _dataLayer.GetValue(storeId, HttpUtility.UrlDecode(key), null, cancellationToken);
                 await _fileCache.SetValueAsync(cacheKey, datalayerValue ?? "");
-                 _logger.LogInformation("Got value for {StoreId} {Key} from DataLayer", storeId.SanitizeForLog(), key.SanitizeForLog());
+                _logger.LogInformation("Got value for {StoreId} {Key} from DataLayer", storeId.SanitizeForLog(), key.SanitizeForLog());
                 return datalayerValue;
             });
 
