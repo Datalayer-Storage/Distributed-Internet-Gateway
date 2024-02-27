@@ -149,8 +149,18 @@ public partial class StoresController(GatewayService gatewayService,
             return mimeType;
         }
 
+        if (otherMimeTypes.TryGetValue(ext, out var othermimeType))
+        {
+            return othermimeType;
+        }
+
         return null;
     }
+
+    private static readonly Dictionary<string, string> otherMimeTypes = new()
+    {
+        { "offer", "text/html"}
+    };
 
     [GeneratedRegex(@"[^:]\w+\/[\w-+\d.]+(?=;|,)")]
     private static partial Regex MimeTypeRegex();

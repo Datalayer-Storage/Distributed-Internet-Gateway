@@ -34,7 +34,7 @@ internal sealed class AddCoinCommand()
         }
 
         using CancellationTokenSource cts = new(10000);
-        var url = await dnsService.ResolveHostUrl(Url, cts.Token);
+        var url = await dnsService.ResolveHostUrl(41410, Url, cts.Token);
         var fee = await chiaService.ResolveFee(Fee, serverReserve, cts.Token);
 
         if (serverCoinService.AddServer(Store, url, serverReserve, fee))

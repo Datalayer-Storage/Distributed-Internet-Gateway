@@ -75,23 +75,17 @@ internal sealed class StoreService(DataLayerProxy dataLayer,
                 // before mirroring check we have enough funds
                 if (!await AddMirror(storeId, mirrorReserveAmount, fee, url, CancellationToken.None))
                 {
-                    _logger.LogWarning("Insufficient funds to add mirror. Pausing mirroring for now.");
+                    _logger.LogWarning("Insufficient funds to add mirror.");
                     // if we are out of funds to add mirrors, stop trying but continue subscribing
                     haveFunds = false;
                 }
             }
 
-            try
+            if (!await AddServer(storeId, mirrorReserveAmount, fee, url, CancellationToken.None))
             {
-                _logger.LogInformation("Adding server for {id}", storeId);
-                if (!_serverCoinService.AddServer(storeId, url, serverReserveAmount, fee))
-                {
-                    _logger.LogWarning("Failed to add server for {id}", storeId);
-                }
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError("Failed to add server for {id}: {message}", storeId, ex.Message);
+                _logger.LogWarning("Insufficient funds to add server.");
+                // if we are out of funds to add servers, stop trying but continue subscribing
+                haveFunds = false;
             }
         }
         else if (url is null)
@@ -106,20 +100,55 @@ internal sealed class StoreService(DataLayerProxy dataLayer,
         return (haveFunds, addedStore);
     }
 
-    private async Task<bool> AddMirror(string id, ulong reserveAmount, ulong fee, string mirrorUri, CancellationToken stoppingToken)
+    private async Task<bool> AddServer(string storeId, ulong reserveAmount, ulong fee, string serverUri, CancellationToken stoppingToken)
     {
-        var mirrors = await _dataLayer.GetMirrors(id, stoppingToken);
+        var servers = _serverCoinService.GetCoins(storeId);
+        // add any mirrors that aren't already ours
+        if (!servers.Any(s => s.ours == true))
+        {
+            _logger.LogInformation("Adding server {id}", storeId);
+            var retryCount = 0;
+            while (retryCount < 2)
+            {
+                try
+                {
+                    // try to add the server - this may fail with insufficient funds
+                    _serverCoinService.AddServer(storeId, serverUri, reserveAmount, fee);
+                    // if we succeeded, return true
+                    return true;
+                }
+                catch (ResponseException)
+                {
+                    // if we get an exception, try to add the mirror again
+                    var waitingForChangeDelayMinutes = _configuration.GetValue("dig:WaitingForChangeDelayMinutes", 2);
+                    _logger.LogWarning("Waiting {WaitingForChangeDelayMinutes} minutes for change", waitingForChangeDelayMinutes);
+                    await Task.Delay(TimeSpan.FromMinutes(waitingForChangeDelayMinutes), stoppingToken);
+                    retryCount++;
+                }
+            }
+
+            // we've tried twice and failed
+            return false;
+        }
+
+        // we already have a mirror
+        return true;
+    }
+
+    private async Task<bool> AddMirror(string storeId, ulong reserveAmount, ulong fee, string mirrorUri, CancellationToken stoppingToken)
+    {
+        var mirrors = await _dataLayer.GetMirrors(storeId, stoppingToken);
         // add any mirrors that aren't already ours
         if (!mirrors.Any(m => m.Ours))
         {
-            _logger.LogInformation("Adding mirror {id}", id);
+            _logger.LogInformation("Adding mirror {id}", storeId);
             var retryCount = 0;
             while (retryCount < 2)
             {
                 try
                 {
                     // try to add the mirror - this may fail with insufficient funds
-                    await _dataLayer.AddMirror(id, reserveAmount, [mirrorUri], fee, stoppingToken);
+                    await _dataLayer.AddMirror(storeId, reserveAmount, [mirrorUri], fee, stoppingToken);
                     // if we succeeded, return true
                     return true;
                 }

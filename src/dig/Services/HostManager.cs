@@ -37,6 +37,6 @@ internal class HostManager(DnsService denService,
             return host;
         }
 
-        return await _dnsService.GetHostUri(token);
+        return await _dnsService.GetHostUri(8575, token);
     }
 }

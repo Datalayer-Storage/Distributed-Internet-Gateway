@@ -10,17 +10,17 @@ public sealed class DnsService(IHttpClientFactory httpClientFactory,
     private readonly IConfiguration _configuration = configuration;
     private readonly HttpClient _httpClient = httpClientFactory.CreateClient("datalayer.storage");
 
-    public async Task<string> ResolveHostUrl(string? url, CancellationToken stoppingToken)
+    public async Task<string> ResolveHostUrl(int port, string? url, CancellationToken stoppingToken)
     {
         if (!string.IsNullOrEmpty(url))
         {
             return url.ToString();
         }
 
-        return await GetHostUri(stoppingToken) ?? throw new Exception("Failed to get public ip.");
+        return await GetHostUri(port, stoppingToken) ?? throw new Exception("Failed to get public ip.");
     }
 
-    public async Task<string?> GetHostUri(CancellationToken stoppingToken)
+    public async Task<string?> GetHostUri(int port, CancellationToken stoppingToken)
     {
         // config file takes precedence
         var host = _configuration["dig:MirrorHostUri"];
@@ -33,7 +33,7 @@ public sealed class DnsService(IHttpClientFactory httpClientFactory,
         publicIpAddress = publicIpAddress?.Trim();
         if (!string.IsNullOrEmpty(publicIpAddress))
         {
-            return $"http://{publicIpAddress}:8575";
+            return $"http://{publicIpAddress}:{port}";
         }
 
         return null;

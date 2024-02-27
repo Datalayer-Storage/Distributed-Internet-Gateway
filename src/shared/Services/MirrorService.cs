@@ -21,7 +21,7 @@ public sealed class MirrorService(DnsService dnsService,
 
     public async Task<string?> GetMyMirrorUri(CancellationToken cancellationToken)
     {
-        var uri = await _dnsService.GetHostUri(cancellationToken);
+        var uri = await _dnsService.GetHostUri(8575, cancellationToken);
         if (string.IsNullOrEmpty(uri))
         {
             return null;
