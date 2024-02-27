@@ -27,7 +27,8 @@ internal class AppStorage
     }
 
     public string UserSettingsFilePath => Path.Combine(_folderPath, "appsettings.user.json");
-
+    public string UserSettingsFolder => _folderPath;
+    
     public void Save(string name, string value)
     {
         try
