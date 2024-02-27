@@ -1,16 +1,13 @@
-using System;
-using System.IO;
-using System.Threading;
-using System.Threading.Tasks;
+
+using chia.dotnet;
 using Microsoft.Extensions.Caching.Memory;
-using Microsoft.Extensions.Logging;
 using System.Collections.Concurrent;
 
 namespace dig.server
 {
     public class StoreUpdateNotifierService
     {
-        private readonly GatewayService _gatewayService;
+        private readonly DataLayerProxy _dataLayer;
         private readonly IMemoryCache _memoryCache;
         private readonly ILogger _logger;
         private readonly List<Func<string, Task>> _callbacks = new();
@@ -18,9 +15,9 @@ namespace dig.server
         private readonly string _cacheDirectory;
         private readonly ConcurrentDictionary<string, string> _storeIds = new ConcurrentDictionary<string, string>();
 
-        public StoreUpdateNotifierService(GatewayService gatewayService, IMemoryCache memoryCache, ILogger logger)
+        public StoreUpdateNotifierService(DataLayerProxy dataLayer, IMemoryCache memoryCache, ILogger logger)
         {
-            _gatewayService = gatewayService;
+            _dataLayer = dataLayer;
             _memoryCache = memoryCache;
             _logger = logger;
             _cacheDirectory = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "StoreUpdateNotifierCache");
@@ -38,15 +35,17 @@ namespace dig.server
                     return;
                 }
 
-                var rootHash = await _gatewayService.GetValue(storeId, "root_hash", CancellationToken.None);
+                var rootHash = await _dataLayer.GetRoot(storeId, default);
+                _logger.LogInformation($"!!!!!!!!!!!!!!!!!!!! Retrieved root hash {rootHash.Hash} for storeId {storeId}.");
 
                 if (rootHash != null)
                 {
-                    _memoryCache.Set(cacheKey, rootHash);
+                    _logger.LogInformation($"Retrieved root hash {rootHash.Hash} for storeId {storeId}.");
+                    _memoryCache.Set(cacheKey, rootHash.Hash);
                     _storeIds.TryAdd(storeId, cacheKey); // Track the store ID
 
                     var filePath = Path.Combine(_cacheDirectory, $"{storeId}-root_hash");
-                    await File.WriteAllTextAsync(filePath, rootHash);
+                    await File.WriteAllTextAsync(filePath, rootHash.Hash);
 
                     _logger.LogInformation($"Stored root hash for storeId {storeId} successfully.");
                 }
@@ -100,20 +99,21 @@ namespace dig.server
                 var cacheKey = _storeIds[storeId];
                 var currentRootHash = _memoryCache.Get<string>(cacheKey);
 
-                var newRootHash = await _gatewayService.GetValue(storeId, "root_hash", CancellationToken.None);
+                var newRootHash = await _dataLayer.GetRoot(storeId, CancellationToken.None);
 
-                if (newRootHash != null && !newRootHash.Equals(currentRootHash))
+                if (newRootHash != null && !newRootHash.Hash.Equals(currentRootHash))
                 {
-                    _memoryCache.Set(cacheKey, newRootHash);
+                    _memoryCache.Set(cacheKey, newRootHash.Hash);
                     _logger.LogInformation($"Updated in-memory cache for {storeId} with new root hash.");
 
                     var filePath = Path.Combine(_cacheDirectory, $"{storeId}-root_hash");
-                    await File.WriteAllTextAsync(filePath, newRootHash);
+                    await File.WriteAllTextAsync(filePath, newRootHash.Hash);
 
                     _logger.LogInformation($"Updated file cache for {storeId} with new root hash.");
 
                     foreach (var callback in _callbacks)
                     {
+                        _logger.LogInformation($"Invoking callback for storeId {storeId}.");
                         await callback(storeId);
                     }
                 }

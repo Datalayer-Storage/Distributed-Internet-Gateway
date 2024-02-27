@@ -1,9 +1,11 @@
 public class FileCacheService
 {
     private readonly string _cacheDirectory;
+    private readonly ILogger _logger;
 
-    public FileCacheService(string cacheDirectory)
+    public FileCacheService(string cacheDirectory, ILogger logger)
     {
+        _logger = logger;
         _cacheDirectory = cacheDirectory;
         if (!Directory.Exists(_cacheDirectory))
         {
@@ -28,18 +30,22 @@ public class FileCacheService
         await File.WriteAllTextAsync(filePath, value);
     }
 
-    public void Invalidate(string storeId)
+    public void InvalidateStore(string storeId)
     {
         var storeDirectory = Path.Combine(_cacheDirectory, storeId);
         if (Directory.Exists(storeDirectory))
         {
-            Directory.Delete(storeDirectory, true);
+            foreach (var file in Directory.GetFiles(storeDirectory, $"{storeId}*"))
+            {
+                _logger.LogInformation("Deleting file {File}", file);
+                File.Delete(file);
+            }
         }
     }
 
     private string GetFilePath(string key)
     {
-        var safeKey = Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes(key)).TrimEnd('=').Replace('/', '-').Replace('+', '_');
+        var safeKey = key.TrimEnd('=').Replace('/', '-').Replace('+', '_');
         return Path.Combine(_cacheDirectory, safeKey);
     }
 }

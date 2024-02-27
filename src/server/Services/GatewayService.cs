@@ -3,23 +3,34 @@ using System.Reflection;
 using chia.dotnet;
 using System.Web;
 using System.Text.Json;
+using System.Security.Policy;
 
 namespace dig.server;
 
-public sealed class GatewayService(DataLayerProxy dataLayer,
-                                    ChiaConfig chiaConfig,
-                                    StoreRegistryService storeRegistryService,
-                                    IMemoryCache memoryCache,
-                                    ILogger<GatewayService> logger,
-                                    IConfiguration configuration)
+public class GatewayService
 {
-    private readonly DataLayerProxy _dataLayer = dataLayer;
-    private readonly ChiaConfig _chiaConfig = chiaConfig;
-    private readonly StoreRegistryService _storeRegistryService = storeRegistryService;
-    private readonly IMemoryCache _memoryCache = memoryCache;
-    private readonly ILogger<GatewayService> _logger = logger;
-    private readonly IConfiguration _configuration = configuration;
-    private FileCacheService _fileCache = new FileCacheService(@"C:\Temp\store-cache");
+    private readonly DataLayerProxy _dataLayer;
+    private readonly ChiaConfig _chiaConfig;
+    private readonly StoreRegistryService _storeRegistryService;
+    private readonly IMemoryCache _memoryCache;
+    private readonly ILogger<GatewayService> _logger;
+    private readonly IConfiguration _configuration;
+    private FileCacheService _fileCache;
+    private readonly StoreUpdateNotifierService _storeUpdateNotifierService;
+
+    public GatewayService(DataLayerProxy dataLayer, ChiaConfig chiaConfig, StoreRegistryService storeRegistryService, IMemoryCache memoryCache, ILogger<GatewayService> logger, IConfiguration configuration)
+    {
+        _dataLayer = dataLayer;
+        _chiaConfig = chiaConfig;
+        _storeRegistryService = storeRegistryService;
+        _memoryCache = memoryCache;
+        _logger = logger;
+        _configuration = configuration;
+        _fileCache = new FileCacheService(@"C:\Temp\store-cache", _logger);
+        _storeUpdateNotifierService = new StoreUpdateNotifierService(dataLayer, memoryCache, logger);
+
+        _storeUpdateNotifierService.StartWatcher(storeId => InvalidateStore(storeId), TimeSpan.FromSeconds(15));
+    }
 
     public WellKnown GetWellKnown(string baseUri) => new(xch_address: _configuration.GetValue("dig:XchAddress", "")!,
                                                                   known_stores_endpoint: $"{baseUri}/.well-known/known_stores",
@@ -29,6 +40,14 @@ public sealed class GatewayService(DataLayerProxy dataLayer,
     public bool HaveDataLayerConfig() => _chiaConfig.GetEndpoint("data_layer") is not null;
 
     private static string GetAssemblyVersion() => Assembly.GetExecutingAssembly().GetName().Version?.ToString() ?? "0.0.0.0";
+
+    public Task<bool> InvalidateStore(string storeId)
+    {
+        _logger.LogInformation("Invalidating store {storeId}", storeId.SanitizeForLog());
+        _logger.LogInformation("!!!!!@@@@@@@@@@@@@@@@@@@@@@!!!!!!!!!!!!!!!!!!!@@@@@@@@@@@@@@@");
+        _fileCache.InvalidateStore(storeId);
+        return Task.FromResult(true);
+    }
 
     public async Task<IEnumerable<string>> GetKnownStores()
     {
@@ -52,7 +71,7 @@ public sealed class GatewayService(DataLayerProxy dataLayer,
     {
         try
         {
-            var cacheKey = $"keys-{storeId}";
+            var cacheKey = $"{storeId}-keys";
             // memory cache is used to cache the keys for 15 minutes
             var keys = await _memoryCache.GetOrCreateAsync(cacheKey, async entry =>
             {
@@ -77,6 +96,10 @@ public sealed class GatewayService(DataLayerProxy dataLayer,
         catch (Exception)
         {
             return null;  // 404 in the api
+        }
+        finally
+        {
+            await _storeUpdateNotifierService.RegisterStoreAsync(storeId);
         }
     }
 
@@ -108,6 +131,10 @@ public sealed class GatewayService(DataLayerProxy dataLayer,
         catch
         {
             return null; // 404 in the api
+        }
+        finally
+        {
+            await _storeUpdateNotifierService.RegisterStoreAsync(storeId);
         }
     }
 
