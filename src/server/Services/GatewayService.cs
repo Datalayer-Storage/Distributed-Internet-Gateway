@@ -17,7 +17,7 @@ public class GatewayService
     private FileCacheService _fileCache;
     private readonly StoreUpdateNotifierService _storeUpdateNotifierService;
 
-    public GatewayService(DataLayerProxy dataLayer,
+    internal GatewayService(DataLayerProxy dataLayer,
                             ChiaConfig chiaConfig,
                             StoreRegistryService storeRegistryService,
                             AppStorage appStorage,
