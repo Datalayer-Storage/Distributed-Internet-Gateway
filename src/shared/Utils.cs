@@ -22,6 +22,18 @@ internal static partial class Utils
         return innerMost.Message;
     }
 
+    public static string SanitizePath(this string path, string baseDirectory)
+    {
+        var fullPath = Path.GetFullPath(Path.Combine(baseDirectory, path));
+
+        if (!fullPath.StartsWith(baseDirectory, StringComparison.Ordinal))
+        {
+            throw new UnauthorizedAccessException("Access denied");
+        }
+
+        return fullPath;
+    }
+
     public static string SanitizeForLog(this string input) => SanitizeRegex().Replace(input, "_");
 
     public static bool IsBase64Image(string data) => data.StartsWith("data:image", StringComparison.OrdinalIgnoreCase);

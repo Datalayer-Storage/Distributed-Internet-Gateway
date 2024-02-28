@@ -1,3 +1,5 @@
+namespace dig.server;
+
 public class RenderFactory
 {
     public static string? Render(string storeId, object fileContents, string fileExtension, HttpRequest request)

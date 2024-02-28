@@ -1,3 +1,5 @@
+namespace dig.server;
+
 public class FileCacheService
 {
     private readonly string _cacheDirectory;
@@ -37,18 +39,15 @@ public class FileCacheService
         {
             foreach (var file in Directory.GetFiles(_cacheDirectory, $"{storeId}*"))
             {
-                _logger.LogInformation("Deleting file {File}", file);
-                File.Delete(file);
-                
-                var fileNameWithoutExtension = Path.GetFileNameWithoutExtension(file);
+                var sanitizedPath = file.SanitizePath(_cacheDirectory);
+                _logger.LogInformation("Deleting file {File}", sanitizedPath);
+                File.Delete(sanitizedPath);
+
+                var fileNameWithoutExtension = Path.GetFileNameWithoutExtension(sanitizedPath);
                 callback(fileNameWithoutExtension);
             }
         }
     }
 
-    private string GetFilePath(string key)
-    {
-        var safeKey = key.TrimEnd('=').Replace('/', '-').Replace('+', '_');
-        return Path.Combine(_cacheDirectory, safeKey);
-    }
+    private string GetFilePath(string key) => Path.Combine(_cacheDirectory, key).SanitizePath(_cacheDirectory);
 }

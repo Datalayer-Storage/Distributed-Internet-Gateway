@@ -1,9 +1,4 @@
-using Microsoft.AspNetCore.Mvc;
-using System.Text.RegularExpressions;
-using Microsoft.AspNetCore.Http;
-
 namespace dig.server;
-
 
 public static class IndexRenderer
 {

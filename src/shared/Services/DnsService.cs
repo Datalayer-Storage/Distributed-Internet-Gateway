@@ -1,5 +1,6 @@
 using System.Dynamic;
 using System.Net.Http.Json;
+
 namespace dig;
 
 public sealed class DnsService(IHttpClientFactory httpClientFactory,
