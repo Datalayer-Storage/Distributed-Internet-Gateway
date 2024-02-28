@@ -49,9 +49,5 @@ public class FileCacheService
         }
     }
 
-    private string GetFilePath(string key)
-    {
-        var safeKey = key.TrimEnd('=').Replace('/', '-').Replace('+', '_');
-        return Path.Combine(_cacheDirectory, safeKey).SanitizePath(_cacheDirectory);
-    }
+    private string GetFilePath(string key) => Path.Combine(_cacheDirectory, key).SanitizePath(_cacheDirectory);
 }
