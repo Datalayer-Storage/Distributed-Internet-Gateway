@@ -30,7 +30,7 @@ public class FileCacheService
         await File.WriteAllTextAsync(filePath, value);
     }
 
-    public void InvalidateStore(string storeId)
+    public void InvalidateStore(string storeId, Func<string, Task> callback)
     {
         _logger.LogInformation("Invalidating store {storeId}", storeId);
         var storeDirectory = Path.Combine(_cacheDirectory, storeId);
@@ -40,6 +40,9 @@ public class FileCacheService
             {
                 _logger.LogInformation("Deleting file {File}", file);
                 File.Delete(file);
+                
+                var fileNameWithoutExtension = Path.GetFileNameWithoutExtension(file);
+                callback(fileNameWithoutExtension);
             }
         }
     }

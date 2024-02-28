@@ -42,7 +42,12 @@ public class GatewayService
 
     public Task<bool> InvalidateStore(string storeId)
     {
-        _fileCache.InvalidateStore(storeId);
+        _fileCache.InvalidateStore(storeId, cacheKey =>
+        {
+            _logger.LogInformation("Removing {CacheKey} from memory cache", cacheKey);
+            _memoryCache.Remove(cacheKey);
+            return Task.CompletedTask;
+        });
         return Task.FromResult(true);
     }
 
@@ -79,12 +84,12 @@ public class GatewayService
                 if (fsCacheValue is not null)
                 {
                     _logger.LogInformation("Got value for {StoreId} {Key} from file cache", storeId.SanitizeForLog(), storeId.SanitizeForLog());
-                    return  JsonSerializer.Deserialize<string[]>(fsCacheValue);
+                    return JsonSerializer.Deserialize<string[]>(fsCacheValue);
                 }
 
                 var datalayerValue = await _dataLayer.GetKeys(storeId, null, cancellationToken);
                 await _fileCache.SetValueAsync(cacheKey, JsonSerializer.Serialize(datalayerValue ?? []));
-                 _logger.LogInformation("Got value for {StoreId} {Key} from DataLayer", storeId.SanitizeForLog(), storeId.SanitizeForLog());
+                _logger.LogInformation("Got value for {StoreId} {Key} from DataLayer", storeId.SanitizeForLog(), storeId.SanitizeForLog());
                 return datalayerValue;
             });
 
@@ -119,7 +124,7 @@ public class GatewayService
 
                 var datalayerValue = await _dataLayer.GetValue(storeId, HttpUtility.UrlDecode(key), null, cancellationToken);
                 await _fileCache.SetValueAsync(cacheKey, datalayerValue ?? "");
-                 _logger.LogInformation("Got value for {StoreId} {Key} from DataLayer", storeId.SanitizeForLog(), key.SanitizeForLog());
+                _logger.LogInformation("Got value for {StoreId} {Key} from DataLayer", storeId.SanitizeForLog(), key.SanitizeForLog());
                 return datalayerValue;
             });
 
