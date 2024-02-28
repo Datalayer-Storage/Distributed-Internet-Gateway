@@ -23,9 +23,13 @@ internal sealed class ShowConfigCommand()
         hostIp ??= "<error>";
         Console.WriteLine($"hostIp: {hostIp}");
 
-        var hostUri = await dnsService.GetHostUri(8575, cancellationSource.Token);
+        var hostUri = await dnsService.GetMirrorUri(cancellationSource.Token);
         hostUri ??= "<error>";
         Console.WriteLine($"hostUri: {hostUri}");
+
+        var digUri = await dnsService.GetDigServerUri(cancellationSource.Token);
+        digUri ??= "<error>";
+        Console.WriteLine($"digUri: {digUri}");
 
         return 0;
     }

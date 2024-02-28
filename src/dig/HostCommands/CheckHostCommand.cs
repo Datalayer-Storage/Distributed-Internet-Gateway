@@ -12,7 +12,7 @@ internal sealed class CheckHostCommand()
     public async Task<int> Execute(HostManager hostManager)
     {
         using var cancellationSource = new CancellationTokenSource(TimeSpan.FromSeconds(Timeout));
-        await hostManager.CheckHost(Host, cancellationSource.Token);
+        await hostManager.CheckMirrorHost(Host, cancellationSource.Token);
         return 0;
     }
 }

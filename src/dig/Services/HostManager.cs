@@ -1,16 +1,16 @@
 using System.Net.Http.Json;
+
 namespace dig;
 
-
 internal class HostManager(DnsService denService,
-                        IHttpClientFactory httpClientFactory,
-                        ILogger<HostManager> logger)
+                            IHttpClientFactory httpClientFactory,
+                            ILogger<HostManager> logger)
 {
     private readonly DnsService _dnsService = denService;
     private readonly ILogger<HostManager> _logger = logger;
     private readonly HttpClient _httpClient = httpClientFactory.CreateClient("datalayer.storage");
 
-    public async Task CheckHost(string host, CancellationToken token = default)
+    public async Task CheckMirrorHost(string host, CancellationToken token = default)
     {
         var hostToCheck = await GetHost(host, token);
         if (string.IsNullOrEmpty(hostToCheck))
@@ -37,6 +37,6 @@ internal class HostManager(DnsService denService,
             return host;
         }
 
-        return await _dnsService.GetHostUri(8575, token);
+        return await _dnsService.GetMirrorUri(token);
     }
 }

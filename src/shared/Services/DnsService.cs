@@ -20,20 +20,31 @@ public sealed class DnsService(IHttpClientFactory httpClientFactory,
         return await GetHostUri(port, stoppingToken) ?? throw new Exception("Failed to get public ip.");
     }
 
-    public async Task<string?> GetHostUri(int port, CancellationToken stoppingToken)
+    public async Task<string?> GetMirrorUri(CancellationToken stoppingToken)
+    {
+        var port = _configuration.GetValue("dig:DataLayerMirrorPort", 8575);
+        return await GetHostUri(port, stoppingToken);
+    }
+
+    public async Task<string?> GetDigServerUri(CancellationToken stoppingToken)
+    {
+        var port = _configuration.GetValue("dig:DigServerPort", 41410);
+        return await GetHostUri(port, stoppingToken);
+    }
+
+    private async Task<string?> GetHostUri(int port, CancellationToken stoppingToken)
     {
         // config file takes precedence
-        var host = _configuration["dig:MirrorHostUri"];
-        if (!string.IsNullOrEmpty(host))
+        var host = _configuration.GetValue("dig:HostName", "");
+        if (string.IsNullOrEmpty(host))
         {
-            return host;
+            var publicIpAddress = await GetPublicIPAdress(stoppingToken);
+            host = publicIpAddress?.Trim();
         }
 
-        var publicIpAddress = await GetPublicIPAdress(stoppingToken);
-        publicIpAddress = publicIpAddress?.Trim();
-        if (!string.IsNullOrEmpty(publicIpAddress))
+        if (!string.IsNullOrEmpty(host))
         {
-            return $"http://{publicIpAddress}:{port}";
+            return $"http://{host}:{port}";
         }
 
         return null;
