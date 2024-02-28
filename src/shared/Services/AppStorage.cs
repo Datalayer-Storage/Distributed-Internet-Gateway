@@ -1,5 +1,5 @@
 namespace dig;
-internal class AppStorage
+public class AppStorage
 {
     private readonly string _folderPath = string.Empty;
 

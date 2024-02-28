@@ -33,10 +33,9 @@ public class FileCacheService
     public void InvalidateStore(string storeId, Func<string, Task> callback)
     {
         _logger.LogInformation("Invalidating store {storeId}", storeId);
-        var storeDirectory = Path.Combine(_cacheDirectory, storeId);
-        if (Directory.Exists(storeDirectory))
+        if (Directory.Exists(_cacheDirectory))
         {
-            foreach (var file in Directory.GetFiles(storeDirectory, $"{storeId}*"))
+            foreach (var file in Directory.GetFiles(_cacheDirectory, $"{storeId}*"))
             {
                 _logger.LogInformation("Deleting file {File}", file);
                 File.Delete(file);

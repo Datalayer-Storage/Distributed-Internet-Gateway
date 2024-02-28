@@ -17,10 +17,9 @@ public class GatewayService
     private FileCacheService _fileCache;
     private readonly StoreUpdateNotifierService _storeUpdateNotifierService;
 
-    internal GatewayService(DataLayerProxy dataLayer,
+    public GatewayService(DataLayerProxy dataLayer,
                             ChiaConfig chiaConfig,
                             StoreRegistryService storeRegistryService,
-                            AppStorage appStorage,
                             IMemoryCache memoryCache,
                             ILogger<GatewayService> logger,
                             IConfiguration configuration)
@@ -31,7 +30,7 @@ public class GatewayService
         _memoryCache = memoryCache;
         _logger = logger;
         _configuration = configuration;
-        _fileCache = new FileCacheService(Path.Combine(appStorage.UserSettingsFolder, "store-cache"), _logger);
+        _fileCache = new FileCacheService(@"C:\Temp\store-cache", _logger);
         _storeUpdateNotifierService = new StoreUpdateNotifierService(dataLayer, memoryCache, logger);
 
         _storeUpdateNotifierService.StartWatcher(storeId => InvalidateStore(storeId), TimeSpan.FromSeconds(15));
