@@ -1,5 +1,7 @@
 using QRCoder;
 
+namespace dig.server;
+
 public class OfferRenderer : IRenderer
 {
     public string Render(string storeId, object contents, HttpRequest request)

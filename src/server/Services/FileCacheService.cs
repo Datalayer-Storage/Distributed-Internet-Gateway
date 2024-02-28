@@ -1,4 +1,4 @@
-using dig;
+namespace dig.server;
 
 public class FileCacheService
 {
