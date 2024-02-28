@@ -18,7 +18,7 @@ internal sealed class StoreCommands
     [Command("list", Description = "List subscribed stores, their mirrors and coins.")]
     public ListAllCommand List { get; init; } = new();
 
-    [Command("sync", Description = "Sync the list of stores with a remote list.")]
+    [Command("sync", Description = "Syncs the DIG node with the data layer.")]
     public SyncStoresCommand Sync { get; init; } = new();
 
     [Command("check-fee", Description = "Check the fee for adding a mirror or coin.")]

@@ -80,9 +80,7 @@
         "--mirror-reserve",
         "300000002",
         "--fee",
-        "5000000",
-        "--prune",
-        "--known-only"
+        "5000000"
       ],
       "cwd": "${workspaceFolder}/src/dig",
       "console": "integratedTerminal",

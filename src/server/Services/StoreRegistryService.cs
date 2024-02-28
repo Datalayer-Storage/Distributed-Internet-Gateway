@@ -3,7 +3,7 @@ using System.Collections.Concurrent;
 namespace dig.server;
 
 public sealed class StoreRegistryService(MirrorService mirrorService,
-                                            ILogger<StoreRegistryService> logger, 
+                                            ILogger<StoreRegistryService> logger,
                                             IConfiguration configuration)
 {
     private readonly IDictionary<string, Store> _storeNames = new ConcurrentDictionary<string, Store>();
@@ -11,10 +11,7 @@ public sealed class StoreRegistryService(MirrorService mirrorService,
     private readonly ILogger<StoreRegistryService> _logger = logger;
     private readonly IConfiguration _configuration = configuration;
 
-    public Store GetStore(string key)
-    {
-        return _storeNames.TryGetValue(key, out var store) ? store : new Store { singleton_id = key };
-    }
+    public Store GetStore(string key) => _storeNames.TryGetValue(key, out var store) ? store : new Store { singleton_id = key };
 
     public async Task Refresh(CancellationToken cancellationToken = default)
     {
