@@ -46,7 +46,7 @@ public class StoreUpdateNotifierService : IDisposable
                 _memoryCache.Set(cacheKey, rootHash.Hash);
                 _storeIds.TryAdd(storeId, cacheKey); // Track the store ID
 
-                var filePath = Path.Combine(_cacheDirectory, $"{storeId}-root_hash");
+                var filePath = Path.Combine(_cacheDirectory, $"{storeId}-root_hash").SanitizePath(_cacheDirectory);
                 await File.WriteAllTextAsync(filePath, rootHash.Hash);
 
                 _logger.LogInformation("Stored root hash for storeId {storeId} successfully.", storeId.SanitizeForLog());
@@ -71,7 +71,7 @@ public class StoreUpdateNotifierService : IDisposable
 
         _storeIds.TryRemove(storeId, out _); // Remove the store ID from tracking
 
-        var filePath = Path.Combine(_cacheDirectory, $"{storeId}-root_hash");
+        var filePath = Path.Combine(_cacheDirectory, $"{storeId}-root_hash").SanitizePath(_cacheDirectory);
         if (File.Exists(filePath))
         {
             File.Delete(filePath);
@@ -88,8 +88,9 @@ public class StoreUpdateNotifierService : IDisposable
         var files = Directory.GetFiles(_cacheDirectory, "*-root_hash");
         foreach (var file in files)
         {
-            var content = await File.ReadAllTextAsync(file);
-            var storeId = Path.GetFileNameWithoutExtension(file).Split("-root_hash")[0];
+            var sanitizedPath = file.SanitizePath(_cacheDirectory);
+            var content = await File.ReadAllTextAsync(sanitizedPath);
+            var storeId = Path.GetFileNameWithoutExtension(sanitizedPath).Split("-root_hash")[0];
             var cacheKey = $"root_hash_{storeId}";
             _memoryCache.Set(cacheKey, content);
             _storeIds.TryAdd(storeId, cacheKey); // Ensure the store ID is tracked
@@ -102,7 +103,6 @@ public class StoreUpdateNotifierService : IDisposable
         {
             var cacheKey = _storeIds[storeId];
             var currentRootHash = _memoryCache.Get<string>(cacheKey);
-
             var newRootHash = await _dataLayer.GetRoot(storeId, CancellationToken.None);
 
             if (newRootHash != null && !newRootHash.Hash.Equals(currentRootHash))
@@ -110,7 +110,7 @@ public class StoreUpdateNotifierService : IDisposable
                 _memoryCache.Set(cacheKey, newRootHash.Hash);
                 _logger.LogInformation("Updated in-memory cache for {storeId} with new root hash.", storeId.SanitizeForLog());
 
-                var filePath = Path.Combine(_cacheDirectory, $"{storeId}-root_hash");
+                var filePath = Path.Combine(_cacheDirectory, $"{storeId}-root_hash").SanitizePath(_cacheDirectory);
                 await File.WriteAllTextAsync(filePath, newRootHash.Hash);
 
                 _logger.LogInformation("Updated file cache for {storeId} with new root hash.", storeId.SanitizeForLog());
