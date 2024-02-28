@@ -19,6 +19,7 @@ public class GatewayService
 
     public GatewayService(DataLayerProxy dataLayer,
                             ChiaConfig chiaConfig,
+                            AppStorage appStorage,
                             StoreRegistryService storeRegistryService,
                             IMemoryCache memoryCache,
                             ILogger<GatewayService> logger,
@@ -30,16 +31,16 @@ public class GatewayService
         _memoryCache = memoryCache;
         _logger = logger;
         _configuration = configuration;
-        _fileCache = new FileCacheService(@"C:\Temp\store-cache", _logger);
-        _storeUpdateNotifierService = new StoreUpdateNotifierService(dataLayer, memoryCache, logger);
+        _fileCache = new FileCacheService(Path.Combine(appStorage.UserSettingsFolder, "store-cache"), _logger);
 
+        _storeUpdateNotifierService = new StoreUpdateNotifierService(dataLayer, memoryCache, logger);
         _storeUpdateNotifierService.StartWatcher(storeId => InvalidateStore(storeId), TimeSpan.FromSeconds(15));
     }
 
     public WellKnown GetWellKnown(string baseUri) => new(xch_address: _configuration.GetValue("dig:XchAddress", "")!,
-                                                                  known_stores_endpoint: $"{baseUri}/.well-known/known_stores",
-                                                                  donation_address: _configuration.GetValue("dig:DonationAddress", "")!,
-                                                                  server_version: GetAssemblyVersion());
+                                                            known_stores_endpoint: $"{baseUri}/.well-known/known_stores",
+                                                            donation_address: _configuration.GetValue("dig:DonationAddress", "")!,
+                                                            server_version: GetAssemblyVersion());
 
     public bool HaveDataLayerConfig() => _chiaConfig.GetEndpoint("data_layer") is not null;
 

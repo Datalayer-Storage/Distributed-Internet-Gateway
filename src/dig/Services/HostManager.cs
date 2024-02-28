@@ -3,8 +3,8 @@ namespace dig;
 
 
 internal class HostManager(DnsService denService,
-                        IHttpClientFactory httpClientFactory,
-                        ILogger<HostManager> logger)
+                            IHttpClientFactory httpClientFactory,
+                            ILogger<HostManager> logger)
 {
     private readonly DnsService _dnsService = denService;
     private readonly ILogger<HostManager> _logger = logger;
