@@ -59,7 +59,7 @@ namespace dig.server
                 _logger.LogError(ex, $"Error setting root hash to cache for storeId {storeId}.");
             }
         }
-
+        
         public async Task UnregisterStoreAsync(string storeId)
         {
             var cacheKey = $"root_hash_{storeId}";
