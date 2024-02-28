@@ -4,8 +4,7 @@ using System.Dynamic;
 
 namespace dig;
 
-
-internal static class Utils
+internal static partial class Utils
 {
     public static Exception GetInnermostException(Exception ex)
     {
@@ -23,15 +22,9 @@ internal static class Utils
         return innerMost.Message;
     }
 
-    public static string SanitizeForLog(this string input)
-    {
-        return Regex.Replace(input, @"\W", "_");
-    }
+    public static string SanitizeForLog(this string input) => SanitizeRegex().Replace(input, "_");
 
-    public static bool IsBase64Image(string data)
-    {
-        return data.StartsWith("data:image", StringComparison.OrdinalIgnoreCase);
-    }
+    public static bool IsBase64Image(string data) => data.StartsWith("data:image", StringComparison.OrdinalIgnoreCase);
 
     public static bool TryParseJson(string strInput, out dynamic? v)
     {
@@ -52,4 +45,7 @@ internal static class Utils
 
         return v is not null;
     }
+
+    [GeneratedRegex(@"\W")] // matches any non-word character
+    private static partial Regex SanitizeRegex();
 }

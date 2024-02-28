@@ -2,18 +2,20 @@
 using chia.dotnet;
 using Microsoft.Extensions.Caching.Memory;
 using System.Collections.Concurrent;
+using System.Diagnostics;
 
 namespace dig.server
 {
-    public class StoreUpdateNotifierService
+    public class StoreUpdateNotifierService : IDisposable
     {
         private readonly DataLayerProxy _dataLayer;
         private readonly IMemoryCache _memoryCache;
         private readonly ILogger _logger;
-        private readonly List<Func<string, Task>> _callbacks = new();
-        private Timer _timer;
+        private readonly List<Func<string, Task>> _callbacks = [];
+        private Timer? _timer;
+        private bool disposedValue;
         private readonly string _cacheDirectory;
-        private readonly ConcurrentDictionary<string, string> _storeIds = new ConcurrentDictionary<string, string>();
+        private readonly ConcurrentDictionary<string, string> _storeIds = new();
 
         public StoreUpdateNotifierService(DataLayerProxy dataLayer, IMemoryCache memoryCache, ILogger logger)
         {
@@ -31,37 +33,39 @@ namespace dig.server
                 var cacheKey = $"root_hash_{storeId}";
                 if (_memoryCache.TryGetValue(cacheKey, out _))
                 {
-                    _logger.LogInformation($"StoreId {storeId} already exists in memory cache.");
+                    _logger.LogInformation("StoreId {storeId} already exists in memory cache.", storeId.SanitizeForLog());
                     return;
                 }
 
                 var rootHash = await _dataLayer.GetRoot(storeId, default);
-                _logger.LogInformation($"Retrieved root hash {rootHash.Hash} for storeId {storeId}.");
+                _logger.LogInformation("Retrieved root hash {rootHash} for storeId {storeId}.", rootHash.Hash, storeId.SanitizeForLog());
 
                 if (rootHash != null)
                 {
-                    _logger.LogInformation($"Retrieved root hash {rootHash.Hash} for storeId {storeId}.");
+                    _logger.LogInformation("Retrieved root hash {rootHash} for storeId {storeId}.", rootHash.Hash, storeId.SanitizeForLog());
                     _memoryCache.Set(cacheKey, rootHash.Hash);
                     _storeIds.TryAdd(storeId, cacheKey); // Track the store ID
 
                     var filePath = Path.Combine(_cacheDirectory, $"{storeId}-root_hash");
                     await File.WriteAllTextAsync(filePath, rootHash.Hash);
 
-                    _logger.LogInformation($"Stored root hash for storeId {storeId} successfully.");
+                    _logger.LogInformation("Stored root hash for storeId {storeId} successfully.", storeId.SanitizeForLog());
                 }
                 else
                 {
-                    _logger.LogError($"Failed to retrieve root hash for storeId {storeId}.");
+                    _logger.LogError("Failed to retrieve root hash for storeId {storeId}.", storeId.SanitizeForLog());
                 }
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, $"Error setting root hash to cache for storeId {storeId}.");
+                _logger.LogError(ex, "Error setting root hash to cache for storeId {storeId}.", storeId.SanitizeForLog());
             }
         }
-        
+
         public async Task UnregisterStoreAsync(string storeId)
         {
+            await Task.CompletedTask;
+
             var cacheKey = $"root_hash_{storeId}";
             _memoryCache.Remove(cacheKey);
 
@@ -71,11 +75,11 @@ namespace dig.server
             if (File.Exists(filePath))
             {
                 File.Delete(filePath);
-                _logger.LogInformation($"Successfully unwatched and deleted cache for storeId {storeId}.");
+                _logger.LogInformation("Successfully unwatched and deleted cache for storeId {storeId}.", storeId.SanitizeForLog());
             }
             else
             {
-                _logger.LogInformation($"No root_hash file found for storeId {storeId} to unwatch.");
+                _logger.LogInformation("No root_hash file found for storeId {storeId} to unwatch.", storeId.SanitizeForLog());
             }
         }
 
@@ -104,16 +108,16 @@ namespace dig.server
                 if (newRootHash != null && !newRootHash.Hash.Equals(currentRootHash))
                 {
                     _memoryCache.Set(cacheKey, newRootHash.Hash);
-                    _logger.LogInformation($"Updated in-memory cache for {storeId} with new root hash.");
+                    _logger.LogInformation("Updated in-memory cache for {storeId} with new root hash.", storeId.SanitizeForLog());
 
                     var filePath = Path.Combine(_cacheDirectory, $"{storeId}-root_hash");
                     await File.WriteAllTextAsync(filePath, newRootHash.Hash);
 
-                    _logger.LogInformation($"Updated file cache for {storeId} with new root hash.");
+                    _logger.LogInformation("Updated file cache for {storeId} with new root hash.", storeId.SanitizeForLog());
 
                     foreach (var callback in _callbacks)
                     {
-                        _logger.LogInformation($"Invoking callback for storeId {storeId}.");
+                        _logger.LogInformation("Invoking callback for storeId {storeId}.", storeId.SanitizeForLog());
                         await callback(storeId);
                     }
                 }
@@ -122,6 +126,7 @@ namespace dig.server
 
         public void StartWatcher(Func<string, Task> callback, TimeSpan interval)
         {
+            Debug.Assert(_timer == null, "Watcher already started");
             if (_callbacks.Count == 0)
             {
                 _timer = new Timer(async _ => await RefreshRootHashesAsync(), null, TimeSpan.Zero, interval);
@@ -138,6 +143,29 @@ namespace dig.server
                 _timer?.Dispose();
                 _timer = null;
             }
+        }
+
+        protected virtual void Dispose(bool disposing)
+        {
+            if (!disposedValue)
+            {
+                if (disposing)
+                {
+                    _callbacks.Clear();
+                    _timer?.Change(Timeout.Infinite, 0);
+                    _timer?.Dispose();
+                    _timer = null;
+                }
+
+                disposedValue = true;
+            }
+        }
+
+        public void Dispose()
+        {
+            // Do not change this code. Put cleanup code in 'Dispose(bool disposing)' method
+            Dispose(disposing: true);
+            GC.SuppressFinalize(this);
         }
     }
 }
