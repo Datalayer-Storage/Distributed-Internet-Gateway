@@ -44,7 +44,7 @@ public partial class StoresController(GatewayService gatewayService,
                     }
                 }
 
-               string htmlContent = IndexRenderer.Render(storeId, decodedKeys, Request);
+                string htmlContent = IndexRenderer.Render(storeId, decodedKeys ?? [], Request);
 
                 return Content(htmlContent, "text/html");
             }

@@ -46,6 +46,7 @@ builder.Services.AddControllersWithViews();
 // these are the services needed by the gateway
 builder.Services.AddSingleton<ChiaConfig>()
     .AddHttpClient()
+    .AddSingleton((provider) => appStorage)
     .AddActivatedSingleton<IServer, ServerService>()
     .AddSingleton<MirrorService>()
     .AddSingleton<GatewayService>()
@@ -85,7 +86,6 @@ if (builder.Configuration.GetValue("dig:DynDnsJobEnabled", false))
         .AddSingleton<DynDnsService>()
         .AddSingleton<DnsService>()
         .AddSingleton<LoginManager>()
-        .AddSingleton((provider) => appStorage)
         .AddDataProtection()
         .SetApplicationName("distributed-internet-gateway")
         .SetDefaultKeyLifetime(TimeSpan.FromDays(180));
