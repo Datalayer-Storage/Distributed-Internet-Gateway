@@ -154,7 +154,7 @@ public class StoreUpdateNotifierService : IDisposable
 
                 _preCacheQueue.Enqueue(storeId);
                 // purposely not awaited - fire and forget
-                ProcessPreCacheQueueAsync();
+                _ = ProcessPreCacheQueueAsync();
             }
         }
     }

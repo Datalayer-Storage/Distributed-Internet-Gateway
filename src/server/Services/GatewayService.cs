@@ -212,7 +212,7 @@ public class GatewayService
         }
     }
 
-    public async Task<string?> GetValueAsHtml(string storeId, string lastStoreRootHash, CancellationToken cancellationToken)
+    public async Task<string?> GetValueAsHtml(string storeId, string? lastStoreRootHash, CancellationToken cancellationToken)
     {
         var hexKey = HexUtils.ToHex("index.html");
         var value = await GetValue(storeId, hexKey, lastStoreRootHash, cancellationToken);
