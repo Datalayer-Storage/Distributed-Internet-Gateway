@@ -24,12 +24,14 @@ public sealed class DnsService(IHttpClientFactory httpClientFactory,
     public async Task<string?> GetMirrorUri(CancellationToken stoppingToken)
     {
         var port = _configuration.GetValue("dig:DataLayerMirrorPort", 8575);
+        
         return await GetHostUri(port, stoppingToken);
     }
 
     public async Task<string?> GetDigServerUri(CancellationToken stoppingToken)
     {
         var port = _configuration.GetValue("dig:DigServerPort", 41410);
+
         return await GetHostUri(port, stoppingToken);
     }
 
@@ -39,16 +41,15 @@ public sealed class DnsService(IHttpClientFactory httpClientFactory,
         var host = _configuration.GetValue("dig:HostName", "");
         if (string.IsNullOrEmpty(host))
         {
-            var publicIpAddress = await GetPublicIPAdress(stoppingToken);
-            host = publicIpAddress?.Trim();
+            host = await GetPublicIPAdress(stoppingToken);
         }
 
-        if (!string.IsNullOrEmpty(host))
+        if (string.IsNullOrEmpty(host))
         {
-            return $"http://{host}:{port}";
+            return null;
         }
 
-        return null;
+        return $"http://{host}:{port}";
     }
 
     public async Task<string?> GetPublicIPAdress(CancellationToken stoppingToken)
@@ -59,6 +60,7 @@ public sealed class DnsService(IHttpClientFactory httpClientFactory,
 
             var response = await _httpClient.GetAsync("/user/v1/get_user_ip", stoppingToken);
             dynamic ip = await response.Content.ReadFromJsonAsync<ExpandoObject>(stoppingToken) ?? throw new Exception("Get public ip address failed.");
+
             return ip?.ip_address?.ToString()?.Trim();
         }
         catch (Exception ex)
