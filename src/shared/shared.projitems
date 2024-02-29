@@ -12,13 +12,12 @@
         <Compile Include="$(MSBuildThisFileDirectory)Services\ServerCoinService.cs" />
         <Compile Include="$(MSBuildThisFileDirectory)Services\StoreService.cs" />
         <Compile Include="$(MSBuildThisFileDirectory)Services\MirrorService.cs" />
+        <Compile Include="$(MSBuildThisFileDirectory)Services\NodeSyncService.cs" />
         <Compile Include="$(MSBuildThisFileDirectory)Services\IServer.cs" />
         <Compile Include="$(MSBuildThisFileDirectory)RpcEndpointConfiguration.cs" />
-        <Compile Include="$(MSBuildThisFileDirectory)ScopedLogEntry.cs" />
         <Compile Include="$(MSBuildThisFileDirectory)Services\ChiaConfig.cs" />
         <Compile Include="$(MSBuildThisFileDirectory)Services\ChiaService.cs" />
         <Compile Include="$(MSBuildThisFileDirectory)Services\DnsService.cs" />
-        <Compile Include="$(MSBuildThisFileDirectory)Services\StoreSyncService.cs" />
         <Compile Include="$(MSBuildThisFileDirectory)Services\DynDnsService.cs" />
         <Compile Include="$(MSBuildThisFileDirectory)Services\AppStorage.cs" />
         <Compile Include="$(MSBuildThisFileDirectory)Services\LoginManager.cs" />

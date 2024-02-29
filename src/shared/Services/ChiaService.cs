@@ -29,7 +29,7 @@ internal sealed class ChiaService(FullNodeProxy fullNode,
                 return defaultFee;
             }
 
-            using var _ = new ScopedLogEntry(_logger, "Getting fee estimate");
+            _logger.LogInformation("Getting fee estimate");
             int[] targetTimes = [_configuration.GetValue("dig:FeeEstimateTargetTimeMinutes", 5) * 60];
             var fee = await _fullNode.GetFeeEstimate(cost, targetTimes, stoppingToken);
 

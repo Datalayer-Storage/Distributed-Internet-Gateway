@@ -1,13 +1,13 @@
 namespace dig.server;
 
-internal sealed class PeriodicStoreSyncService(StoreSyncService syncService,
-                                            ChiaService chiaService,
-                                            ILogger<PeriodicStoreSyncService> logger,
-                                            IConfiguration configuration) : BackgroundService
+internal sealed class PeriodicNodeSyncService(NodeSyncService syncService,
+                                                ChiaService chiaService,
+                                                ILogger<PeriodicNodeSyncService> logger,
+                                                IConfiguration configuration) : BackgroundService
 {
-    private readonly StoreSyncService _syncService = syncService;
+    private readonly NodeSyncService _syncService = syncService;
     private readonly ChiaService _chiaService = chiaService;
-    private readonly ILogger<PeriodicStoreSyncService> _logger = logger;
+    private readonly ILogger<PeriodicNodeSyncService> _logger = logger;
     private readonly IConfiguration _configuration = configuration;
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -21,26 +21,20 @@ internal sealed class PeriodicStoreSyncService(StoreSyncService syncService,
             {
                 // set/reset the delay period (default to once a day)
                 var period = _configuration.GetValue("dig:StoreSyncIntervalMinutes", 1440);
-                var mirrorListUri = _configuration.GetValue("dig:DataLayerStorageUri", "https://api.datalayer.storage/") + "mirrors/v1/list_all";
                 var mirrorReserveAmount = _configuration.GetValue<ulong>("dig:AddMirrorReserveAmount", 0);
                 var serverReserveAmount = _configuration.GetValue<ulong>("dig:ServerCoinReserveAmount", 0);
-                var addMirrors = _configuration.GetValue("dig:MirrorSubscriptions", true);
-                var pruneStores = _configuration.GetValue("dig:PruneStores", true);
-                var knownOnly = _configuration.GetValue("dig:VerifiedStoresOnly", true);
                 var defaultFee = _configuration.GetValue<ulong>("dig:DefaultFee", 500000);
                 var fee = await _chiaService.ResolveFee(defaultFee, Math.Max(mirrorReserveAmount, serverReserveAmount), stoppingToken);
 
-                var (addedCount, removedCount, message) = await _syncService.SyncStores(mirrorListUri,
-                                                                                        mirrorReserveAmount,
-                                                                                        serverReserveAmount,
-                                                                                        addMirrors,
-                                                                                        pruneStores,
-                                                                                        knownOnly,
-                                                                                        fee,
-                                                                                        stoppingToken);
-                if (message is not null)
+                try
                 {
-                    // try sooner than regular if the DL is busy
+                    await _syncService.SyncWithDataLayer(mirrorReserveAmount,
+                                                            serverReserveAmount,
+                                                            fee,
+                                                            stoppingToken);
+                }
+                catch
+                {
                     period = _configuration.GetValue("dig:DataLayerBusyRetryMinutes", 60);
                     _logger.LogWarning("The data layer appears busy. Will try again later.");
                 }
