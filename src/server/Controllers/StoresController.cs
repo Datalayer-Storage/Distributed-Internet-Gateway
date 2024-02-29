@@ -51,7 +51,6 @@ public partial class StoresController(GatewayService gatewayService,
                         var proof = await _gatewayService.GetProof(storeId, HexUtils.ToHex("index.html"), cancellationToken);
                         if (proof is not null)
                         {
-                            _logger.LogInformation("Got proof for {StoreId} {proof} from DataLayer", storeId.SanitizeForLog(), proof.SanitizeForLog());
                             HttpContext.Response.Headers.Add("X-Proof-of-Inclusion", proof);
                         }
                         

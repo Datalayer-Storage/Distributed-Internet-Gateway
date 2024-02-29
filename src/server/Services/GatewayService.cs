@@ -33,7 +33,7 @@ public class GatewayService
         _configuration = configuration;
         _fileCache = new FileCacheService(Path.Combine(appStorage.UserSettingsFolder, "store-cache"), _logger);
 
-        _storeUpdateNotifierService = new StoreUpdateNotifierService(dataLayer, memoryCache, logger);
+        _storeUpdateNotifierService = new StoreUpdateNotifierService(dataLayer, memoryCache, logger, _fileCache);
         _storeUpdateNotifierService.StartWatcher(storeId => InvalidateStore(storeId), TimeSpan.FromMinutes(5));
     }
 

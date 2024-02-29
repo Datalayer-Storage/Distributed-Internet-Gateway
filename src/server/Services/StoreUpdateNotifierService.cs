@@ -15,15 +15,16 @@ public class StoreUpdateNotifierService : IDisposable
     private Timer? _timer;
     private bool disposedValue;
     private readonly string _cacheDirectory;
+    private readonly FileCacheService _fileCache;
     private readonly ConcurrentDictionary<string, string> _storeIds = new();
+    private readonly ConcurrentQueue<string> _preCacheQueue = new ConcurrentQueue<string>();
 
-    public StoreUpdateNotifierService(DataLayerProxy dataLayer, IMemoryCache memoryCache, ILogger logger)
+    public StoreUpdateNotifierService(DataLayerProxy dataLayer, IMemoryCache memoryCache, ILogger logger, FileCacheService fileCache)
     {
         _dataLayer = dataLayer;
         _memoryCache = memoryCache;
         _logger = logger;
-        _cacheDirectory = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "StoreUpdateNotifierCache");
-        Directory.CreateDirectory(_cacheDirectory); // Ensure the cache directory exists
+        _fileCache = fileCache;
     }
 
     public async Task RegisterStoreAsync(string storeId)
@@ -62,6 +63,35 @@ public class StoreUpdateNotifierService : IDisposable
         }
     }
 
+    public async Task ProcessPreCacheQueueAsync()
+    {
+        while (_preCacheQueue.TryDequeue(out var storeId))
+        {
+            _logger.LogInformation($"Processing pre-cache for storeId: {storeId}");
+            await Task.Run(async () => await PreCacheStore(storeId));
+        }
+    }
+
+    public async Task PreCacheStore(string storeId)
+    {
+        var lastRootHash = await _dataLayer.GetRoot(storeId, CancellationToken.None);
+        var storeKeys = await _dataLayer.GetKeys(storeId, lastRootHash.Hash, CancellationToken.None);
+        if (storeKeys != null)
+        {
+            foreach (var key in storeKeys)
+            {
+                _logger.LogInformation("Precaching key {key} for storeId {storeId}.", key.SanitizeForLog(), storeId.SanitizeForLog());
+                var value = await _dataLayer.GetValue(storeId, key, lastRootHash.Hash, CancellationToken.None);
+                if (value != null)
+                {
+                    var cacheKey = $"{storeId}-{key}";
+                    await _fileCache.SetValueAsync(cacheKey, value);
+                }
+                await Task.Delay(500);
+            }
+        }
+    }
+
     public async Task UnregisterStoreAsync(string storeId)
     {
         await Task.CompletedTask;
@@ -80,20 +110,6 @@ public class StoreUpdateNotifierService : IDisposable
         else
         {
             _logger.LogInformation("No root_hash file found for storeId {storeId} to unwatch.", storeId.SanitizeForLog());
-        }
-    }
-
-    public async Task LoadRootHashesToCacheAsync()
-    {
-        var files = Directory.GetFiles(_cacheDirectory, "*-root_hash");
-        foreach (var file in files)
-        {
-            var sanitizedPath = file.SanitizePath(_cacheDirectory);
-            var content = await File.ReadAllTextAsync(sanitizedPath);
-            var storeId = Path.GetFileNameWithoutExtension(sanitizedPath).Split("-root_hash")[0];
-            var cacheKey = $"root_hash_{storeId}";
-            _memoryCache.Set(cacheKey, content);
-            _storeIds.TryAdd(storeId, cacheKey); // Ensure the store ID is tracked
         }
     }
 
@@ -120,6 +136,10 @@ public class StoreUpdateNotifierService : IDisposable
                     _logger.LogInformation("Invoking callback for storeId {storeId}.", storeId.SanitizeForLog());
                     await callback(storeId);
                 }
+
+                _preCacheQueue.Enqueue(storeId);
+                // purposely not awaited - fire and forget
+                ProcessPreCacheQueueAsync();
             }
         }
     }

@@ -13,6 +13,10 @@ public class FileCacheService
         {
             Directory.CreateDirectory(_cacheDirectory);
         }
+        
+        // If the DIG node is just starting up, we want to clear the cache
+        // Because it could be super stale
+        InvaidateAllCache();
     }
 
     public async Task<string?> GetValueAsync(string key)
@@ -30,6 +34,19 @@ public class FileCacheService
     {
         var filePath = GetFilePath(key);
         await File.WriteAllTextAsync(filePath, value);
+    }
+
+    public void InvaidateAllCache()
+    {
+        if (Directory.Exists(_cacheDirectory))
+        {
+            foreach (var file in Directory.GetFiles(_cacheDirectory, $"*"))
+            {
+                var sanitizedPath = file.SanitizePath(_cacheDirectory);
+                _logger.LogInformation("Deleting file {File}", sanitizedPath);
+                File.Delete(sanitizedPath);
+            }
+        }
     }
 
     public void InvalidateStore(string storeId, Func<string, Task> callback)
