@@ -1,3 +1,4 @@
+using System.Text;
 using Microsoft.AspNetCore.Mvc;
 using System.Text.RegularExpressions;
 
@@ -37,9 +38,23 @@ public partial class StoresController(GatewayService gatewayService,
                 // the key represents a SPA app, so we want to return the index.html
                 if (decodedKeys != null && decodedKeys.Count > 0 && decodedKeys.Contains("index.html"))
                 {
-                    var html = await _gatewayService.GetValueAsHtml(storeId, cancellationToken);
+                    var lastStoreRootHash = await _gatewayService.GetLastRoot(storeId, cancellationToken);
+
+                    if (lastStoreRootHash is not null)
+                    {
+                        HttpContext.Response.Headers.Add("X-Generation-Hash", lastStoreRootHash);
+                    }
+
+                    var html = await _gatewayService.GetValueAsHtml(storeId, lastStoreRootHash, cancellationToken);
                     if (html is not null)
                     {
+                        var proof = await _gatewayService.GetProof(storeId, HexUtils.ToHex("index.html"), cancellationToken);
+                        if (proof is not null)
+                        {
+                            _logger.LogInformation("Got proof for {StoreId} {proof} from DataLayer", storeId.SanitizeForLog(), proof.SanitizeForLog());
+                            HttpContext.Response.Headers.Add("X-Proof-of-Inclusion", proof);
+                        }
+                        
                         return Content(html, "text/html");
                     }
                 }
@@ -102,7 +117,29 @@ public partial class StoresController(GatewayService gatewayService,
             }
 
             var hexKey = HexUtils.ToHex(key);
-            var rawValue = await _gatewayService.GetValue(storeId, hexKey, cancellationToken);
+
+            var proof = await _gatewayService.GetProof(storeId, hexKey, cancellationToken);
+            if (proof is not null)
+            {
+                 byte[] proofBytes = Encoding.UTF8.GetBytes(proof);
+
+                // Convert the byte array to a Base64 string
+                string proofBase64 = Convert.ToBase64String(proofBytes);
+                HttpContext.Response.Headers.Add("X-Proof-of-Inclusion", proofBase64);
+            }
+            
+            // Requesting GetValue only from the last root hash onchain ensures that only
+            // nodes that have the latest state will respond to the request
+            // This helps prevent a mismatch between the state of the store and 
+            // the data when pulled across decentralized nodes
+            var lastStoreRootHash = await _gatewayService.GetLastRoot(storeId, cancellationToken);
+
+            if (lastStoreRootHash is not null)
+            {
+                HttpContext.Response.Headers.Add("X-Generation-Hash", lastStoreRootHash);
+            }
+
+            var rawValue = await _gatewayService.GetValue(storeId, hexKey, lastStoreRootHash, cancellationToken);
             if (rawValue is null)
             {
                 _logger.LogInformation("couldn't find: {key}", key.SanitizeForLog());
@@ -119,7 +156,7 @@ public partial class StoresController(GatewayService gatewayService,
                 if (expando is not null && expando.TryGetValue("type", out var type) && type?.ToString() == "multipart")
                 {
                     string mimeType = GetMimeType(fileExtension) ?? "application/octet-stream";
-                    var bytes = await _gatewayService.GetValuesAsBytes(storeId, json, cancellationToken);
+                    var bytes = await _gatewayService.GetValuesAsBytes(storeId, json, lastStoreRootHash, cancellationToken);
 
                     return Results.File(bytes, mimeType);
                 }

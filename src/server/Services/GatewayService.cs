@@ -75,6 +75,36 @@ public class GatewayService
         return stores.Select(_storeRegistryService.GetStore);
     }
 
+    public async Task<string?> GetLastRoot(string storeId, CancellationToken cancellationToken)
+    {
+        try
+        {
+            var cacheKey = $"{storeId}-root-history";
+            var rootHistory = await _memoryCache.GetOrCreateAsync(cacheKey, async entry =>
+            {
+                entry.SlidingExpiration = TimeSpan.FromSeconds(30);
+                _logger.LogInformation("Getting root history for {StoreId}", storeId.SanitizeForLog());
+                var datalayerValue = await _dataLayer.GetRootHistory(storeId, cancellationToken);
+                return datalayerValue;
+            });
+
+            var lastRootHistoryItem = rootHistory?.LastOrDefault();
+            if (lastRootHistoryItem != null)
+            {
+                // Return the rootHash of the last item
+                return lastRootHistoryItem.RootHash;
+            }
+            else
+            {
+                return null;
+            }
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
     public async Task<IEnumerable<string>?> GetKeys(string storeId, CancellationToken cancellationToken)
     {
         try
@@ -111,7 +141,43 @@ public class GatewayService
         }
     }
 
-    public async Task<string?> GetValue(string storeId, string key, CancellationToken cancellationToken)
+    public async Task<string?> GetProof(string storeId, string hexKey, CancellationToken cancellationToken)
+    {
+        try
+        {
+            var cacheKey = $"{storeId}-{hexKey}-proof";
+            var proof = await _memoryCache.GetOrCreateAsync(cacheKey, async entry =>
+            {
+                entry.SlidingExpiration = TimeSpan.FromMinutes(15);
+                _logger.LogInformation("Getting proof for {StoreId} {Key}", storeId.SanitizeForLog(), hexKey.SanitizeForLog());
+
+                var fsCacheValue = await _fileCache.GetValueAsync(cacheKey);
+                if (fsCacheValue is not null)
+                {
+                    _logger.LogInformation("Got value for {StoreId} {Key} from file cache", storeId.SanitizeForLog(), hexKey.SanitizeForLog());
+                    return fsCacheValue;
+                }
+
+                var proofResponse = await _dataLayer.GetProof(storeId, new List<string> { HttpUtility.UrlDecode(hexKey) }, cancellationToken);
+                var proof = proofResponse.ToJson();
+                await _fileCache.SetValueAsync(cacheKey, proof);
+                _logger.LogInformation("Got proof for {StoreId} {proof} from DataLayer", storeId.SanitizeForLog(), proof.SanitizeForLog());
+                return proof;
+            });
+
+            return proof;
+        }
+        catch
+        {
+            return null; // 404 in the api
+        }
+        finally
+        {
+            await _storeUpdateNotifierService.RegisterStoreAsync(storeId);
+        }
+    }
+
+    public async Task<string?> GetValue(string storeId, string key, string? rootHash, CancellationToken cancellationToken)
     {
         try
         {
@@ -128,7 +194,7 @@ public class GatewayService
                     return fsCacheValue;
                 }
 
-                var datalayerValue = await _dataLayer.GetValue(storeId, HttpUtility.UrlDecode(key), null, cancellationToken);
+                var datalayerValue = await _dataLayer.GetValue(storeId, HttpUtility.UrlDecode(key), rootHash, cancellationToken);
                 await _fileCache.SetValueAsync(cacheKey, datalayerValue ?? "");
                 _logger.LogInformation("Got value for {StoreId} {Key} from DataLayer", storeId.SanitizeForLog(), key.SanitizeForLog());
                 return datalayerValue;
@@ -146,10 +212,10 @@ public class GatewayService
         }
     }
 
-    public async Task<string?> GetValueAsHtml(string storeId, CancellationToken cancellationToken)
+    public async Task<string?> GetValueAsHtml(string storeId, string lastStoreRootHash, CancellationToken cancellationToken)
     {
         var hexKey = HexUtils.ToHex("index.html");
-        var value = await GetValue(storeId, hexKey, cancellationToken);
+        var value = await GetValue(storeId, hexKey, lastStoreRootHash, cancellationToken);
         if (value is null)
         {
             return null; // 404 in the api
@@ -162,7 +228,7 @@ public class GatewayService
         return decodedValue.Replace("<head>", $"<head>\n    {baseTag}");
     }
 
-    public async Task<byte[]> GetValuesAsBytes(string storeId, dynamic json, CancellationToken cancellationToken)
+    public async Task<byte[]> GetValuesAsBytes(string storeId, dynamic json, string rootHash, CancellationToken cancellationToken)
     {
         var multipartFileNames = json.parts as IEnumerable<string> ?? new List<string>();
         var sortedFileNames = new List<string>(multipartFileNames);
@@ -178,7 +244,7 @@ public class GatewayService
         {
             var hexKey = HexUtils.ToHex(HttpUtility.UrlDecode(fileName));
 
-            return await GetValue(storeId, hexKey, cancellationToken);
+            return await GetValue(storeId, hexKey, rootHash, cancellationToken);
         });
 
         var dataLayerResponses = await Task.WhenAll(hexPartsPromises);
