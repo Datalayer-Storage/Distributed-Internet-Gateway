@@ -18,6 +18,7 @@ public class StoreUpdateNotifierService : IDisposable
     private readonly FileCacheService _fileCache;
     private readonly ConcurrentDictionary<string, string> _storeIds = new();
     private readonly ConcurrentQueue<string> _preCacheQueue = new ConcurrentQueue<string>();
+    private readonly SemaphoreSlim _preCacheLock = new SemaphoreSlim(1, 1);
 
     public StoreUpdateNotifierService(DataLayerProxy dataLayer, IMemoryCache memoryCache, ILogger logger, FileCacheService fileCache)
     {
@@ -65,10 +66,24 @@ public class StoreUpdateNotifierService : IDisposable
 
     public async Task ProcessPreCacheQueueAsync()
     {
-        while (_preCacheQueue.TryDequeue(out var storeId))
+        // Wait to enter the semaphore. If no one is inside, enter immediately.
+        // Otherwise, wait until the semaphore is released.
+        await _preCacheLock.WaitAsync();
+
+        try
         {
-            _logger.LogInformation($"Processing pre-cache for storeId: {storeId}");
-            await Task.Run(async () => await PreCacheStore(storeId));
+            while (_preCacheQueue.TryDequeue(out var storeId))
+            {
+                _logger.LogInformation($"Processing pre-cache for storeId: {storeId} on a separate thread.");
+
+                // Execute PreCacheStore on a separate thread and wait for it to complete
+                await Task.Run(async () => await PreCacheStore(storeId));
+            }
+        }
+        finally
+        {
+            // When the task is complete, release the semaphore so another instance can run
+            _preCacheLock.Release();
         }
     }
 
