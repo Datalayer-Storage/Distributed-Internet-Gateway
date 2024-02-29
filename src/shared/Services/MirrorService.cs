@@ -4,11 +4,9 @@ using Newtonsoft.Json.Serialization;
 
 namespace dig;
 
-public sealed class MirrorService(DnsService dnsService,
-                                        IHttpClientFactory httpClientFactory,
-                                        ILogger<MirrorService> logger)
+public sealed class MirrorService(IHttpClientFactory httpClientFactory,
+                                    ILogger<MirrorService> logger)
 {
-    private readonly DnsService _dnsService = dnsService;
     private readonly ILogger<MirrorService> _logger = logger;
     private readonly HttpClient _httpClient = httpClientFactory.CreateClient();
     private readonly JsonSerializerSettings _settings = new()
@@ -19,19 +17,9 @@ public sealed class MirrorService(DnsService dnsService,
         }
     };
 
-    public async Task<string?> GetMyMirrorUri(CancellationToken cancellationToken)
-    {
-        var uri = await _dnsService.GetMirrorUri(cancellationToken);
-        if (string.IsNullOrEmpty(uri))
-        {
-            return null;
-        }
-        return uri;
-    }
-
     public async IAsyncEnumerable<Store> FetchLatest(string uri, [EnumeratorCancellation] CancellationToken stoppingToken)
     {
-        using var _ = new ScopedLogEntry(_logger, $"Fetching latest mirrors from {uri}");
+        _logger.LogInformation("Fetching latest mirrors from {uri}", uri);
         var currentPage = 1;
         var totalPages = 0; // we won't know actual total pages until we get the first page
 
@@ -53,7 +41,7 @@ public sealed class MirrorService(DnsService dnsService,
     {
         try
         {
-            using var _ = new ScopedLogEntry(_logger, $"Fetching page {currentPage} from {uri}");
+            _logger.LogInformation("Fetching page {currentPage} from {uri}", currentPage, uri);
             using var response = await httpClient.GetAsync($"{uri}?page={currentPage}", stoppingToken);
             response.EnsureSuccessStatusCode();
 

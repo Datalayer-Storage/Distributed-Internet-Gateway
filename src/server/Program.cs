@@ -48,8 +48,8 @@ builder.Services.AddSingleton<ChiaConfig>()
     .AddHttpClient()
     .AddSingleton((provider) => appStorage)
     .AddActivatedSingleton<IServer, ServerService>()
-    .AddSingleton<MirrorService>()
     .AddSingleton<GatewayService>()
+    .AddSingleton<MirrorService>()
     .AddSingleton<DnsService>()
     .AddSingleton<StoreRegistryService>()
     .AddSingleton(provider => new DataLayerProxy(provider.GetRequiredKeyedService<IRpcClient>("data_layer"), "dig.server"))
@@ -65,13 +65,13 @@ builder.Services.AddHttpClient("datalayer.storage", c =>
 
 // this sets up the sync service - note that it shares some dependencies with the gateway service
 // ChiaConfig, RpcClientHost, and DataLayerProxy
-if (builder.Configuration.GetValue("dig:StoreSyncJobEnabled", false))
+if (builder.Configuration.GetValue("dig:NodeSyncJobEnabled", false))
 {
     builder.Services
-        .AddHostedService<PeriodicStoreSyncService>()
+        .AddHostedService<PeriodicNodeSyncService>()
+        .AddSingleton<NodeSyncService>()
         .AddSingleton<ChiaService>()
         .AddSingleton<StoreService>()
-        .AddSingleton<StoreSyncService>()
         .AddSingleton<ServerCoinService>()
         .AddSingleton<DnsService>()
         .AddSingleton(provider => new FullNodeProxy(provider.GetRequiredKeyedService<IRpcClient>("full_node"), "dig.server"))
