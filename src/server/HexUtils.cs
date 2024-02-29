@@ -16,19 +16,36 @@ internal static class HexUtils
 
     /// <summary>
     /// Converts a hexadecimal string to its corresponding string representation.
+    /// If its already hex it should return the original value.
     /// </summary>
     /// <param name="hex">The hexadecimal string to convert.</param>
     /// <returns>The string representation of the hexadecimal input.</returns>
     public static string FromHex(this string hex)
     {
-        if (hex.StartsWith("0x", StringComparison.OrdinalIgnoreCase))
+        // Remove any leading "0x" or "0X" if present
+        hex = hex.TrimStart().ToLowerInvariant();
+        if (hex.StartsWith("0x"))
         {
-            hex = hex[2..];
+            hex = hex.Substring(2);
         }
 
-        return Encoding.UTF8.GetString(Enumerable.Range(0, hex.Length)
-            .Where(x => x % 2 == 0)
-            .Select(x => Convert.ToByte(hex.Substring(x, 2), 16))
-            .ToArray());
+        // Convert the hexadecimal string to bytes
+        try
+        {
+            byte[] bytes = new byte[hex.Length / 2];
+            for (int i = 0; i < bytes.Length; i++)
+            {
+                bytes[i] = Convert.ToByte(hex.Substring(i * 2, 2), 16);
+            }
+
+            // Convert bytes to UTF-8 string
+            return Encoding.UTF8.GetString(bytes).Trim();
+        }
+        catch
+        {
+            // Error occurred during conversion, return the original input
+            return hex;
+        }
     }
+
 }
