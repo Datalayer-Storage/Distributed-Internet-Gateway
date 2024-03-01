@@ -75,8 +75,9 @@ public partial class StoresController(GatewayService gatewayService,
 
             if (redirect is not null)
             {
+                _logger.LogInformation("Redirecting to {redirect}", redirect);
                 HttpContext.Response.Headers.Location = redirect;
-                return StatusCode(StatusCodes.Status304NotModified);
+                return Redirect(redirect);
             }
 
             return NotFound();
@@ -159,12 +160,13 @@ public partial class StoresController(GatewayService gatewayService,
             {
                 _logger.LogInformation("couldn't find: {key}", key.SanitizeForLog());
 
-                var redirect = await _meshNetworkRoutingService.GetMeshNetworkLocationAsync(storeId, null);
+                var redirect = await _meshNetworkRoutingService.GetMeshNetworkLocationAsync(storeId, key);
 
                 if (redirect is not null)
                 {
+                    _logger.LogInformation("Redirecting to {redirect}", redirect);
                     HttpContext.Response.Headers.Location = redirect;
-                    return StatusCode(StatusCodes.Status304NotModified);
+                    return Redirect(redirect);
                 }
 
                 return NotFound();
