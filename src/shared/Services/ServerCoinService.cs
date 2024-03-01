@@ -4,7 +4,7 @@ using System.Diagnostics;
 using System.Dynamic;
 using Newtonsoft.Json;
 
-internal sealed class ServerCoinService(ChiaConfig chiaConfig,
+public sealed class ServerCoinService(ChiaConfig chiaConfig,
                                         ILogger<ServerCoinService> logger,
                                         IConfiguration configuration)
 {

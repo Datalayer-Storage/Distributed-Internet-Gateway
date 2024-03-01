@@ -1,6 +1,6 @@
 using System.Text;
-namespace dig.server;
 
+namespace dig.server;
 
 /// <summary>
 /// Provides utility methods for converting strings to and from hexadecimal representation.

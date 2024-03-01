@@ -52,11 +52,11 @@ public class StoreUpdateNotifierService(DataLayerProxy dataLayer, IMemoryCache m
         }
     }
 
-    public async Task ProcessPreCacheQueueAsync()
+    public async Task ProcessPreCacheQueueAsync(CancellationToken cancellationToken)
     {
         // Wait to enter the semaphore. If no one is inside, enter immediately.
         // Otherwise, wait until the semaphore is released.
-        await _preCacheLock.WaitAsync();
+        await _preCacheLock.WaitAsync(cancellationToken);
 
         try
         {
@@ -65,7 +65,7 @@ public class StoreUpdateNotifierService(DataLayerProxy dataLayer, IMemoryCache m
                 _logger.LogInformation("Processing pre-cache for storeId: {storeId} on a separate thread.", storeId);
 
                 // Execute PreCacheStore on a separate thread and wait for it to complete
-                await Task.Run(async () => await PreCacheStore(storeId));
+                await Task.Run(async () => await PreCacheStore(storeId, cancellationToken), cancellationToken);
             }
         }
         finally
@@ -75,22 +75,23 @@ public class StoreUpdateNotifierService(DataLayerProxy dataLayer, IMemoryCache m
         }
     }
 
-    public async Task PreCacheStore(string storeId)
+    public async Task PreCacheStore(string storeId, CancellationToken cancellationToken)
     {
-        var lastRootHash = await _dataLayer.GetRoot(storeId, CancellationToken.None);
-        var storeKeys = await _dataLayer.GetKeys(storeId, lastRootHash.Hash, CancellationToken.None);
+        var lastRootHash = await _dataLayer.GetRoot(storeId, cancellationToken);
+        var storeKeys = await _dataLayer.GetKeys(storeId, lastRootHash.Hash, cancellationToken);
         if (storeKeys != null)
         {
             foreach (var key in storeKeys)
             {
                 _logger.LogInformation("Pre-caching key {key} for storeId {storeId}.", key.SanitizeForLog(), storeId.SanitizeForLog());
-                var value = await _dataLayer.GetValue(storeId, key, lastRootHash.Hash, CancellationToken.None);
+                var value = await _dataLayer.GetValue(storeId, key, lastRootHash.Hash, cancellationToken);
                 if (value != null)
                 {
                     var cacheKey = $"{storeId}-{key}";
-                    await _fileCache.SetValueAsync(cacheKey, value);
+                    await _fileCache.SetValueAsync(cacheKey, value, cancellationToken);
                 }
-                await Task.Delay(500);
+
+                await Task.Delay(500, cancellationToken);
             }
         }
     }
@@ -105,13 +106,13 @@ public class StoreUpdateNotifierService(DataLayerProxy dataLayer, IMemoryCache m
         _storeIds.TryRemove(storeId, out _); // Remove the store ID from tracking
     }
 
-    public async Task RefreshRootHashesAsync()
+    public async Task RefreshRootHashesAsync(CancellationToken cancellationToken)
     {
         foreach (var storeId in _storeIds.Keys) // Iterate over tracked store IDs
         {
             var cacheKey = _storeIds[storeId];
             var currentRootHash = _memoryCache.Get<string>(cacheKey);
-            var newRootHash = await _dataLayer.GetRoot(storeId, CancellationToken.None);
+            var newRootHash = await _dataLayer.GetRoot(storeId, cancellationToken);
 
             if (newRootHash != null && !newRootHash.Hash.Equals(currentRootHash))
             {
@@ -126,17 +127,17 @@ public class StoreUpdateNotifierService(DataLayerProxy dataLayer, IMemoryCache m
 
                 _preCacheQueue.Enqueue(storeId);
                 // purposely not awaited - fire and forget
-                _ = ProcessPreCacheQueueAsync();
+                _ = ProcessPreCacheQueueAsync(CancellationToken.None);
             }
         }
     }
 
-    public void StartWatcher(Func<string, Task> callback, TimeSpan interval)
+    public void StartWatcher(Func<string, Task> callback, TimeSpan interval, CancellationToken cancellationToken)
     {
         Debug.Assert(_timer == null, "Watcher already started");
         if (_callbacks.Count == 0)
         {
-            _timer = new Timer(async _ => await RefreshRootHashesAsync(), null, TimeSpan.Zero, interval);
+            _timer = new Timer(async _ => await RefreshRootHashesAsync(cancellationToken), null, TimeSpan.Zero, interval);
         }
         _callbacks.Add(callback);
     }

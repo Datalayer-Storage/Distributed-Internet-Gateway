@@ -52,6 +52,7 @@ builder.Services.AddSingleton<ChiaConfig>()
     .AddSingleton<MirrorService>()
     .AddSingleton<DnsService>()
     .AddSingleton<StoreRegistryService>()
+    .AddSingleton<ServerCoinService>()
     .AddSingleton(provider => new DataLayerProxy(provider.GetRequiredKeyedService<IRpcClient>("data_layer"), "dig.server"))
     .AddEndpointsApiExplorer()
     .AddSwaggerGen()
@@ -72,7 +73,6 @@ if (builder.Configuration.GetValue("dig:NodeSyncJobEnabled", false))
         .AddSingleton<NodeSyncService>()
         .AddSingleton<ChiaService>()
         .AddSingleton<StoreService>()
-        .AddSingleton<ServerCoinService>()
         .AddSingleton<DnsService>()
         .AddSingleton(provider => new FullNodeProxy(provider.GetRequiredKeyedService<IRpcClient>("full_node"), "dig.server"))
         .AddRpcEndpoint("full_node");
@@ -101,15 +101,11 @@ if (builder.Configuration.GetValue("dig:RunAsWindowsService", false))
 }
 
 var app = builder.Build();
-if (app.Environment.IsDevelopment())
-{
-    app.UseSwagger();
-    app.UseSwaggerUI();
-}
-else
+if (app.Environment.IsProduction())
 {
     app.UseHsts();
 }
+
 app.UseHttpsRedirection();
 app.UseCors();
 app.MapControllers();
