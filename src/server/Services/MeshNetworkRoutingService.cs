@@ -1,158 +1,134 @@
 using Microsoft.Extensions.Caching.Memory;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Configuration;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Net.Http;
 using System.Text.Json;
+using System.Threading.Tasks;
 using chia.dotnet;
 
-namespace dig.server;
-
-public class MeshNetworkRoutingService(ChiaConfig chiaConfig,
-                                        DataLayerProxy dataLayer,
-                                        ServerCoinService serverCoinService,
-                                        ILogger<MeshNetworkRoutingService> logger,
-                                        IConfiguration configuration, IMemoryCache cache)
+namespace dig.server
 {
-    private readonly ChiaConfig _chiaConfig = chiaConfig;
-    private readonly DataLayerProxy _dataLayer = dataLayer;
-    private readonly ServerCoinService _serverCoinService = serverCoinService;
-    private readonly ILogger<MeshNetworkRoutingService> _logger = logger;
-    private readonly HttpClient _httpClient = new();
-    private readonly IConfiguration _configuration = configuration;
-    private readonly IMemoryCache _cache = cache;
-
-    private string[] GetRedirectUrls(string storeId)
+    public class MeshNetworkRoutingService
     {
-        var coins = _serverCoinService.GetCoins(storeId);
-        if (coins.Any())
+        private readonly ChiaConfig _chiaConfig;
+        private readonly DataLayerProxy _dataLayer;
+        private readonly ServerCoinService _serverCoinService;
+        private readonly ILogger<MeshNetworkRoutingService> _logger;
+        private readonly HttpClient _httpClient = new();
+        private readonly IConfiguration _configuration;
+        private readonly IMemoryCache _cache;
+
+        public MeshNetworkRoutingService(ChiaConfig chiaConfig, DataLayerProxy dataLayer, ServerCoinService serverCoinService, ILogger<MeshNetworkRoutingService> logger, IConfiguration configuration, IMemoryCache cache)
         {
-            // Assuming coin.urls is an IEnumerable of some type that can be converted to string
-            var allUrls = coins.Select(coin => coin.urls).ToArray();
-
-            // Convert each List<object> in 'allUrls' to string[], then flatten
-            var flattenedUrls = allUrls.SelectMany(urls => ((List<object>)urls).Select(url => (string)url)).ToArray();
-
-
-            // _fileCacheService.SetValueAsync(cacheKey, allUrls, default);
-            _logger.LogInformation("Found {count} URLs for store {storeId}", flattenedUrls.Length, storeId.SanitizeForLog());
-            return flattenedUrls;
+            _chiaConfig = chiaConfig;
+            _dataLayer = dataLayer;
+            _serverCoinService = serverCoinService;
+            _logger = logger;
+            _configuration = configuration;
+            _cache = cache;
         }
 
-        return [];
-    }
-
-    public async Task<string?> GetMeshNetworkContentsAsync(string storeId, string? key)
-    {
-        var urls = GetRedirectUrls(storeId);
-
-        // Filter out URLs that are in the cache (not online in the past 24 hours)
-        var filteredUrls = urls.Where(url => !_cache.TryGetValue(url, out _)).ToList();
-
-        // Shuffle the filtered URLs
-        var shuffledUrls = filteredUrls.OrderBy(url => Guid.NewGuid()).ToList();
-
-        foreach (var url in shuffledUrls)
+        private string[]? GetRedirectUrls(string storeId)
         {
-            var apiUrl = $"{url}/api/status/{storeId}";
-            var redirectUrl = key != null ? $"{url}/{storeId}/{key}" : $"{url}/{storeId}";
-
-            _logger.LogInformation("Checking URL {url}", apiUrl);
-
-            var request = new HttpRequestMessage(HttpMethod.Get, apiUrl);
-
-            try
+            string cacheKey = $"RedirectUrls-{storeId}";
+            // Check if the URL list is already cached
+            if (!_cache.TryGetValue(cacheKey, out string[] cachedUrls))
             {
-                var response = await _httpClient.SendAsync(request);
-                if (response.IsSuccessStatusCode)
+                var coins = _serverCoinService.GetCoins(storeId);
+                if (coins.Any())
                 {
-                    var data = await response.Content.ReadAsStringAsync();
-                    var json = JsonSerializer.Deserialize<chia.dotnet.DataLayerSyncStatus>(data);
+                    var allUrls = coins.Select(coin => coin.urls).ToArray();
+                    var flattenedUrls = allUrls.SelectMany(urls => ((List<object>)urls).Select(url => (string)url)).ToArray();
 
-                    if (json != null)
+                    _logger.LogInformation("Found {count} URLs for store {storeId}", flattenedUrls.Length, storeId);
+
+                    // Cache the flattened URLs with a 5-minute expiration
+                    var cacheEntryOptions = new MemoryCacheEntryOptions().SetAbsoluteExpiration(TimeSpan.FromMinutes(5));
+                    _cache.Set(cacheKey, flattenedUrls, cacheEntryOptions);
+
+                    return flattenedUrls;
+                }
+                else
+                {
+                    // Cache an empty array to avoid repeatedly fetching for non-existent URLs
+                    _cache.Set(cacheKey, Array.Empty<string>(), new MemoryCacheEntryOptions().SetAbsoluteExpiration(TimeSpan.FromMinutes(5)));
+                    return Array.Empty<string>();
+                }
+            }
+
+            return cachedUrls;
+        }
+
+
+        public async Task<string?> GetMeshNetworkContentAsync(string storeId, string? key) => await FetchMeshNetworkData(storeId, key, false);
+
+        public async Task<string?> GetMeshNetworkLocationAsync(string storeId, string? key) => await FetchMeshNetworkData(storeId, key, true);
+
+        // The first URL is usually the source of the datastore so lets attempt to get the data from there first
+        // This is because itll always have the most up to date data while the rest of the network is still propagating.
+        // Then move on to the rest of the network if the first is slow or down.
+        private async Task<string?> FetchMeshNetworkData(string storeId, string? key, bool returnRedirectUrl)
+        {
+            var urls = GetRedirectUrls(storeId);
+
+            if (urls is null || urls.Length == 0)
+            {
+                _logger.LogWarning("No URLs found for store {storeId}", storeId);
+                return null;
+            }
+            // Apply cache filter to the first URL
+            var firstUrl = urls.FirstOrDefault(url => !_cache.TryGetValue(url, out _));
+
+            // Filter and shuffle the remaining URLs, excluding the first URL if it's already selected
+            var remainingUrls = urls.SkipWhile(url => url == firstUrl).Where(url => !_cache.TryGetValue(url, out _)).OrderBy(_ => Guid.NewGuid());
+
+            // Combine the first URL (if not cached) with the filtered remaining URLs
+            var orderedUrls = firstUrl != null ? new[] { firstUrl }.Concat(remainingUrls) : remainingUrls;
+
+
+            foreach (var url in orderedUrls)
+            {
+                var apiUrl = $"{url}/api/status/{storeId}";
+                var redirectUrl = key != null ? $"{url}/{storeId}/{key}" : $"{url}/{storeId}";
+
+                try
+                {
+                    var response = await _httpClient.GetAsync(apiUrl);
+                    if (response.IsSuccessStatusCode)
                     {
+                        var data = await response.Content.ReadAsStringAsync();
+                        var json = JsonSerializer.Deserialize<chia.dotnet.DataLayerSyncStatus>(data);
                         var rootHistory = await _dataLayer.GetRootHistory(storeId, default);
                         var lastRootHistoryItem = rootHistory?.LastOrDefault();
 
-                        if (lastRootHistoryItem != null && lastRootHistoryItem.RootHash != json.RootHash)
+                        if (json == null || lastRootHistoryItem == null || lastRootHistoryItem.RootHash != json.RootHash)
+                            continue;
+
+                        if (returnRedirectUrl)
                         {
-                            continue; // Skip this URL and continue with the next one
+                            _logger.LogInformation("Found 200 OK for URL {url}", redirectUrl);
+                            return redirectUrl;
                         }
 
-                        // If checks pass, make a GET request to the redirectUrl and return its content
-                        _logger.LogInformation("Fetching content for URL {url}", redirectUrl);
-                        var redirectRequest = new HttpRequestMessage(HttpMethod.Get, redirectUrl);
-                        var redirectResponse = await _httpClient.SendAsync(redirectRequest);
+                        var redirectResponse = await _httpClient.GetAsync(redirectUrl);
                         if (redirectResponse.IsSuccessStatusCode)
                         {
-                            var redirectData = await redirectResponse.Content.ReadAsStringAsync();
-                            return redirectData; // Return the content of the redirect URL
+                            _logger.LogInformation("Fetching content for URL {url}", redirectUrl);
+                            return await redirectResponse.Content.ReadAsStringAsync();
                         }
                     }
                 }
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error checking URL {url}", apiUrl);
-
-                // If the server is offline, blacklist it for 1 hour before trying again
-                _cache.Set(url, false, TimeSpan.FromHours(1));
-                // Ignore exceptions and try the next URL
-            }
-        }
-
-        return null; // Return null if no URL passes the checks
-    }
-
-
-    public async Task<string?> GetMeshNetworkLocationAsync(string storeId, string? key)
-    {
-        var urls = GetRedirectUrls(storeId);
-
-        // Filter out URLs that are in the cache (not online in the past 24 hours)
-        var filteredUrls = urls.Where(url => !_cache.TryGetValue(url, out _)).ToList();
-
-        // Shuffle the filtered URLs
-        var shuffledUrls = filteredUrls.OrderBy(url => Guid.NewGuid()).ToList();
-
-        foreach (var url in shuffledUrls)
-        {
-            var apiUrl = $"{url}/api/status/{storeId}";
-            var redirectUrl = key != null ? $"{url}/{storeId}/{key}" : $"{url}/{storeId}";
-
-            _logger.LogInformation("Checking URL {url}", apiUrl);
-
-            var request = new HttpRequestMessage(HttpMethod.Get, apiUrl);
-
-            try
-            {
-                var response = await _httpClient.SendAsync(request);
-                if (response.IsSuccessStatusCode)
+                catch (Exception ex)
                 {
-                    var data = await response.Content.ReadAsStringAsync();
-                    var json = JsonSerializer.Deserialize<chia.dotnet.DataLayerSyncStatus>(data);
-
-                    if (json != null)
-                    {
-                        var rootHistory = await _dataLayer.GetRootHistory(storeId, default);
-                        var lastRootHistoryItem = rootHistory?.LastOrDefault();
-
-                        if (lastRootHistoryItem != null && lastRootHistoryItem.RootHash != json.RootHash)
-                        {
-                            continue; // Skip this URL and continue with the next one
-                        }
-
-                        _logger.LogInformation("Found 200 OK for URL {url}", redirectUrl);
-                        return redirectUrl; // Return the redirect URL if checks pass
-                    }
+                    _logger.LogError(ex, "Error checking URL {url}", apiUrl);
+                    _cache.Set(url, false, TimeSpan.FromHours(1));
                 }
             }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error checking URL {url}", apiUrl);
 
-                // If the server is offline, blacklist it for 1 hour before trying again
-                _cache.Set(url, false, TimeSpan.FromHours(1));
-                // Ignore exceptions and try the next URL
-            }
+            return null;
         }
-
-        return null; // Return null if no URL passes the checks
     }
 }
