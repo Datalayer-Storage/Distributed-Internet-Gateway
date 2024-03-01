@@ -106,13 +106,13 @@ public class StoreUpdateNotifierService(DataLayerProxy dataLayer, IMemoryCache m
         _storeIds.TryRemove(storeId, out _); // Remove the store ID from tracking
     }
 
-    public async Task RefreshRootHashesAsync()
+    public async Task RefreshRootHashesAsync(CancellationToken cancellationToken)
     {
         foreach (var storeId in _storeIds.Keys) // Iterate over tracked store IDs
         {
             var cacheKey = _storeIds[storeId];
             var currentRootHash = _memoryCache.Get<string>(cacheKey);
-            var newRootHash = await _dataLayer.GetRoot(storeId, CancellationToken.None);
+            var newRootHash = await _dataLayer.GetRoot(storeId, cancellationToken);
 
             if (newRootHash != null && !newRootHash.Hash.Equals(currentRootHash))
             {
@@ -132,12 +132,12 @@ public class StoreUpdateNotifierService(DataLayerProxy dataLayer, IMemoryCache m
         }
     }
 
-    public void StartWatcher(Func<string, Task> callback, TimeSpan interval)
+    public void StartWatcher(Func<string, Task> callback, TimeSpan interval, CancellationToken cancellationToken)
     {
         Debug.Assert(_timer == null, "Watcher already started");
         if (_callbacks.Count == 0)
         {
-            _timer = new Timer(async _ => await RefreshRootHashesAsync(), null, TimeSpan.Zero, interval);
+            _timer = new Timer(async _ => await RefreshRootHashesAsync(cancellationToken), null, TimeSpan.Zero, interval);
         }
         _callbacks.Add(callback);
     }
