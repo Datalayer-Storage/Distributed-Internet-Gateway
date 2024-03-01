@@ -16,7 +16,7 @@ public class FileCacheService
         
         // If the DIG node is just starting up, we want to clear the cache
         // Because it could be super stale
-        InvaidateAllCache();
+        InvalidateAllCache();
     }
 
     public async Task<string?> GetValueAsync(string key)
@@ -36,7 +36,7 @@ public class FileCacheService
         await File.WriteAllTextAsync(filePath, value);
     }
 
-    public void InvaidateAllCache()
+    public void InvalidateAllCache()
     {
         if (Directory.Exists(_cacheDirectory))
         {
