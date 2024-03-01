@@ -116,7 +116,7 @@ public class GatewayService
                 entry.SlidingExpiration = TimeSpan.FromMinutes(15);
                 _logger.LogInformation("Getting keys for {StoreId}", storeId.SanitizeForLog());
 
-                var fsCacheValue = await _fileCache.GetValueAsync(cacheKey);
+                var fsCacheValue = await _fileCache.GetValueAsync(cacheKey, cancellationToken);
                 if (fsCacheValue is not null)
                 {
                     _logger.LogInformation("Got value for {StoreId} {Key} from file cache", storeId.SanitizeForLog(), storeId.SanitizeForLog());
@@ -124,7 +124,7 @@ public class GatewayService
                 }
 
                 var datalayerValue = await _dataLayer.GetKeys(storeId, null, cancellationToken);
-                await _fileCache.SetValueAsync(cacheKey, JsonSerializer.Serialize(datalayerValue ?? []));
+                await _fileCache.SetValueAsync(cacheKey, JsonSerializer.Serialize(datalayerValue ?? []), cancellationToken);
                 _logger.LogInformation("Got value for {StoreId} {Key} from DataLayer", storeId.SanitizeForLog(), storeId.SanitizeForLog());
                 return datalayerValue;
             });
@@ -151,7 +151,7 @@ public class GatewayService
                 entry.SlidingExpiration = TimeSpan.FromMinutes(15);
                 _logger.LogInformation("Getting proof for {StoreId} {Key}", storeId.SanitizeForLog(), hexKey.SanitizeForLog());
 
-                var fsCacheValue = await _fileCache.GetValueAsync(cacheKey);
+                var fsCacheValue = await _fileCache.GetValueAsync(cacheKey, cancellationToken);
                 if (fsCacheValue is not null)
                 {
                     _logger.LogInformation("Got value for {StoreId} {Key} from file cache", storeId.SanitizeForLog(), hexKey.SanitizeForLog());
@@ -160,7 +160,7 @@ public class GatewayService
 
                 var proofResponse = await _dataLayer.GetProof(storeId, new List<string> { HttpUtility.UrlDecode(hexKey) }, cancellationToken);
                 var proof = proofResponse.ToJson();
-                await _fileCache.SetValueAsync(cacheKey, proof);
+                await _fileCache.SetValueAsync(cacheKey, proof, cancellationToken);
                 _logger.LogInformation("Got proof for {StoreId} {proof} from DataLayer", storeId.SanitizeForLog(), proof.SanitizeForLog());
                 return proof;
             });
@@ -187,7 +187,7 @@ public class GatewayService
                 entry.SlidingExpiration = TimeSpan.FromMinutes(15);
                 _logger.LogInformation("Getting value for {StoreId} {Key}", storeId.SanitizeForLog(), key.SanitizeForLog());
 
-                var fsCacheValue = await _fileCache.GetValueAsync(cacheKey);
+                var fsCacheValue = await _fileCache.GetValueAsync(cacheKey, cancellationToken);
                 if (fsCacheValue is not null)
                 {
                     _logger.LogInformation("Got value for {StoreId} {Key} from file cache", storeId.SanitizeForLog(), key.SanitizeForLog());
@@ -195,7 +195,7 @@ public class GatewayService
                 }
 
                 var datalayerValue = await _dataLayer.GetValue(storeId, HttpUtility.UrlDecode(key), rootHash, cancellationToken);
-                await _fileCache.SetValueAsync(cacheKey, datalayerValue ?? "");
+                await _fileCache.SetValueAsync(cacheKey, datalayerValue ?? "", cancellationToken);
                 _logger.LogInformation("Got value for {StoreId} {Key} from DataLayer", storeId.SanitizeForLog(), key.SanitizeForLog());
                 return datalayerValue;
             });

@@ -19,21 +19,21 @@ public class FileCacheService
         InvalidateAllCache();
     }
 
-    public async Task<string?> GetValueAsync(string key)
+    public async Task<string?> GetValueAsync(string key, CancellationToken token)
     {
         var filePath = GetFilePath(key);
         if (File.Exists(filePath))
         {
-            return await File.ReadAllTextAsync(filePath);
+            return await File.ReadAllTextAsync(filePath, token);
         }
 
         return null;
     }
 
-    public async Task SetValueAsync(string key, string value)
+    public async Task SetValueAsync(string key, string value, CancellationToken token)
     {
         var filePath = GetFilePath(key);
-        await File.WriteAllTextAsync(filePath, value);
+        await File.WriteAllTextAsync(filePath, value, token);
     }
 
     public void InvalidateAllCache()
