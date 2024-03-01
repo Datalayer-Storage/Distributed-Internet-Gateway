@@ -1,11 +1,5 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Net.Http;
-using System.Security.Policy;
-using System.Threading.Tasks;
+using Microsoft.Extensions.Caching.Memory;
 using System.Text.Json;
-
 using chia.dotnet;
 
 namespace dig.server;
@@ -14,7 +8,7 @@ public class MeshNetworkRoutingService(ChiaConfig chiaConfig,
                                         DataLayerProxy dataLayer,
                                         ServerCoinService serverCoinService,
                                         ILogger<MeshNetworkRoutingService> logger,
-                                        IConfiguration configuration)
+                                        IConfiguration configuration, IMemoryCache cache)
 {
     private readonly ChiaConfig _chiaConfig = chiaConfig;
     private readonly DataLayerProxy _dataLayer = dataLayer;
@@ -22,6 +16,7 @@ public class MeshNetworkRoutingService(ChiaConfig chiaConfig,
     private readonly ILogger<MeshNetworkRoutingService> _logger = logger;
     private readonly HttpClient _httpClient = new();
     private readonly IConfiguration _configuration = configuration;
+    private readonly IMemoryCache _cache = cache;
 
     private string[] GetRedirectUrls(string storeId)
     {
@@ -47,8 +42,11 @@ public class MeshNetworkRoutingService(ChiaConfig chiaConfig,
     {
         var urls = GetRedirectUrls(storeId);
 
-        // Shuffle the URLs using the Guid technique for randomness
-        var shuffledUrls = urls.OrderBy(url => Guid.NewGuid()).ToList();
+        // Filter out URLs that are in the cache (not online in the past 24 hours)
+        var filteredUrls = urls.Where(url => !_cache.TryGetValue(url, out _)).ToList();
+
+        // Shuffle the filtered URLs
+        var shuffledUrls = filteredUrls.OrderBy(url => Guid.NewGuid()).ToList();
 
         foreach (var url in shuffledUrls)
         {
@@ -85,6 +83,9 @@ public class MeshNetworkRoutingService(ChiaConfig chiaConfig,
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error checking URL {url}", apiUrl);
+                
+                // If the server is offline, blacklist it for 1 hour before trying again
+                _cache.Set(url, false, TimeSpan.FromHours(1));
                 // Ignore exceptions and try the next URL
             }
         }
