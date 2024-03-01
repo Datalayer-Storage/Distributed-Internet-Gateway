@@ -115,7 +115,7 @@ public partial class StoresController(GatewayService gatewayService,
                 }
             }
 
-            var hexKey = HexUtils.ToHex(key);
+            var hexKey = key.StartsWith("0x") ? key : HexUtils.ToHex(key);
 
             var proof = await _gatewayService.GetProof(storeId, hexKey, cancellationToken);
             if (proof is not null)
