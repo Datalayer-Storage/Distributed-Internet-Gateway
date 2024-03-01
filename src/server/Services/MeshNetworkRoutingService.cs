@@ -4,15 +4,20 @@ using System.Linq;
 using System.Net.Http;
 using System.Security.Policy;
 using System.Threading.Tasks;
+using System.Text.Json;
+
+using chia.dotnet;
 
 namespace dig.server;
 
 public class MeshNetworkRoutingService(ChiaConfig chiaConfig,
+                                        DataLayerProxy dataLayer,
                                         ServerCoinService serverCoinService,
                                         ILogger<MeshNetworkRoutingService> logger,
                                         IConfiguration configuration)
 {
     private readonly ChiaConfig _chiaConfig = chiaConfig;
+    private readonly DataLayerProxy _dataLayer = dataLayer;
     private readonly ServerCoinService _serverCoinService = serverCoinService;
     private readonly ILogger<MeshNetworkRoutingService> _logger = logger;
     private readonly HttpClient _httpClient = new();
@@ -47,39 +52,45 @@ public class MeshNetworkRoutingService(ChiaConfig chiaConfig,
 
         foreach (var url in shuffledUrls)
         {
-            var requestUrl = $"{url}/{storeId}"; // Construct the request URL
+            var apiUrl = $"{url}/api/status/{storeId}";
+            var redirectUrl = key != null ? $"{url}/{storeId}/{key}" : $"{url}/{storeId}";
 
+            _logger.LogInformation("Checking URL {url}", apiUrl);
 
-            if (key is not null)
-            {
-                requestUrl += $"/{key}";
-            }
-
-            _logger.LogInformation("Checking HEAD FOR URL {url}", requestUrl);
-
-            // Create a HEAD request
-            var request = new HttpRequestMessage(HttpMethod.Head, requestUrl);
+            var request = new HttpRequestMessage(HttpMethod.Get, apiUrl);
 
             try
             {
-                // Send the HEAD request
                 var response = await _httpClient.SendAsync(request);
-
-                _logger.LogInformation("Found {statusCode} for URL {url}", response.StatusCode, requestUrl);
-
-                // Check if the status code is 200 OK
                 if (response.IsSuccessStatusCode)
                 {
-                    _logger.LogInformation("Found 200 OK for URL {url}", requestUrl);
-                    return requestUrl; // Return the URL if 200 OK
+                    var data = await response.Content.ReadAsStringAsync();
+                    var json = JsonSerializer.Deserialize<chia.dotnet.DataLayerSyncStatus>(data);
+
+                    if (json != null)
+                    {
+                        var rootHistory = await _dataLayer.GetRootHistory(storeId, default);
+                        var lastRootHistoryItem = rootHistory?.LastOrDefault();
+
+                        if (lastRootHistoryItem != null && lastRootHistoryItem.RootHash != json.RootHash)
+                        {
+                            continue; // Skip this URL and continue with the next one
+                        }
+
+                        _logger.LogInformation("Found 200 OK for URL {url}", redirectUrl);
+                        return redirectUrl; // Return the redirect URL if checks pass
+                    }
                 }
             }
-            catch (Exception)
+            catch (Exception ex)
             {
+                _logger.LogError(ex, "Error checking URL {url}", apiUrl);
                 // Ignore exceptions and try the next URL
             }
         }
 
-        return null; // Return null if no URL returns 200 OK
+        return null; // Return null if no URL passes the checks
     }
+
+
 }
