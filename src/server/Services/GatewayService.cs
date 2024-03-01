@@ -33,7 +33,7 @@ public class GatewayService
         _configuration = configuration;
         _fileCache = new FileCacheService(Path.Combine(appStorage.UserSettingsFolder, "store-cache"), _logger);
 
-        _storeUpdateNotifierService = new StoreUpdateNotifierService(dataLayer, memoryCache, logger);
+        _storeUpdateNotifierService = new StoreUpdateNotifierService(dataLayer, memoryCache, logger, _fileCache);
         _storeUpdateNotifierService.StartWatcher(storeId => InvalidateStore(storeId), TimeSpan.FromMinutes(5));
     }
 
@@ -212,7 +212,7 @@ public class GatewayService
         }
     }
 
-    public async Task<string?> GetValueAsHtml(string storeId, string lastStoreRootHash, CancellationToken cancellationToken)
+    public async Task<string?> GetValueAsHtml(string storeId, string? lastStoreRootHash, CancellationToken cancellationToken)
     {
         var hexKey = HexUtils.ToHex("index.html");
         var value = await GetValue(storeId, hexKey, lastStoreRootHash, cancellationToken);

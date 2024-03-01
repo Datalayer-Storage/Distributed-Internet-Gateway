@@ -42,7 +42,7 @@ public partial class StoresController(GatewayService gatewayService,
 
                     if (lastStoreRootHash is not null)
                     {
-                        HttpContext.Response.Headers.Add("X-Generation-Hash", lastStoreRootHash);
+                        HttpContext.Response.Headers.TryAdd("X-Generation-Hash", lastStoreRootHash);
                     }
 
                     var html = await _gatewayService.GetValueAsHtml(storeId, lastStoreRootHash, cancellationToken);
@@ -51,10 +51,9 @@ public partial class StoresController(GatewayService gatewayService,
                         var proof = await _gatewayService.GetProof(storeId, HexUtils.ToHex("index.html"), cancellationToken);
                         if (proof is not null)
                         {
-                            _logger.LogInformation("Got proof for {StoreId} {proof} from DataLayer", storeId.SanitizeForLog(), proof.SanitizeForLog());
-                            HttpContext.Response.Headers.Add("X-Proof-of-Inclusion", proof);
+                            HttpContext.Response.Headers.TryAdd("X-Proof-of-Inclusion", proof);
                         }
-                        
+
                         return Content(html, "text/html");
                     }
                 }
@@ -121,22 +120,22 @@ public partial class StoresController(GatewayService gatewayService,
             var proof = await _gatewayService.GetProof(storeId, hexKey, cancellationToken);
             if (proof is not null)
             {
-                 byte[] proofBytes = Encoding.UTF8.GetBytes(proof);
+                byte[] proofBytes = Encoding.UTF8.GetBytes(proof);
 
                 // Convert the byte array to a Base64 string
                 string proofBase64 = Convert.ToBase64String(proofBytes);
-                HttpContext.Response.Headers.Add("X-Proof-of-Inclusion", proofBase64);
+                HttpContext.Response.Headers.TryAdd("X-Proof-of-Inclusion", proofBase64);
             }
-            
+
             // Requesting GetValue only from the last root hash onchain ensures that only
             // nodes that have the latest state will respond to the request
-            // This helps prevent a mismatch between the state of the store and 
+            // This helps prevent a mismatch between the state of the store and
             // the data when pulled across decentralized nodes
             var lastStoreRootHash = await _gatewayService.GetLastRoot(storeId, cancellationToken);
 
             if (lastStoreRootHash is not null)
             {
-                HttpContext.Response.Headers.Add("X-Generation-Hash", lastStoreRootHash);
+                HttpContext.Response.Headers.TryAdd("X-Generation-Hash", lastStoreRootHash);
             }
 
             var rawValue = await _gatewayService.GetValue(storeId, hexKey, lastStoreRootHash, cancellationToken);
