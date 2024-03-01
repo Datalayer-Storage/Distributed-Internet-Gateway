@@ -12,6 +12,12 @@ public partial class StoresController(GatewayService gatewayService,
     private readonly ILogger<StoresController> _logger = logger;
     private readonly MeshNetworkRoutingService _meshNetworkRoutingService = meshNetworkRoutingService;
 
+    [HttpHead]
+    public IActionResult MyAction()
+    {
+        return NoContent(); // Respond with 204 No Content status code
+    }
+
     [HttpGet("{storeId}")]
     [ProducesResponseType(StatusCodes.Status307TemporaryRedirect)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]

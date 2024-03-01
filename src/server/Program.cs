@@ -40,9 +40,10 @@ else if (File.Exists(appStorage.UserSettingsFilePath))
     builder.Configuration.AddJsonFile(appStorage.UserSettingsFilePath, optional: true);
 }
 
-// this sets up the gateway service
 builder.Services.AddControllersWithViews();
+builder.Services.AddRazorPages();
 
+// this sets up the gateway service
 // these are the services needed by the gateway
 builder.Services.AddSingleton<ChiaConfig>()
     .AddHttpClient()
@@ -55,8 +56,8 @@ builder.Services.AddSingleton<ChiaConfig>()
     .AddSingleton<MeshNetworkRoutingService>()
     .AddSingleton<ServerCoinService>()
     .AddSingleton(provider => new DataLayerProxy(provider.GetRequiredKeyedService<IRpcClient>("data_layer"), "dig.server"))
-    .AddEndpointsApiExplorer()
-    .AddSwaggerGen()
+    // .AddEndpointsApiExplorer()
+    // .AddSwaggerGen()
     .AddMemoryCache();
 
 builder.Services.AddRpcEndpoint("data_layer"); //.AddStandardResilienceHandler();
@@ -102,15 +103,25 @@ if (builder.Configuration.GetValue("dig:RunAsWindowsService", false))
 }
 
 var app = builder.Build();
+
+app.UseStatusCodePagesWithReExecute("/Error", "?statusCode={0}");
+
 if (app.Environment.IsProduction())
 {
     app.UseHsts();
 }
 
 app.UseHttpsRedirection();
-app.UseCors();
-app.MapControllers();
 app.UseStaticFiles();
+app.UseRouting();
+app.UseCors();
+#pragma warning disable ASP0014
+app.UseEndpoints(endpoints =>
+{
+    endpoints.MapControllers();
+});
+#pragma warning restore ASP0014
+
 
 // this is the IPC server that the command line talks to
 var server = new Server("dig.server.ipc");
