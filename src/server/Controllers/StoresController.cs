@@ -4,11 +4,18 @@ using System.Text.RegularExpressions;
 
 namespace dig.server;
 
-public partial class StoresController(GatewayService gatewayService,
-                                        ILogger<StoresController> logger) : ControllerBase
+public partial class StoresController : ControllerBase
 {
-    private readonly GatewayService _gatewayService = gatewayService;
-    private readonly ILogger<StoresController> _logger = logger;
+    private readonly GatewayService _gatewayService;
+    private readonly ILogger<StoresController> _logger;
+    private readonly MeshNetworkRoutingService _meshNetworkRoutingService;
+
+    public StoresController(GatewayService gatewayService, ILogger<StoresController> logger, ChiaConfig chiaConfig)
+    {
+        _gatewayService = gatewayService;
+        _logger = logger;
+        _meshNetworkRoutingService = new MeshNetworkRoutingService(chiaConfig, logger);
+    }
 
     [HttpGet("{storeId}")]
     [ProducesResponseType(StatusCodes.Status307TemporaryRedirect)]
@@ -61,6 +68,14 @@ public partial class StoresController(GatewayService gatewayService,
                 string htmlContent = IndexRenderer.Render(storeId, decodedKeys ?? [], Request);
 
                 return Content(htmlContent, "text/html");
+            }
+
+            var redirect = await _meshNetworkRoutingService.GetMeshNetworkLocationAsync(storeId, null);
+
+            if (redirect is not null)
+            {
+                HttpContext.Response.Headers.Location = redirect;
+                return StatusCode(StatusCodes.Status304NotModified);
             }
 
             return NotFound();
@@ -142,6 +157,14 @@ public partial class StoresController(GatewayService gatewayService,
             if (rawValue is null)
             {
                 _logger.LogInformation("couldn't find: {key}", key.SanitizeForLog());
+
+                var redirect = await _meshNetworkRoutingService.GetMeshNetworkLocationAsync(storeId, null);
+
+                if (redirect is not null)
+                {
+                    HttpContext.Response.Headers.Location = redirect;
+                    return StatusCode(StatusCodes.Status304NotModified);
+                }
 
                 return NotFound();
             }
