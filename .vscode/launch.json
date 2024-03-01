@@ -27,7 +27,7 @@
         "stores",
         "add",
         "-s",
-        "1baa3e432ed02887120e6027c1dacaefd4bda619f3a9f859ad8adefc9dee2b90"
+        "26632ad912845e6f77714ca0996b21eb647803162dd444275ab5c09bea9426ea"
       ],
       "cwd": "${workspaceFolder}/src/dig",
       "console": "integratedTerminal",

@@ -46,7 +46,7 @@ internal sealed class AddStoreCommand()
             return -1;
         }
 
-        using var cts = new CancellationTokenSource(10000);
+        using var cts = new CancellationTokenSource(120000);
         var url = await dnsService.ResolveHostUrl(41410, Url, cts.Token);
         var fee = await chiaService.ResolveFee(Fee, Math.Max(serverCoinReserve, mirrorCoinReserve), cts.Token);
         var subscriptions = await dataLayer.Subscriptions(cts.Token);
