@@ -21,7 +21,7 @@ public class FileCacheService
 
     public async Task<string?> GetValueAsync(string key, CancellationToken token)
     {
-        var filePath = GetFilePath(key);
+        var filePath = GetFilePath(key).SanitizePath(_cacheDirectory);
         if (File.Exists(filePath))
         {
             return await File.ReadAllTextAsync(filePath, token);
@@ -32,7 +32,7 @@ public class FileCacheService
 
     public async Task SetValueAsync(string key, string value, CancellationToken token)
     {
-        var filePath = GetFilePath(key);
+        var filePath = GetFilePath(key).SanitizePath(_cacheDirectory);
         await File.WriteAllTextAsync(filePath, value, token);
     }
 
@@ -66,5 +66,5 @@ public class FileCacheService
         }
     }
 
-    private string GetFilePath(string key) => Path.Combine(_cacheDirectory, key).SanitizePath(_cacheDirectory);
+    private string GetFilePath(string key) => Path.Combine(_cacheDirectory, key);
 }
