@@ -18,9 +18,10 @@ public class ErrorController(GatewayService gatewayService) : Controller
 
         ViewBag.ErrorMessage = HttpContext.Response.StatusCode switch
         {
-            404 => "That was not found.",
-            _ => "Eek.",
+            404 => "That was not found",
+            _ => "Eek",
         };
+
         return View("Error");
     }
 }
