@@ -6,11 +6,12 @@ namespace dig.server;
 
 public partial class StoresController(GatewayService gatewayService,
                                         MeshNetworkRoutingService meshNetworkRoutingService,
-                                        ILogger<StoresController> logger) : ControllerBase
+                                        ILogger<StoresController> logger, IConfiguration configuration) : ControllerBase
 {
     private readonly GatewayService _gatewayService = gatewayService;
     private readonly ILogger<StoresController> _logger = logger;
     private readonly MeshNetworkRoutingService _meshNetworkRoutingService = meshNetworkRoutingService;
+    private readonly IConfiguration _configuration = configuration;
 
     [HttpHead]
     public IActionResult MyAction()
@@ -71,14 +72,29 @@ public partial class StoresController(GatewayService gatewayService,
                 return Content(htmlContent, "text/html");
             }
 
-            var redirect = await _meshNetworkRoutingService.GetMeshNetworkLocationAsync(storeId, null);
+            var actAsCdn = _configuration.GetValue<bool>("dig:ActAsCdn");
 
-            if (redirect is not null)
+            if (actAsCdn)
             {
-                _logger.LogInformation("Redirecting to {redirect}", redirect.SanitizeForLog());
-                HttpContext.Response.Headers.Location = redirect;
-                return Redirect(redirect);
+                var content = await _meshNetworkRoutingService.GetMeshNetworkContentsAsync(storeId, null);
+
+                if (content is not null)
+                {
+                    return Content(content, "text/html");
+                }
             }
+            else
+            {
+                var redirect = await _meshNetworkRoutingService.GetMeshNetworkLocationAsync(storeId, null);
+
+                if (redirect is not null)
+                {
+                    _logger.LogInformation("Redirecting to {redirect}", redirect.SanitizeForLog());
+                    HttpContext.Response.Headers.Location = redirect;
+                    return Redirect(redirect);
+                }
+            }
+
 
             return NotFound();
 
@@ -155,25 +171,41 @@ public partial class StoresController(GatewayService gatewayService,
                 HttpContext.Response.Headers.TryAdd("X-Generation-Hash", lastStoreRootHash);
             }
 
+            var fileExtension = Path.GetExtension(key);
+
             var rawValue = await _gatewayService.GetValue(storeId, hexKey, lastStoreRootHash, cancellationToken);
             if (rawValue is null)
             {
                 _logger.LogInformation("couldn't find: {key}", key.SanitizeForLog());
 
-                var redirect = await _meshNetworkRoutingService.GetMeshNetworkLocationAsync(storeId, key);
+                var actAsCdn = _configuration.GetValue<bool>("dig:ActAsCdn");
 
-                if (redirect is not null)
+                if (actAsCdn)
                 {
-                    _logger.LogInformation("Redirecting to {redirect}", redirect);
-                    HttpContext.Response.Headers.Location = redirect;
-                    return Redirect(redirect);
+                    var content = await _meshNetworkRoutingService.GetMeshNetworkContentsAsync(storeId, key);
+
+                    if (content is not null)
+                    {
+                        string mimeType = GetMimeType(fileExtension) ?? "application/octet-stream";
+                        return Content(content, mimeType);
+                    }
+                }
+                else
+                {
+                    var redirect = await _meshNetworkRoutingService.GetMeshNetworkLocationAsync(storeId, key);
+
+                    if (redirect is not null)
+                    {
+                        _logger.LogInformation("Redirecting to {redirect}", redirect.SanitizeForLog());
+                        HttpContext.Response.Headers.Location = redirect;
+                        return Redirect(redirect);
+                    }
                 }
 
                 return NotFound();
             }
 
             var decodedValue = HexUtils.FromHex(rawValue);
-            var fileExtension = Path.GetExtension(key);
 
             if (Utils.TryParseJson(decodedValue, out var json))
             {
