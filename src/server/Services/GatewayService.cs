@@ -202,8 +202,9 @@ public class GatewayService
 
             return value;
         }
-        catch
+        catch (Exception e)
         {
+            _logger.LogError(e, "Failed to get value for {StoreId} {Key}", storeId.SanitizeForLog(), key.SanitizeForLog());
             return null; // 404 in the api
         }
         finally
