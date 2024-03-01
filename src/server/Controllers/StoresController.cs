@@ -75,7 +75,7 @@ public partial class StoresController(GatewayService gatewayService,
 
             if (redirect is not null)
             {
-                _logger.LogInformation("Redirecting to {redirect}", redirect);
+                _logger.LogInformation("Redirecting to {redirect}", redirect.SanitizeForLog());
                 HttpContext.Response.Headers.Location = redirect;
                 return Redirect(redirect);
             }

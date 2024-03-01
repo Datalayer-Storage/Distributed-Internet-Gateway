@@ -11,7 +11,7 @@ public class StatusController(DataLayerProxy dataLayer, ILogger<StatusController
     private readonly ILogger<StatusController> _logger = logger;
 
     [HttpGet("{storeId}")]
-    public async Task<IActionResult> Get(string storeId)
+    public async Task<IActionResult> GetStatus(string storeId)
     {
         try
         {
