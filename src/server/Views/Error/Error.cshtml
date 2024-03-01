@@ -1,6 +1,7 @@
 @{
     Layout = "_Layout";
+    var message = ViewBag.ErrorMessage;
 }
 
-<h1>Eek</h1>
-<img class="mx-auto d-block rounded shadow" src="~/images/eek.jpg" alt="Eek" />
+<h1>@message</h1>
+<img class="mx-auto d-block rounded shadow img-fluid" src="~/images/eek.jpg" alt="Eek" />

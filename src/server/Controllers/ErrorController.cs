@@ -13,11 +13,14 @@ public class ErrorController(GatewayService gatewayService) : Controller
         ViewBag.WellKnown = _gatewayService.GetWellKnown($"{request.Scheme}://{request.Host}{request.PathBase}");
         if (statusCode.HasValue)
         {
-            // here is the trick
-            this.HttpContext.Response.StatusCode = statusCode.Value;
+            HttpContext.Response.StatusCode = statusCode.Value;
         }
 
-        // or return View
+        ViewBag.ErrorMessage = HttpContext.Response.StatusCode switch
+        {
+            404 => "That was not found.",
+            _ => "Eek.",
+        };
         return View("Error");
     }
 }
