@@ -4,18 +4,13 @@ using System.Text.RegularExpressions;
 
 namespace dig.server;
 
-public partial class StoresController : ControllerBase
+public partial class StoresController(GatewayService gatewayService,
+                                        MeshNetworkRoutingService meshNetworkRoutingService,
+                                        ILogger<StoresController> logger) : ControllerBase
 {
-    private readonly GatewayService _gatewayService;
-    private readonly ILogger<StoresController> _logger;
-    private readonly MeshNetworkRoutingService _meshNetworkRoutingService;
-
-    public StoresController(GatewayService gatewayService, ILogger<StoresController> logger, ChiaConfig chiaConfig)
-    {
-        _gatewayService = gatewayService;
-        _logger = logger;
-        _meshNetworkRoutingService = new MeshNetworkRoutingService(chiaConfig, logger);
-    }
+    private readonly GatewayService _gatewayService = gatewayService;
+    private readonly ILogger<StoresController> _logger = logger;
+    private readonly MeshNetworkRoutingService _meshNetworkRoutingService = meshNetworkRoutingService;
 
     [HttpGet("{storeId}")]
     [ProducesResponseType(StatusCodes.Status307TemporaryRedirect)]

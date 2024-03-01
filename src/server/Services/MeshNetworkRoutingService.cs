@@ -6,19 +6,16 @@ using System.Threading.Tasks;
 
 namespace dig.server;
 
-public class MeshNetworkRoutingService
+public class MeshNetworkRoutingService(ChiaConfig chiaConfig,
+                                        ServerCoinService serverCoinService,
+                                        ILogger<MeshNetworkRoutingService> logger,
+                                        IConfiguration configuration)
 {
-    private readonly ServerCoinService _serverCoinService;
-    private readonly ILogger _logger;
-    private readonly HttpClient _httpClient;
-    private readonly IConfiguration _configuration;
-
-    public MeshNetworkRoutingService(ChiaConfig chiaConfig, ILogger logger, IConfiguration configuration)
-    {
-        _logger = logger;
-        _serverCoinService = new ServerCoinService(chiaConfig, _logger, configuration);
-        _httpClient = new HttpClient();
-    }
+    private readonly ChiaConfig _chiaConfig = chiaConfig;
+    private readonly ServerCoinService _serverCoinService = serverCoinService;
+    private readonly ILogger<MeshNetworkRoutingService> _logger = logger;
+    private readonly HttpClient _httpClient = new();
+    private readonly IConfiguration _configuration = configuration;
 
     private string[] GetRedirectUrls(string storeId)
     {
@@ -34,7 +31,7 @@ public class MeshNetworkRoutingService
         return [];
     }
 
-    public async Task<string?> GetMeshNetworkLocationAsync(string storeId, string key)
+    public async Task<string?> GetMeshNetworkLocationAsync(string storeId, string? key)
     {
         var urls = GetRedirectUrls(storeId);
 
