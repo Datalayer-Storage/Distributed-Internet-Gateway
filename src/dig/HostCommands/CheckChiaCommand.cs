@@ -1,6 +1,6 @@
 using chia.dotnet;
-namespace dig;
 
+namespace dig;
 
 internal sealed class CheckChiaCommand()
 {
@@ -10,20 +10,19 @@ internal sealed class CheckChiaCommand()
     [CommandTarget]
     public async Task<int> Execute(FullNodeProxy fullNodeProxy, DataLayerProxy dataLayerProxy)
     {
-        using var cancellationSource = new CancellationTokenSource(TimeSpan.FromSeconds(Timeout));
-
-        await HealthZ(fullNodeProxy, cancellationSource.Token);
-        await HealthZ(dataLayerProxy, cancellationSource.Token);
+        await HealthZ(dataLayerProxy);
+        await HealthZ(fullNodeProxy);
 
         return 0;
     }
 
-    private static async Task HealthZ(ServiceProxy proxy, CancellationToken cancellationToken)
+    private async Task HealthZ(ServiceProxy proxy)
     {
         try
         {
             Console.WriteLine($"Checking {proxy.DestinationService} at {proxy.RpcClient.Endpoint.Uri}...");
-            await proxy.HealthZ(cancellationToken);
+            using var cancellationSource = new CancellationTokenSource(TimeSpan.FromSeconds(Timeout));
+            await proxy.HealthZ(cancellationSource.Token);
             Console.WriteLine($"\tCheck succeeded.");
         }
         catch (Exception e)
