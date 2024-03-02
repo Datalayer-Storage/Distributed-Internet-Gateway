@@ -63,7 +63,7 @@ namespace dig.server
         }
 
 
-        public async Task<string?> GetMeshNetworkContentAsync(string storeId, string? key) => await FetchMeshNetworkData(storeId, key, false);
+        public async Task<string?> GetMeshNetworkContentsAsync(string storeId, string? key) => await FetchMeshNetworkData(storeId, key, false);
 
         public async Task<string?> GetMeshNetworkLocationAsync(string storeId, string? key) => await FetchMeshNetworkData(storeId, key, true);
 
