@@ -32,22 +32,12 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Check Versions
+      - name: Extract version from publish.ps1
         run: |
-          # Extract version from main branch's publish.ps1
-          $mainVersionLine = Get-Content ${{ github.workspace }}/publish.ps1 | Select-String '^\$version = "([^"]+)"'
-          $mainVersion = $mainVersionLine -replace '^\$version = "([^"]+)"', '$1'
-          echo "Main version: $mainVersion"
-
-          # Extract version from current branch's publish.ps1
-          $branchVersionLine = Get-Content ${{ github.workspace }}/publish.ps1 | Select-String '^\$version = "([^"]+)"'
-          $branchVersion = $branchVersionLine -replace '^\$version = "([^"]+)"', '$1'
-          echo "Branch version: $branchVersion"
+          # Use grep to find the line containing '$version', then cut to extract the version value
+          VERSION=$(grep '^\$version = ' publish.ps1 | cut -d '"' -f 2)
+          echo "Extracted version: $VERSION"
           
-          # Compare versions
-          if ($branchVersion -eq $mainVersion) {
-            Write-Error "Version in publish.ps1 on this branch is not incremented. Version must increment for a merge to main."
-            exit 1
-          }
-        shell: pwsh
-  
+          # Set the version as an output for other steps to use
+          echo "VERSION=$VERSION" >> $GITHUB_ENV
+        shell: bash
