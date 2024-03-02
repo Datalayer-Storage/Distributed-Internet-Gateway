@@ -32,7 +32,7 @@ public class GatewayService
         _logger = logger;
         _configuration = configuration;
         _fileCache = new FileCacheService(Path.Combine(appStorage.UserSettingsFolder, "store-cache"), _logger);
-
+    
         _storeUpdateNotifierService = new StoreUpdateNotifierService(dataLayer, memoryCache, logger, _fileCache);
         _storeUpdateNotifierService.StartWatcher(storeId => InvalidateStore(storeId), TimeSpan.FromMinutes(5), CancellationToken.None);
     }
@@ -202,8 +202,9 @@ public class GatewayService
 
             return value;
         }
-        catch
+        catch (Exception e)
         {
+            _logger.LogError(e, "Failed to get value for {StoreId} {Key}", storeId.SanitizeForLog(), key.SanitizeForLog());
             return null; // 404 in the api
         }
         finally

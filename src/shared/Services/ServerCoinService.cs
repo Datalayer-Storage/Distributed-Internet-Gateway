@@ -1,10 +1,11 @@
 namespace dig;
 
 using System.Diagnostics;
+using System.Runtime.InteropServices;
 using System.Dynamic;
 using Newtonsoft.Json;
 
-public sealed class ServerCoinService(ChiaConfig chiaConfig,
+public class ServerCoinService(ChiaConfig chiaConfig,
                                         ILogger<ServerCoinService> logger,
                                         IConfiguration configuration)
 {
@@ -46,9 +47,11 @@ public sealed class ServerCoinService(ChiaConfig chiaConfig,
     private string RunCommand(IList<string> args)
     {
         var programPath = _configuration.GetValue("dig:ServerCoinExePath", "");
+
         if (string.IsNullOrEmpty(programPath))
         {
-            programPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "server_coin.exe");
+            var programName = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? "server_coin.exe" : "server_coin";
+            programPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, programName);
         }
 
         if (!File.Exists(programPath))
