@@ -5,7 +5,7 @@ using System.Runtime.InteropServices;
 using System.Dynamic;
 using Newtonsoft.Json;
 
-public sealed class ServerCoinService(ChiaConfig chiaConfig,
+public class ServerCoinService(ChiaConfig chiaConfig,
                                         ILogger<ServerCoinService> logger,
                                         IConfiguration configuration)
 {
