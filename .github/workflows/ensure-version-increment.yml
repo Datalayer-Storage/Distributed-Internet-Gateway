@@ -1,0 +1,49 @@
+# This workflow runs on any PRs that are targeting main, and ensures that the version in package.json is incremented
+name: Check Version Increment
+
+on:
+  pull_request:
+    branches:
+      - 'main'
+
+concurrency:
+  # SHA is added to the end if on `main` to let all main workflows run
+  group: ${{ github.ref }}-${{ github.workflow }}-${{ github.event_name }}-${{ github.ref == 'refs/heads/main' && github.sha || '' }}
+  cancel-in-progress: true
+
+jobs:
+  check-version:
+    name: Check version increment
+    runs-on: ubuntu-latest
+    steps:
+      - uses: Chia-Network/actions/clean-workspace@main
+
+      - name: Checkout current branch
+        uses: actions/checkout@v3
+        with:
+          path: branch-repo
+
+      - name: Checkout main
+        uses: actions/checkout@v3
+        with:
+          ref: main
+          path: main-repo
+
+      - name: Check Versions
+        run: |
+          # Extract version from main branch's publish.ps1
+          $mainVersionLine = Get-Content ${{ github.workspace }}/main-repo/publish.ps1 | Select-String '^\$version = "([^"]+)"'
+          $mainVersion = $mainVersionLine -replace '^\$version = "([^"]+)"', '$1'
+          echo "Main version: $mainVersion"
+
+          # Extract version from current branch's publish.ps1
+          $branchVersionLine = Get-Content ${{ github.workspace }}/branch-repo/publish.ps1 | Select-String '^\$version = "([^"]+)"'
+          $branchVersion = $branchVersionLine -replace '^\$version = "([^"]+)"', '$1'
+          echo "Branch version: $branchVersion"
+          
+          # Compare versions
+          if ($branchVersion -eq $mainVersion) {
+            Write-Error "Version in publish.ps1 on this branch is not incremented. Version must increment for a merge to main."
+            exit 1
+          }
+        shell: pwsh
