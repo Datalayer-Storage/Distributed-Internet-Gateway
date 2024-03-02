@@ -261,7 +261,7 @@ jobs:
           zip -r dig-win-x64-${{ steps.tag-name.outputs.TAGNAME }}.zip dig-win-x64
           zip -r dig-linux-x64-${{ steps.tag-name.outputs.TAGNAME }}.zip dig-linux-x64
           zip -r dig-linux-arm64-${{ steps.tag-name.outputs.TAGNAME }}.zip dig-linux-arm64
-          mv dig-win-x64-msi/Distributed-Internet-Gateway-win-x64.msi dig-win-x64-msi/dig-win-x64-${{ steps.tag-name.outputs.TAGNAME }}.msi
+          mv dig-win-x64-msi/Distributed-Internet-Gateway-win-x64.msi dig-win-x64-${{ steps.tag-name.outputs.TAGNAME }}.msi
         
       - name: Release
         uses: softprops/action-gh-release@v0.1.15
