@@ -1,6 +1,6 @@
 #!/bin/bash
 
-version="0.2.2"
+version="0.2.3"
 fullName="dig"
 names=("dig" "server")
 src="src"

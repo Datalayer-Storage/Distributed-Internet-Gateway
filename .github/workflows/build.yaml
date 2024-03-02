@@ -1,0 +1,275 @@
+name: Build Binaries
+
+on:
+  push:
+    tags:
+      - '**'
+  pull_request:
+    branches:
+      - '**'
+
+concurrency:
+  group: ${{ github.ref }}-${{ github.workflow }}-${{ github.event_name }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Build Binaries on Windows
+    runs-on: windows-2019
+
+    steps:
+      - name: Clean workspace
+        uses: Chia-Network/actions/clean-workspace@main
+
+      - name: Checkout Code
+        uses: actions/checkout@v3
+
+      - name: Install .NET SDK 8.0
+        uses: actions/setup-dotnet@v2
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Create publish folder
+        run: |
+          $publishPath = Join-Path -Path $env:GITHUB_WORKSPACE -ChildPath "publish"
+
+          # Check if the publish folder already exists
+          if (-not (Test-Path $publishPath)) {
+            # Create the publish folder
+            New-Item -ItemType Directory -Path $publishPath | Out-Null
+            Write-Host "publish folder created at $publishPath"
+          } else {
+            Write-Host "publish folder already exists at $publishPath"
+          }
+        shell: pwsh
+
+      - name: Build Projects
+        run: ${{ github.workspace }}\publish.ps1
+        shell: pwsh
+
+      - name: Setup Certificate (Windows)
+        run: |
+          echo "${{ secrets.SM_CLIENT_CERT_FILE_B64 }}" | base64 --decode > /d/Certificate_pkcs12.p12
+        shell: bash
+
+      - name: Set variables (Windows)
+        id: variables
+        run: |
+          echo "::set-output name=version::${GITHUB_REF#refs/tags/v}"
+          echo "::set-output name=KEYPAIR_NAME::Key_454819080"
+          echo "SM_HOST=${{ secrets.SM_HOST }}" >> "$GITHUB_ENV"
+          echo "SM_API_KEY=${{ secrets.SM_API_KEY }}" >> "$GITHUB_ENV"
+          echo "SM_CLIENT_CERT_FILE=D:\\Certificate_pkcs12.p12" >> "$GITHUB_ENV"
+          echo "SM_CLIENT_CERT_PASSWORD=${{ secrets.SM_CLIENT_CERT_PASSWORD }}" >> "$GITHUB_ENV"
+          echo "C:\Program Files (x86)\Windows Kits\10\App Certification Kit" >> $GITHUB_PATH
+          echo "C:\Program Files (x86)\Microsoft SDKs\Windows\v10.0A\bin\NETFX 4.8 Tools" >> $GITHUB_PATH
+          echo "C:\Program Files\DigiCert\DigiCert One Signing Manager Tools" >> $GITHUB_PATH
+          echo "C:\Program Files\DigiCert\DigiCert Keylocker Tools" >> $GITHUB_PATH
+        shell: bash
+
+      - name: Setting up the client tools (Windows)
+        run: |
+          curl -X GET  https://one.digicert.com/signingmanager/api-ui/v1/releases/Keylockertools-windows-x64.msi/download?account_id=e94ff86e-6519-4598-a066-6b6b252245f0 -H "x-api-key:%SM_API_KEY%" -o smtools-windows-x64.msi
+          msiexec /i smtools-windows-x64.msi /qn
+        shell: cmd
+
+    
+      - name: Setup SSM KSP on windows latest (Windows)
+        run: |
+          curl -X GET  https://stage.one.digicert.com/signingmanager/api-ui/v1/releases/smtools-windows-x64.msi/download -H "x-api-key:%SM_API_KEY%" -o smtools-windows-x64.msi
+          msiexec /i smtools-windows-x64.msi /quiet /qn
+          smksp_registrar.exe list
+          smctl.exe keypair ls
+          C:\Windows\System32\certutil.exe -csp "DigiCert Signing Manager KSP" -key -user
+          smksp_cert_sync.exe
+        shell: cmd
+
+      - name: Signing using Signtool (Windows)
+        run: |
+          signtool.exe sign /sha1 ${{ secrets.SM_CODE_SIGNING_CERT_SHA1_HASH }} /tr http://timestamp.digicert.com /td SHA256 /fd SHA256 ${{ github.workspace }}\publish\standalone\win-x64\dig.exe
+          signtool.exe sign /sha1 ${{ secrets.SM_CODE_SIGNING_CERT_SHA1_HASH }} /tr http://timestamp.digicert.com /td SHA256 /fd SHA256 ${{ github.workspace }}\publish\standalone\win-x64\dig.server.exe
+
+      - name: Signtool verify (Windows)
+        run: |
+          signtool verify /v /pa ${{ github.workspace }}\publish\standalone\win-x64\dig.exe
+          signtool verify /v /pa ${{ github.workspace }}\publish\standalone\win-x64\dig.server.exe
+        shell: cmd
+      
+      - name: Download server_coin assets from the latest release and rename
+        run: |
+          # Fetch the latest release data from GitHub API
+          $headers = @{
+            "Authorization" = "token $env:GH_PAT"
+          }
+          $latestRelease = Invoke-RestMethod -Uri "https://api.github.com/repos/Datalayer-Storage/chia-server-coin-cli/releases/latest" -Headers $headers
+          $tagName = $latestRelease.tag_name
+
+          # Define asset filenames based on the tag name
+          $fileNames = @("server_coin-win-x64-$tagName.zip", "server_coin-linux-x64-$tagName.zip", "server_coin-linux-arm64-$tagName.zip")
+
+          # Loop through each filename to download and rename
+          foreach ($fileName in $fileNames) {
+            # Find the asset download URL
+            $asset = $latestRelease.assets | Where-Object {$_.name -eq $fileName}
+            if ($null -eq $asset) {
+              Write-Warning "Asset URL for $fileName not found"
+              continue
+            }
+
+            # Download the asset
+            $downloadPath = Join-Path -Path $env:GITHUB_WORKSPACE -ChildPath $asset.name
+            Invoke-WebRequest -Uri $asset.browser_download_url -Headers $headers -OutFile $downloadPath
+
+            # Rename the file to strip out the tag name
+            $newName = $asset.name.Replace("-$tagName", "")
+            $newPath = Join-Path -Path $env:GITHUB_WORKSPACE -ChildPath $newName
+            Rename-Item -Path $downloadPath -NewName $newPath
+          }
+        shell: pwsh
+        env:
+          GH_PAT: ${{ secrets.GH_ACCESS_TOKEN }}
+
+      - name: Unzip downloaded assets
+        run: |
+          # Define the paths for the zip files and their destination directories
+          $zipFiles = @{
+            "server_coin-win-x64.zip" = "publish/standalone/win-x64";
+            "server_coin-linux-x64.zip" = "publish/standalone/linux-x64";
+            "server_coin-linux-arm64.zip" = "publish/standalone/linux-arm64"
+          }
+      
+          # Iterate through each zip file and extract it to the specified destination
+          foreach ($zipFile in $zipFiles.GetEnumerator()) {
+            $zipPath = Join-Path -Path $env:GITHUB_WORKSPACE -ChildPath $zipFile.Name
+            $destPath = Join-Path -Path $env:GITHUB_WORKSPACE -ChildPath $zipFile.Value
+      
+            # Check if the zip file exists before attempting to extract
+            if (Test-Path $zipPath) {
+              # Create the destination directory if it doesn't exist
+              if (-not (Test-Path $destPath)) {
+                New-Item -ItemType Directory -Path $destPath | Out-Null
+              }
+      
+              # Extract the zip file to a temporary location
+              $tempPath = Join-Path -Path $env:TEMP -ChildPath ([System.IO.Path]::GetRandomFileName())
+              Expand-Archive -Path $zipPath -DestinationPath $tempPath -Force
+      
+              # Move the contents from the temporary location to the final destination
+              Get-ChildItem -Path $tempPath | Move-Item -Destination $destPath
+              Remove-Item -Path $tempPath -Recurse -Force
+            }
+            else {
+              Write-Warning "Zip file $zipFile.Name does not exist and cannot be unzipped."
+            }
+          }
+        shell: pwsh
+      
+      - name: List files and folders in a directory
+        run: Get-ChildItem -Path ${{ github.workspace }}\publish\standalone\win-x64 | ForEach-Object { Write-Host $_.FullName }
+        shell: pwsh
+
+      - name: Create thirdparty folder
+        run: |
+          $thirdpartyPath = Join-Path -Path $env:GITHUB_WORKSPACE -ChildPath "thirdparty"
+
+          # Check if the thirdparty folder already exists
+          if (-not (Test-Path $thirdpartyPath)) {
+            # Create the thirdparty folder
+            New-Item -ItemType Directory -Path $thirdpartyPath | Out-Null
+            Write-Host "thirdparty folder created at $thirdpartyPath"
+          } else {
+            Write-Host "thirdparty folder already exists at $thirdpartyPath"
+          }
+
+          cp ${{ github.workspace }}/publish/standalone/win-x64/server_coin.exe ${{ github.workspace }}/thirdparty/server_coin.exe
+        shell: pwsh
+
+      - name: Build MSI
+        run: ${{ github.workspace }}\build-msi.ps1
+        shell: pwsh
+
+      - name: Signing MSI using Signtool (Windows)
+        run: |
+          signtool.exe sign /sha1 ${{ secrets.SM_CODE_SIGNING_CERT_SHA1_HASH }} /tr http://timestamp.digicert.com /td SHA256 /fd SHA256 ${{ github.workspace }}\publish\Distributed-Internet-Gateway-win-x64.msi
+
+      - name: Signtool verify MSI (Windows)
+        run: |
+          signtool verify /v /pa ${{ github.workspace }}\publish\Distributed-Internet-Gateway-win-x64.msi
+        shell: cmd
+      
+      - name: Upload Windows MSI Artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: dig-win-x64-msi
+          path: publish/Distributed-Internet-Gateway-win-x64.msi
+      
+      - name: Upload Windows Artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: dig-win-x64
+          path: publish/standalone/win-x64
+
+      - name: Upload Linux x64 Artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: dig-linux-x64
+          path: publish/standalone/linux-x64
+
+      - name: Upload Linux ARM64 Artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: dig-linux-arm64
+          path: publish/standalone/linux-arm64
+
+  release:
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/')
+    needs:
+      - build
+    steps:
+      - name: Download Windows artifacts
+        uses: actions/download-artifact@v3
+        with:
+          name: dig-win-x64-msi
+          path: dig-win-x64-msi
+
+      - name: Download Windows artifacts
+        uses: actions/download-artifact@v3
+        with:
+          name: dig-win-x64
+          path: dig-win-x64
+
+      - name: Download Linux x64 deb
+        uses: actions/download-artifact@v3
+        with:
+          name: dig-linux-x64
+          path: dig-linux-x64
+
+      - name: Download Linux arm64 deb
+        uses: actions/download-artifact@v3
+        with:
+          name: dig-linux-arm64
+          path: dig-linux-arm64
+
+      - name: Get tag name
+        id: tag-name
+        run: |
+          echo "TAGNAME=$(echo $GITHUB_REF | cut -d / -f 3)" >>$GITHUB_OUTPUT
+      
+      - name: Create zips
+        run: |
+          zip -r dig-win-x64-${{ steps.tag-name.outputs.TAGNAME }}.zip dig-win-x64
+          zip -r dig-linux-x64-${{ steps.tag-name.outputs.TAGNAME }}.zip dig-linux-x64
+          zip -r dig-linux-arm64-${{ steps.tag-name.outputs.TAGNAME }}.zip dig-linux-arm64
+          mv dig-win-x64-msi/Distributed-Internet-Gateway-win-x64.msi dig-win-x64-msi/dig-win-x64-${{ steps.tag-name.outputs.TAGNAME }}.msi
+        
+      - name: Release
+        uses: softprops/action-gh-release@v0.1.15
+        with:
+          files: |
+            dig-win-x64-${{ steps.tag-name.outputs.TAGNAME }}.zip
+            dig-linux-x64-${{ steps.tag-name.outputs.TAGNAME }}.zip
+            dig-linux-arm64-${{ steps.tag-name.outputs.TAGNAME }}.zip
+            dig-win-x64-${{ steps.tag-name.outputs.TAGNAME }}.msi
+        env:
+          GITHUB_TOKEN: ${{ secrets.GH_ACCESS_TOKEN }}
