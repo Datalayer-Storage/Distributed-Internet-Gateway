@@ -166,10 +166,11 @@ jobs:
       
       - name: Copy License
         run: |
-          cp ${{ github.workspace }}\COPYING ${{ github.workspace }}\publish\standalone\win-x64
-          cp ${{ github.workspace }}\COPYING ${{ github.workspace }}\publish\standalone\linux-x64
-          cp ${{ github.workspace }}\COPYING ${{ github.workspace }}\publish\standalone\linux-arm64
-        shell: bash
+          Copy-Item -Path "${env:GITHUB_WORKSPACE}\COPYING" -Destination "${env:GITHUB_WORKSPACE}\publish\standalone\win-x64"
+          Copy-Item -Path "${env:GITHUB_WORKSPACE}\COPYING" -Destination "${env:GITHUB_WORKSPACE}\publish\standalone\linux-x64"
+          Copy-Item -Path "${env:GITHUB_WORKSPACE}\COPYING" -Destination "${env:GITHUB_WORKSPACE}\publish\standalone\linux-arm64"
+        shell: pwsh
+      
 
       - name: Create thirdparty folder
         run: |
