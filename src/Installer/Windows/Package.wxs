@@ -85,6 +85,7 @@
             <ComponentRef Id="stylev1css" />
             <ComponentRef Id="githubmarkwhitepng" />
             <ComponentRef Id="githubmarkpng" />
+            <ComponentRef Id="eekjpg" />
             <ComponentRef Id="swarmjpg" />
             <ComponentRef Id="Twittersocialiconscirclebluepng" />
             <ComponentRef Id="Twittersocialiconscirclewhitepng" />

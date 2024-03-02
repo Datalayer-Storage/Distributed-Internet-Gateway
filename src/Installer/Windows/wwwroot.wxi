@@ -39,6 +39,9 @@
         </Directory>
 
         <Directory Id="wwwroot.images" Name="images">
+            <Component Id="eekjpg" Guid="471320DF-85AE-4196-982A-27D46B0D62B9">
+                <File Id="file_eekjpg" Source="$(var.SourcePath)\wwwroot\images\eek.jpg" KeyPath="yes" />
+            </Component>
             <Component Id="githubmarkwhitepng" Guid="44CEC257-2A82-426A-9C58-B9046F77B546">
                 <File Id="file_githubmarkwhitepng" Source="$(var.SourcePath)\wwwroot\images\github-mark-white.png" KeyPath="yes" />
             </Component>
