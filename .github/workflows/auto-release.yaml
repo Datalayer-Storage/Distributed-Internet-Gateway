@@ -32,15 +32,22 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Check for current version tag. Create if it doesn't exist
+      - name: Check Versions
         run: |
-          version=$(cat $GITHUB_WORKSPACE/package.json | jq -r '.version')
-          echo "Version is: $version"
+          # Extract version from main branch's publish.ps1
+          $mainVersionLine = Get-Content ${{ github.workspace }}/main-repo/publish.ps1 | Select-String '^\$version = "([^"]+)"'
+          $mainVersion = $mainVersionLine -replace '^\$version = "([^"]+)"', '$1'
+          echo "Main version: $mainVersion"
 
-          if [ $(git tag -l "$version") ]; then
-            echo "Tag exists, nothing to do"
-          else
-            echo "Tag does not exist. Creating and pushing tag"
-            git tag $version -m "Release $version  $changes"
-            git push origin $version
-          fi
+          # Extract version from current branch's publish.ps1
+          $branchVersionLine = Get-Content ${{ github.workspace }}/branch-repo/publish.ps1 | Select-String '^\$version = "([^"]+)"'
+          $branchVersion = $branchVersionLine -replace '^\$version = "([^"]+)"', '$1'
+          echo "Branch version: $branchVersion"
+          
+          # Compare versions
+          if ($branchVersion -eq $mainVersion) {
+            Write-Error "Version in publish.ps1 on this branch is not incremented. Version must increment for a merge to main."
+            exit 1
+          }
+        shell: pwsh
+  
