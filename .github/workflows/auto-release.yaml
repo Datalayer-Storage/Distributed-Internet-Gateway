@@ -40,4 +40,12 @@ jobs:
           
           # Set the version as an output for other steps to use
           echo "VERSION=$VERSION" >> $GITHUB_ENV
+
+          if [ $(git tag -l "$VERSION") ]; then
+          echo "Tag exists, nothing to do"
+          else
+            echo "Tag does not exist. Creating and pushing tag"
+            git tag $VERSION -m "Release $VERSION  $changes"
+            git push origin $VERSION
+          fi
         shell: bash
