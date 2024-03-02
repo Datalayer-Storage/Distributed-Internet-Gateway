@@ -164,9 +164,12 @@ jobs:
           }
         shell: pwsh
       
-      - name: List files and folders in a directory
-        run: Get-ChildItem -Path ${{ github.workspace }}\publish\standalone\win-x64 | ForEach-Object { Write-Host $_.FullName }
-        shell: pwsh
+      - name: Copy License
+        run: |
+          cp ${{ github.workspace }}\COPYING ${{ github.workspace }}\publish\standalone\win-x64
+          cp ${{ github.workspace }}\COPYING ${{ github.workspace }}\publish\standalone\linux-x64
+          cp ${{ github.workspace }}\COPYING ${{ github.workspace }}\publish\standalone\linux-arm64
+        shell: bash
 
       - name: Create thirdparty folder
         run: |
