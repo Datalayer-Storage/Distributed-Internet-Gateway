@@ -130,7 +130,7 @@ jobs:
         run: ${{ github.workspace }}\build-msi.ps1
         shell: pwsh
 
-      - name: Signing MSI using Signtool
+      - name: Signing MSI
         uses: ./.github/actions/signing-steps
         with:
           ARTIFACT_PATHS: ${{ github.workspace }}/publish/Distributed-Internet-Gateway-${{matrix.runtime}}.msi
@@ -191,7 +191,7 @@ jobs:
           mkdir -p "deb/$CLI_DEB_BASE/etc/systemd/system"
           mkdir -p "deb/$CLI_DEB_BASE/DEBIAN"
           j2 -o "deb/$CLI_DEB_BASE/DEBIAN/control" build-scripts/deb/control.j2
-          cp -r ${{matrix.artifact-name}} "deb/$CLI_DEB_BASE/opt/${{matrix.pkg-name}}/${{matrix.binary-name}}"
+          cp -r ${{matrix.artifact-name}} "deb/$CLI_DEB_BASE/opt/${{matrix.pkg-name}}"
           cp build-scripts/deb/dig@.service deb/$CLI_DEB_BASE/etc/systemd/system/dig@.service
           chmod +x deb/$CLI_DEB_BASE/opt/${{matrix.pkg-name}}/${{matrix.binary-name}}
           chmod +x deb/$CLI_DEB_BASE/opt/${{matrix.pkg-name}}/${{matrix.binary-name}}.server
