@@ -105,13 +105,18 @@ jobs:
           name: ${{matrix.artifact-name}}
           path: publish/standalone/${{matrix.runtime}}
 
-      - name: Download and Bundle Server Coin Binary
-        uses: ./.github/actions/download-server-coin
-        with:
-          runtime: ${{matrix.runtime}}
-          path: thirdparty
-          GH_ACCESS_TOKEN: ${{ secrets.GH_ACCESS_TOKEN }}
-
+      - name: Copy server_coin.exe
+        run: |
+          $sourcePath = "publish/standalone/${{matrix.runtime}}/server_coin.exe"
+          $destinationPath = "thirdparty"
+          # Ensure the destination directory exists
+          if (-not (Test-Path -Path $destinationPath -PathType Container)) {
+              New-Item -ItemType Directory -Path $destinationPath
+          }
+          # Copy the file
+          Copy-Item -Path $sourcePath -Destination $destinationPath
+        shell: pwsh
+        
       - name: list
         run: |
           ls -al
