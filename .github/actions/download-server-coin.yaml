@@ -2,7 +2,10 @@ name: Download Server Coin
 on:
   workflow_call:
     inputs:
-      artifactPath:
+      path:
+        required: true
+        type: string
+      runtime:
         required: true
         type: string
 

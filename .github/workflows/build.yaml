@@ -68,18 +68,18 @@ jobs:
 
       - name: Signing dig.exe
         if: matrix.os == 'Windows'
-        uses: ./.github/workflows/signing-steps.yaml
+        uses: ./.github/actions/signing-steps.yaml
         with:
           artifactPath: ${{ github.workspace }}/publish/standalone/win-x64/dig.exe
 
-      - name: Signing dig.server.exe Exe
+      - name: Signing dig.server.exe
         if: matrix.os == 'Windows'
-        uses: ./.github/workflows/signing-steps.yaml
+        uses: ./.github/actions/signing-steps.yaml
         with:
           artifactPath: ${{ github.workspace }}/publish/standalone/win-x64/dig.server.exe
       
       - name: Download and Bundle Server Coin Binary
-        uses: ./.github/workflows/signing-steps.yaml
+        uses: ./.github/actions/signing-steps.yaml
         with:
           runtime: ${{matrix.runtime}}
           path: publish/standalone/${{matrix.runtime}}
@@ -110,11 +110,11 @@ jobs:
       - name: Download Windows artifacts
         uses: actions/download-artifact@v3
         with:
-          name: dig-win-x64
-          path: publish/standalone/win-x64
+          name: ${{matrix.artifact-name}}
+          path: publish/standalone/${{matrix.runtime}}
 
       - name: Download and Bundle Server Coin Binary
-        uses: ./.github/workflows/signing-steps.yaml
+        uses: ./.github/actions/signing-steps.yaml
         with:
           runtime: ${{matrix.runtime}}
           path: thirdparty
@@ -126,13 +126,13 @@ jobs:
       - name: Signing MSI using Signtool
         uses: ./.github/workflows/signing-steps.yaml
         with:
-          artifactPath: ${{ github.workspace }}/publish/Distributed-Internet-Gateway-win-x64.msi
+          artifactPath: ${{ github.workspace }}/publish/Distributed-Internet-Gateway-${{matrix.runtime}}.msi
 
       - name: Upload Windows MSI Artifacts
         uses: actions/upload-artifact@v3
         with:
-          name: dig-win-x64-msi
-          path: publish/Distributed-Internet-Gateway-win-x64.msi
+          name: ${{matrix.artifact-name}}-msi
+          path: publish/Distributed-Internet-Gateway-${{matrix.runtime}}.msi
         
 
   debs:
