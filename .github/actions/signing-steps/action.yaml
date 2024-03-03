@@ -66,4 +66,4 @@ runs:
           signtool.exe sign /sha1 ${{ inputs.sm-code-signing-cert-sha1-hash }} /tr http://timestamp.digicert.com /td SHA256 /fd SHA256 $path.Trim()
           signtool verify /v /pa $path.Trim()
         }
-      shell: cmd
+      shell: pwsh
