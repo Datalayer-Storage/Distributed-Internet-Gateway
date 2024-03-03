@@ -55,12 +55,12 @@ builder.Services.AddSingleton<ChiaConfig>()
     .AddSingleton<StoreRegistryService>()
     .AddSingleton<MeshNetworkRoutingService>()
     .AddSingleton<ServerCoinService>()
-    .AddSingleton(provider => new DataLayerProxy(provider.GetRequiredKeyedService<IRpcClient>("data_layer"), "dig.server"))
-    // .AddEndpointsApiExplorer()
-    // .AddSwaggerGen()
-    .AddMemoryCache();
+    .AddSingleton<ChiaService>()
+    .AddMemoryCache()
+    .RegisterChiaEndPoint<DataLayerProxy>("dig.server")
+    .RegisterChiaEndPoint<FullNodeProxy>("dig.server")
+    .RegisterChiaEndPoint<WalletProxy>("dig.server");
 
-builder.Services.AddRpcEndpoint("data_layer"); //.AddStandardResilienceHandler();
 builder.Services.AddHttpClient("datalayer.storage", c =>
 {
     c.BaseAddress = new Uri(builder.Configuration.GetValue("dig:DataLayerStorageUri", "https://api.datalayer.storage/")!);
@@ -73,11 +73,8 @@ if (builder.Configuration.GetValue("dig:NodeSyncJobEnabled", false))
     builder.Services
         .AddHostedService<PeriodicNodeSyncService>()
         .AddSingleton<NodeSyncService>()
-        .AddSingleton<ChiaService>()
         .AddSingleton<StoreService>()
-        .AddSingleton<DnsService>()
-        .AddSingleton(provider => new FullNodeProxy(provider.GetRequiredKeyedService<IRpcClient>("full_node"), "dig.server"))
-        .AddRpcEndpoint("full_node");
+        .AddSingleton<DnsService>();
 }
 
 // setup the Dyn Dns service
