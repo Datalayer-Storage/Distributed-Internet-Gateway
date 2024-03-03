@@ -70,18 +70,7 @@ jobs:
         if: matrix.os == 'Windows'
         uses: ./.github/actions/signing-steps
         with:
-          ARTIFACT_PATH: ${{ github.workspace }}\publish\standalone\win-x64\dig.exe
-          SM_CLIENT_CERT_FILE_B64: ${{ secrets.SM_CLIENT_CERT_FILE_B64 }}
-          SM_HOST: ${{ secrets.SM_HOST }}
-          SM_API_KEY: ${{ secrets.SM_API_KEY }}
-          SM_CLIENT_CERT_PASSWORD: ${{ secrets.SM_CLIENT_CERT_PASSWORD }}
-          SM_CODE_SIGNING_CERT_SHA1_HASH: ${{ secrets.SM_CODE_SIGNING_CERT_SHA1_HASH }}
-
-      - name: Signing dig.server.exe
-        if: matrix.os == 'Windows'
-        uses: ./.github/actions/signing-steps
-        with:
-          ARTIFACT_PATH: ${{ github.workspace }}\publish\standalone\win-x64\dig.server.exe
+          ARTIFACT_PATHS: ${{ github.workspace }}\publish\standalone\win-x64\dig.exe,${{ github.workspace }}\publish\standalone\win-x64\dig.server.exe
           SM_CLIENT_CERT_FILE_B64: ${{ secrets.SM_CLIENT_CERT_FILE_B64 }}
           SM_HOST: ${{ secrets.SM_HOST }}
           SM_API_KEY: ${{ secrets.SM_API_KEY }}
