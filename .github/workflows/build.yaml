@@ -68,18 +68,18 @@ jobs:
 
       - name: Signing dig.exe
         if: matrix.os == 'Windows'
-        uses: ./.github/actions/signing-steps.yaml
+        uses: ./.github/actions/signing-steps
         with:
           artifactPath: ${{ github.workspace }}/publish/standalone/win-x64/dig.exe
 
       - name: Signing dig.server.exe
         if: matrix.os == 'Windows'
-        uses: ./.github/actions/signing-steps.yaml
+        uses: ./.github/actions/signing-steps
         with:
           artifactPath: ${{ github.workspace }}/publish/standalone/win-x64/dig.server.exe
       
       - name: Download and Bundle Server Coin Binary
-        uses: ./.github/actions/signing-steps.yaml
+        uses: ./.github/actions/signing-steps
         with:
           runtime: ${{matrix.runtime}}
           path: publish/standalone/${{matrix.runtime}}
