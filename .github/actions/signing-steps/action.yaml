@@ -1,0 +1,55 @@
+name: Signing Steps
+description: 'Signs artifacts'
+inputs:
+  artifact-path:
+    description: 'Path to the artifact to sign'
+    required: true
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Setup Certificate
+      run: |
+        echo "${{ secrets.SM_CLIENT_CERT_FILE_B64 }}" | base64 --decode > /d/Certificate_pkcs12.p12
+      shell: pwsh
+
+    - name: Set variables (Windows)
+      id: variables
+      run: |
+        echo "::set-output name=version::${GITHUB_REF#refs/tags/v}"
+        echo "::set-output name=KEYPAIR_NAME::Key_454819080"
+        echo "SM_HOST=${{ secrets.SM_HOST }}" >> "$GITHUB_ENV"
+        echo "SM_API_KEY=${{ secrets.SM_API_KEY }}" >> "$GITHUB_ENV"
+        echo "SM_CLIENT_CERT_FILE=D:\\Certificate_pkcs12.p12" >> "$GITHUB_ENV"
+        echo "SM_CLIENT_CERT_PASSWORD=${{ secrets.SM_CLIENT_CERT_PASSWORD }}" >> "$GITHUB_ENV"
+        echo "C:\Program Files (x86)\Windows Kits\10\App Certification Kit" >> $GITHUB_PATH
+        echo "C:\Program Files (x86)\Microsoft SDKs\Windows\v10.0A\bin\NETFX 4.8 Tools" >> $GITHUB_PATH
+        echo "C:\Program Files\DigiCert\DigiCert One Signing Manager Tools" >> $GITHUB_PATH
+        echo "C:\Program Files\DigiCert\DigiCert Keylocker Tools" >> $GITHUB_PATH
+      shell: bash
+
+    - name: Setting up the client tools (Windows)
+      run: |
+        curl -X GET  https://one.digicert.com/signingmanager/api-ui/v1/releases/Keylockertools-windows-x64.msi/download?account_id=e94ff86e-6519-4598-a066-6b6b252245f0 -H "x-api-key:%SM_API_KEY%" -o smtools-windows-x64.msi
+        msiexec /i smtools-windows-x64.msi /qn
+      shell: cmd
+
+    - name: Setup SSM KSP on windows latest (Windows)
+      run: |
+        curl -X GET  https://stage.one.digicert.com/signingmanager/api-ui/v1/releases/smtools-windows-x64.msi/download -H "x-api-key:%SM_API_KEY%" -o smtools-windows-x64.msi
+        msiexec /i smtools-windows-x64.msi /quiet /qn
+        smksp_registrar.exe list
+        smctl.exe keypair ls
+        C:\Windows\System32\certutil.exe -csp "DigiCert Signing Manager KSP" -key -user
+        smksp_cert_sync.exe
+      shell: cmd
+    
+    - name: Signing using Signtool
+      run: |
+        signtool.exe sign /sha1 ${{ secrets.SM_CODE_SIGNING_CERT_SHA1_HASH }} /tr http://timestamp.digicert.com /td SHA256 /fd SHA256 ${{ inputs.artifactPath }}
+      shell: cmd
+
+    - name: Signtool verify
+      run: |
+        signtool.exe verify /v /pa ${{ inputs.artifactPath }}
+      shell: cmd
