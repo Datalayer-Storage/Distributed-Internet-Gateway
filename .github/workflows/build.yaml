@@ -70,8 +70,7 @@ jobs:
         if: matrix.os == 'Windows'
         uses: ./.github/actions/signing-steps
         with:
-          artifactPath: ${{ github.workspace }}/publish/standalone/win-x64/dig.exe
-          artifact-path: ${{ github.workspace }}/path/to/artifact
+          artifact-path: ${{ github.workspace }}/publish/standalone/win-x64/dig.exe
           cert-file-b64: ${{ secrets.CERT_FILE_B64 }}
           sm-host: ${{ secrets.SM_HOST }}
           sm-api-key: ${{ secrets.SM_API_KEY }}
@@ -83,8 +82,7 @@ jobs:
         if: matrix.os == 'Windows'
         uses: ./.github/actions/signing-steps
         with:
-          artifactPath: ${{ github.workspace }}/publish/standalone/win-x64/dig.server.exe
-          artifact-path: ${{ github.workspace }}/path/to/artifact
+          artifact-path: ${{ github.workspace }}/publish/standalone/win-x64/dig.server.exe
           cert-file-b64: ${{ secrets.CERT_FILE_B64 }}
           sm-host: ${{ secrets.SM_HOST }}
           sm-api-key: ${{ secrets.SM_API_KEY }}
@@ -121,6 +119,9 @@ jobs:
           - artifact-name: dig-win-x64
             runtime: win-x64
     steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+
       - name: Download Windows artifacts
         uses: actions/download-artifact@v3
         with:
@@ -141,12 +142,10 @@ jobs:
       - name: Signing MSI using Signtool
         uses: ./.github/workflows/signing-steps
         with:
-          artifactPath: ${{ github.workspace }}/publish/Distributed-Internet-Gateway-${{matrix.runtime}}.msi
-          artifact-path: ${{ github.workspace }}/path/to/artifact
+          artifactPathartifact-path: ${{ github.workspace }}/publish/Distributed-Internet-Gateway-${{matrix.runtime}}.msi
           cert-file-b64: ${{ secrets.CERT_FILE_B64 }}
           sm-host: ${{ secrets.SM_HOST }}
           sm-api-key: ${{ secrets.SM_API_KEY }}
-          sm-client-cert-file: D:\Certificate_pkcs12.p12
           sm-client-cert-password: ${{ secrets.SM_CLIENT_CERT_PASSWORD }}
           code-signing-cert-sha1-hash: ${{ secrets.CODE_SIGNING_CERT_SHA1_HASH }}
 
