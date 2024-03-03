@@ -119,6 +119,20 @@ jobs:
           name: ${{matrix.artifact-name}}
           path: publish/standalone/${{matrix.runtime}}
 
+      - name: Create publish folder
+        run: |
+          $publishPath = Join-Path -Path $env:GITHUB_WORKSPACE -ChildPath "thirdparty"
+
+          # Check if the publish folder already exists
+          if (-not (Test-Path $publishPath)) {
+            # Create the publish folder
+            New-Item -ItemType Directory -Path $publishPath | Out-Null
+            Write-Host "publish folder created at $publishPath"
+          } else {
+            Write-Host "publish folder already exists at $publishPath"
+          }
+        shell: pwsh
+
       - name: Download and Bundle Server Coin Binary
         uses: ./.github/actions/download-server-coin
         with:
