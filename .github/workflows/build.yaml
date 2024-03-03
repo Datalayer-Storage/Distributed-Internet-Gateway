@@ -137,7 +137,7 @@ jobs:
           sm-host: ${{ secrets.SM_HOST }}
           sm-api-key: ${{ secrets.SM_API_KEY }}
           sm-client-cert-password: ${{ secrets.SM_CLIENT_CERT_PASSWORD }}
-          code-signing-cert-sha1-hash: ${{ secrets.CODE_SIGNING_CERT_SHA1_HASH }}
+          code-signing-cert-sha1-hash: ${{ secrets.SM_CODE_SIGNING_CERT_SHA1_HASH }}
 
       - name: Upload Windows MSI Artifacts
         uses: actions/upload-artifact@v3
