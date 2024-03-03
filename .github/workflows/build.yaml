@@ -107,6 +107,9 @@ jobs:
           - artifact-name: dig-win-x64
             runtime: win-x64
     steps:
+      - name: Clean workspace
+        uses: Chia-Network/actions/clean-workspace@main
+
       - name: Checkout Code
         uses: actions/checkout@v3
 
@@ -143,7 +146,6 @@ jobs:
           name: ${{matrix.artifact-name}}-msi
           path: publish/Distributed-Internet-Gateway-${{matrix.runtime}}.msi
         
-
   debs:
     name: Build ${{matrix.artifact-name}} deb
     runs-on: ubuntu-latest
@@ -156,11 +158,11 @@ jobs:
           - artifact-name: dig-linux-x64
             runtime: linux-x64
             pkg-name: distributed-internet-gateway
-            binary-name: dig.server
+            binary-name: dig
           - artifact-name: dig-linux-arm64
             runtime: linux-arm64
             pkg-name: distributed-internet-gateway
-            binary-name: dig.server
+            binary-name: dig
 
     steps:
       - name: Checkout Code
@@ -192,9 +194,8 @@ jobs:
           cp -r ${{matrix.artifact-name}} "deb/$CLI_DEB_BASE/opt/${{matrix.pkg-name}}/${{matrix.binary-name}}"
           cp build-scripts/deb/dig@.service deb/$CLI_DEB_BASE/etc/systemd/system/dig@.service
           chmod +x deb/$CLI_DEB_BASE/opt/${{matrix.pkg-name}}/${{matrix.binary-name}}
+          chmod +x deb/$CLI_DEB_BASE/opt/${{matrix.pkg-name}}/${{matrix.binary-name}}.server
           ln -s ../../opt/${{matrix.pkg-name}}/${{matrix.binary-name}} "deb/$CLI_DEB_BASE/usr/bin/${{matrix.pkg-name}}"
-          chmod 755 deb/$CLI_DEB_BASE/DEBIAN/dig
-          chmod 755 deb/$CLI_DEB_BASE/DEBIAN/dig.server
           dpkg-deb --build --root-owner-group "deb/$CLI_DEB_BASE"
 
       - name: Upload deb
