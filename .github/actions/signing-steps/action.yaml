@@ -1,8 +1,8 @@
 name: Signing Steps
 description: 'Signs artifacts'
 inputs:
-  artifact-path:
-    description: 'Path to the artifact to sign'
+  artifact-paths:
+    description: 'Comma-separated paths to the artifacts to sign'
     required: true
   cert-file-b64:
     description: 'Base64 encoded certificate file'
@@ -61,10 +61,16 @@ runs:
     
     - name: Signing using Signtool
       run: |
-        signtool.exe sign /sha1 ${{ inputs.code-signing-cert-sha1-hash }} /tr http://timestamp.digicert.com /td SHA256 /fd SHA256 ${{ inputs.artifact-path }}
+        $paths = "${{ inputs.artifact-paths }}".Split(',')
+        foreach ($path in $paths) {
+          signtool.exe sign /sha1 ${{ inputs.code-signing-cert-sha1-hash }} /tr http://timestamp.digicert.com /td SHA256 /fd SHA256 $path.Trim()
+        }
       shell: cmd
 
     - name: Signtool verify
       run: |
-        signtool.exe verify /v /pa ${{ inputs.artifact-path }}
+        $paths = "${{ inputs.artifact-paths }}".Split(',')
+        foreach ($path in $paths) {
+          signtool.exe verify /v /pa $path.Trim()
+        }
       shell: cmd

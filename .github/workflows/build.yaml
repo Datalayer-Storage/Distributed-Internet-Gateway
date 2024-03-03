@@ -70,25 +70,15 @@ jobs:
         if: matrix.os == 'Windows'
         uses: ./.github/actions/signing-steps
         with:
-          artifact-path: ${{ github.workspace }}/publish/standalone/win-x64/dig.exe
+          artifact-paths: |
+            ${{ github.workspace }}/publish/standalone/win-x64/dig.exe,
+            ${{ github.workspace }}/publish/standalone/win-x64/dig.server.exe
           cert-file-b64: ${{ secrets.CERT_FILE_B64 }}
           sm-host: ${{ secrets.SM_HOST }}
           sm-api-key: ${{ secrets.SM_API_KEY }}
           sm-client-cert-password: ${{ secrets.SM_CLIENT_CERT_PASSWORD }}
           code-signing-cert-sha1-hash: ${{ secrets.CODE_SIGNING_CERT_SHA1_HASH }}
           
-
-      - name: Signing dig.server.exe
-        if: matrix.os == 'Windows'
-        uses: ./.github/actions/signing-steps
-        with:
-          artifact-path: ${{ github.workspace }}/publish/standalone/win-x64/dig.server.exe
-          cert-file-b64: ${{ secrets.CERT_FILE_B64 }}
-          sm-host: ${{ secrets.SM_HOST }}
-          sm-api-key: ${{ secrets.SM_API_KEY }}
-          sm-client-cert-password: ${{ secrets.SM_CLIENT_CERT_PASSWORD }}
-          code-signing-cert-sha1-hash: ${{ secrets.CODE_SIGNING_CERT_SHA1_HASH }}
-      
       - name: Download and Bundle Server Coin Binary
         uses: ./.github/actions/download-server-coin
         with:
@@ -142,7 +132,7 @@ jobs:
       - name: Signing MSI using Signtool
         uses: ./.github/workflows/signing-steps
         with:
-          artifactPathartifact-path: ${{ github.workspace }}/publish/Distributed-Internet-Gateway-${{matrix.runtime}}.msi
+          artifact-paths: ${{ github.workspace }}/publish/Distributed-Internet-Gateway-${{matrix.runtime}}.msi
           cert-file-b64: ${{ secrets.CERT_FILE_B64 }}
           sm-host: ${{ secrets.SM_HOST }}
           sm-api-key: ${{ secrets.SM_API_KEY }}
