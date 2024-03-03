@@ -128,9 +128,9 @@ jobs:
         shell: pwsh
 
       - name: Signing MSI using Signtool
-        uses: ./.github/workflows/signing-steps
+        uses: ./.github/actions/signing-steps
         with:
-          ARTIFACT_PATH: ${{ github.workspace }}/publish/Distributed-Internet-Gateway-${{matrix.runtime}}.msi
+          ARTIFACT_PATHS: ${{ github.workspace }}/publish/Distributed-Internet-Gateway-${{matrix.runtime}}.msi
           SM_CLIENT_CERT_FILE_B64: ${{ secrets.SM_CLIENT_CERT_FILE_B64 }}
           SM_HOST: ${{ secrets.SM_HOST }}
           SM_API_KEY: ${{ secrets.SM_API_KEY }}
@@ -193,7 +193,8 @@ jobs:
           cp build-scripts/deb/dig@.service deb/$CLI_DEB_BASE/etc/systemd/system/dig@.service
           chmod +x deb/$CLI_DEB_BASE/opt/${{matrix.pkg-name}}/${{matrix.binary-name}}
           ln -s ../../opt/${{matrix.pkg-name}}/${{matrix.binary-name}} "deb/$CLI_DEB_BASE/usr/bin/${{matrix.pkg-name}}"
-          chmod 755 deb/$CLI_DEB_BASE/DEBIAN/postinst  # make postinst script executable
+          chmod 755 deb/$CLI_DEB_BASE/DEBIAN/dig
+          chmod 755 deb/$CLI_DEB_BASE/DEBIAN/dig.server
           dpkg-deb --build --root-owner-group "deb/$CLI_DEB_BASE"
 
       - name: Upload deb
