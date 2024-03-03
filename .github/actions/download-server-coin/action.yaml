@@ -7,7 +7,7 @@ inputs:
   runtime:
     required: true
     description: Runtime to download for
-  gh-pat:
+  GH_ACCESS_TOKEN:
     required: true
     description: GitHub Personal Access Token
 
@@ -18,13 +18,13 @@ runs:
       run: |
         # Fetch the latest release data from GitHub API
         $headers = @{
-          "Authorization" = "token ${{ inputs.gh-pat }}"
+          "Authorization" = "token $env:GH_PAT"
         }
         $latestRelease = Invoke-RestMethod -Uri "https://api.github.com/repos/Datalayer-Storage/chia-server-coin-cli/releases/latest" -Headers $headers
         $tagName = $latestRelease.tag_name
 
         # Define asset filenames based on the tag name
-        $fileNames = @("server_coin-${{ inputs.runtime }}-$tagName.zip")
+        $fileNames = @("server_coin-win-x64-$tagName.zip", "server_coin-linux-x64-$tagName.zip", "server_coin-linux-arm64-$tagName.zip")
 
         # Loop through each filename to download and rename
         foreach ($fileName in $fileNames) {
@@ -45,12 +45,16 @@ runs:
           Rename-Item -Path $downloadPath -NewName $newPath
         }
       shell: pwsh
+      env:
+        GH_PAT: ${{ secrets.GH_ACCESS_TOKEN }}
 
     - name: Unzip downloaded assets
       run: |
         # Define the paths for the zip files and their destination directories
         $zipFiles = @{
-          "server_coin-${{ inputs.runtime }}.zip" = "${{ inputs.path }}";
+          "server_coin-win-x64.zip" = "publish/standalone/win-x64";
+          "server_coin-linux-x64.zip" = "publish/standalone/linux-x64";
+          "server_coin-linux-arm64.zip" = "publish/standalone/linux-arm64"
         }
     
         # Iterate through each zip file and extract it to the specified destination
