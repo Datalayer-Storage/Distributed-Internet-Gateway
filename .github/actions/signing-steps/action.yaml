@@ -59,11 +59,13 @@ runs:
           smksp_cert_sync.exe
         shell: cmd
 
-      - name: Signing using Signtool
+      - name: Signing using Signtool (Windows)
         run: |
-          $paths = "${{ inputs.ARTIFACT_PATHS }}".Split(',')
-          foreach ($path in $paths) {
-            signtool.exe sign /sha1 ${{ inputs.SM_CODE_SIGNING_CERT_SHA1_HASH }} /tr http://timestamp.digicert.com /td SHA256 /fd SHA256 $path.Trim()
-            signtool verify /v /pa $path.Trim()
-          }
-        shell: pwsh
+          signtool.exe sign /sha1 ${{ inputs.SM_CODE_SIGNING_CERT_SHA1_HASH }} /tr http://timestamp.digicert.com /td SHA256 /fd SHA256 ${{ inputs.ARTIFACT_PATH }}
+        shell: cmd
+
+      - name: Signtool verify (Windows)
+        run: |
+          signtool verify /v /pa ${{ inputs.ARTIFACT_PATH }}
+        shell: cmd
+
