@@ -23,12 +23,10 @@ inputs:
 runs:
   using: "composite"
   steps:
-    - name: Setup Certificate
+    - name: Setup Certificate (Windows)
       run: |
-        $certBytes = [System.Convert]::FromBase64String("${{ inputs.SM_CLIENT_CERT_FILE_B64 }}")
-        Set-Content -Path "C:\Certificate_pkcs12.p12" -Value $certBytes -Encoding Byte
-      shell: pwsh
-
+        echo "${{ inputs.SM_CLIENT_CERT_FILE_B64 }}" | base64 --decode > /c/Certificate_pkcs12.p12
+      shell: bash
 
     - name: Set variables (Windows)
       id: variables
