@@ -57,11 +57,17 @@ public partial class StoresController(GatewayService gatewayService,
                     var html = await _gatewayService.GetValueAsHtml(storeId, lastStoreRootHash, cancellationToken);
                     if (html is not null)
                     {
-                        var proof = await _gatewayService.GetProof(storeId, HexUtils.ToHex("index.html"), cancellationToken);
-                        if (proof is not null)
+                        var disableProof = _configuration.GetValue<bool>("dig:DisableProofOfInclusion");
+
+                        if (!disableProof)
                         {
-                            HttpContext.Response.Headers.TryAdd("X-Proof-of-Inclusion", proof);
+                            var proof = await _gatewayService.GetProof(storeId, HexUtils.ToHex("index.html"), cancellationToken);
+                            if (proof is not null)
+                            {
+                                HttpContext.Response.Headers.TryAdd("X-Proof-of-Inclusion", proof);
+                            }
                         }
+
 
                         return Content(html, "text/html");
                     }
@@ -150,15 +156,27 @@ public partial class StoresController(GatewayService gatewayService,
 
             var hexKey = key.StartsWith("0x") ? key : HexUtils.ToHex(key);
 
-            var proof = await _gatewayService.GetProof(storeId, hexKey, cancellationToken);
-            if (proof is not null)
-            {
-                byte[] proofBytes = Encoding.UTF8.GetBytes(proof);
+            var disableProof = _configuration.GetValue<bool>("dig:DisableProofOfInclusion");
 
-                // Convert the byte array to a Base64 string
-                string proofBase64 = Convert.ToBase64String(proofBytes);
-                HttpContext.Response.Headers.TryAdd("X-Proof-of-Inclusion", proofBase64);
+            if (!disableProof)
+            {
+                var stopwatch = System.Diagnostics.Stopwatch.StartNew();
+                var proof = await _gatewayService.GetProof(storeId, hexKey, cancellationToken);
+                _logger.LogInformation($"GetProof {proof} ms");
+                stopwatch.Stop();
+                _logger.LogInformation($"GetProof command completed in {stopwatch.ElapsedMilliseconds} ms");
+
+                if (proof is not null)
+                {
+                    byte[] proofBytes = Encoding.UTF8.GetBytes(proof);
+
+                    // Convert the byte array to a Base64 string
+                    string proofBase64 = Convert.ToBase64String(proofBytes);
+                    HttpContext.Response.Headers.TryAdd("X-Proof-of-Inclusion", proofBase64);
+                    HttpContext.Response.Headers.TryAdd("X-Gen-Time", stopwatch.ElapsedMilliseconds.ToString());
+                }
             }
+
 
             // Requesting GetValue only from the last root hash onchain ensures that only
             // nodes that have the latest state will respond to the request
