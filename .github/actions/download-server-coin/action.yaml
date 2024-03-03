@@ -46,7 +46,7 @@ runs:
         }
       shell: pwsh
       env:
-        GH_PAT: ${{ secrets.GH_ACCESS_TOKEN }}
+        GH_PAT: ${{ inputs.GH_ACCESS_TOKEN }}
 
     - name: Unzip downloaded assets
       run: |

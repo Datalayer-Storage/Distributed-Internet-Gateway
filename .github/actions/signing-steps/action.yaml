@@ -1,7 +1,7 @@
 name: Signing Steps
 description: 'Signs artifacts'
 inputs:
-  ARTIFACT_PATHS:
+  ARTIFACT_PATH:
     description: 'Path to the artifacts to sign'
     required: true
   SM_CLIENT_CERT_FILE_B64:
