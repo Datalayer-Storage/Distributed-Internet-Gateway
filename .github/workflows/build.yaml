@@ -70,25 +70,24 @@ jobs:
         if: matrix.os == 'Windows'
         uses: ./.github/actions/signing-steps
         with:
-          artifact-path: ${{ github.workspace }}/publish/standalone/win-x64/dig.exe
+          artifact-path: ${{ github.workspace }}\\publish\\standalon\\win-x64\\dig.exe
           cert-file-b64: ${{ secrets.CERT_FILE_B64 }}
           sm-host: ${{ secrets.SM_HOST }}
           sm-api-key: ${{ secrets.SM_API_KEY }}
           sm-client-cert-password: ${{ secrets.SM_CLIENT_CERT_PASSWORD }}
           sm-code-signing-cert-sha1-hash: ${{ secrets.SM_CODE_SIGNING_CERT_SHA1_HASH }}
 
-      - name: Signing dig.exe
+      - name: Signing dig.server.exe
         if: matrix.os == 'Windows'
         uses: ./.github/actions/signing-steps
         with:
-          artifact-path: ${{ github.workspace }}/publish/standalone/win-x64/dig.server.exe
+          artifact-path: ${{ github.workspace }}\\publish\\standalone\\win-x64\\dig.server.exe
           cert-file-b64: ${{ secrets.CERT_FILE_B64 }}
           sm-host: ${{ secrets.SM_HOST }}
           sm-api-key: ${{ secrets.SM_API_KEY }}
           sm-client-cert-password: ${{ secrets.SM_CLIENT_CERT_PASSWORD }}
           sm-code-signing-cert-sha1-hash: ${{ secrets.SM_CODE_SIGNING_CERT_SHA1_HASH }}
-            
-          
+                
       - name: Download and Bundle Server Coin Binary
         uses: ./.github/actions/download-server-coin
         with:
