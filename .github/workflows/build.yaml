@@ -158,7 +158,7 @@ jobs:
             pkg-name: distributed-internet-gateway
             binary-name: dig.server
           - artifact-name: dig-linux-arm64
-            runtime: linux-x64
+            runtime: linux-arm64
             pkg-name: distributed-internet-gateway
             binary-name: dig.server
 
