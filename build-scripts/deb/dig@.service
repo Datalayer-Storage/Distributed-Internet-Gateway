@@ -1,0 +1,16 @@
+[Unit]
+Description=Distributed Internet Gateway
+
+[Service]
+# Set Chia directory as an environment variable
+Environment=CHIA_ROOT=/home/%i/.chia/mainnet
+
+# datalayer executable
+ExecStart=/opt/distributed-internet-gateway/dig.server
+
+# Start the software with `systemctl start datalayer-storage-uploader@username`
+User=%i
+Group=%i
+
+[Install]
+WantedBy=multi-user.target
