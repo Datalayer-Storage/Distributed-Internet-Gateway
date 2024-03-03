@@ -4,24 +4,39 @@ inputs:
   artifact-path:
     description: 'Path to the artifact to sign'
     required: true
+  cert-file-b64:
+    description: 'Base64 encoded certificate file'
+    required: true
+  sm-host:
+    description: 'Signing Manager Host'
+    required: true
+  sm-api-key:
+    description: 'Signing Manager API Key'
+    required: true
+  sm-client-cert-file:
+    description: 'Path to the client certificate file'
+    required: true
+  sm-client-cert-password:
+    description: 'Password for the client certificate'
+    required: true
+  code-signing-cert-sha1-hash:
+    description: 'SHA1 hash of the code signing certificate'
+    required: true
 
 runs:
   using: 'composite'
   steps:
     - name: Setup Certificate
       run: |
-        echo "${{ secrets.SM_CLIENT_CERT_FILE_B64 }}" | base64 --decode > /d/Certificate_pkcs12.p12
+        echo "${{ inputs.cert-file-b64 }}" | base64 --decode > /d/Certificate_pkcs12.p12
       shell: pwsh
 
     - name: Set variables (Windows)
-      id: variables
       run: |
-        echo "::set-output name=version::${GITHUB_REF#refs/tags/v}"
-        echo "::set-output name=KEYPAIR_NAME::Key_454819080"
-        echo "SM_HOST=${{ secrets.SM_HOST }}" >> "$GITHUB_ENV"
-        echo "SM_API_KEY=${{ secrets.SM_API_KEY }}" >> "$GITHUB_ENV"
-        echo "SM_CLIENT_CERT_FILE=D:\\Certificate_pkcs12.p12" >> "$GITHUB_ENV"
-        echo "SM_CLIENT_CERT_PASSWORD=${{ secrets.SM_CLIENT_CERT_PASSWORD }}" >> "$GITHUB_ENV"
+        echo "SM_HOST=${{ inputs.sm-host }}" >> "$GITHUB_ENV"
+        echo "SM_API_KEY=${{ inputs.sm-api-key }}" >> "$GITHUB_ENV"
+        echo "SM_CLIENT_CERT_FILE=${{ inputs.sm-client-cert-file }}" >> "$GITHUB_ENV"
+        echo "SM_CLIENT_CERT_PASSWORD=${{ inputs.sm-client-cert-password }}" >> "$GITHUB_ENV"
         echo "C:\Program Files (x86)\Windows Kits\10\App Certification Kit" >> $GITHUB_PATH
         echo "C:\Program Files (x86)\Microsoft SDKs\Windows\v10.0A\bin\NETFX 4.8 Tools" >> $GITHUB_PATH
         echo "C:\Program Files\DigiCert\DigiCert One Signing Manager Tools" >> $GITHUB_PATH
@@ -30,13 +45,13 @@ runs:
 
     - name: Setting up the client tools (Windows)
       run: |
-        curl -X GET  https://one.digicert.com/signingmanager/api-ui/v1/releases/Keylockertools-windows-x64.msi/download?account_id=e94ff86e-6519-4598-a066-6b6b252245f0 -H "x-api-key:%SM_API_KEY%" -o smtools-windows-x64.msi
+        curl -X GET  "https://one.digicert.com/signingmanager/api-ui/v1/releases/Keylockertools-windows-x64.msi/download?account_id=e94ff86e-6519-4598-a066-6b6b252245f0" -H "x-api-key:${{ inputs.sm-api-key }}" -o smtools-windows-x64.msi
         msiexec /i smtools-windows-x64.msi /qn
       shell: cmd
 
     - name: Setup SSM KSP on windows latest (Windows)
       run: |
-        curl -X GET  https://stage.one.digicert.com/signingmanager/api-ui/v1/releases/smtools-windows-x64.msi/download -H "x-api-key:%SM_API_KEY%" -o smtools-windows-x64.msi
+        curl -X GET  "https://stage.one.digicert.com/signingmanager/api-ui/v1/releases/smtools-windows-x64.msi/download" -H "x-api-key:${{ inputs.sm-api-key }}" -o smtools-windows-x64.msi
         msiexec /i smtools-windows-x64.msi /quiet /qn
         smksp_registrar.exe list
         smctl.exe keypair ls
@@ -46,10 +61,10 @@ runs:
     
     - name: Signing using Signtool
       run: |
-        signtool.exe sign /sha1 ${{ secrets.SM_CODE_SIGNING_CERT_SHA1_HASH }} /tr http://timestamp.digicert.com /td SHA256 /fd SHA256 ${{ inputs.artifactPath }}
+        signtool.exe sign /sha1 ${{ inputs.code-signing-cert-sha1-hash }} /tr http://timestamp.digicert.com /td SHA256 /fd SHA256 ${{ inputs.artifact-path }}
       shell: cmd
 
     - name: Signtool verify
       run: |
-        signtool.exe verify /v /pa ${{ inputs.artifactPath }}
+        signtool.exe verify /v /pa ${{ inputs.artifact-path }}
       shell: cmd

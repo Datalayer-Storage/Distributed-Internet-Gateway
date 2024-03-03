@@ -71,18 +71,34 @@ jobs:
         uses: ./.github/actions/signing-steps
         with:
           artifactPath: ${{ github.workspace }}/publish/standalone/win-x64/dig.exe
+          artifact-path: ${{ github.workspace }}/path/to/artifact
+          cert-file-b64: ${{ secrets.CERT_FILE_B64 }}
+          sm-host: ${{ secrets.SM_HOST }}
+          sm-api-key: ${{ secrets.SM_API_KEY }}
+          sm-client-cert-file: D:\Certificate_pkcs12.p12
+          sm-client-cert-password: ${{ secrets.SM_CLIENT_CERT_PASSWORD }}
+          code-signing-cert-sha1-hash: ${{ secrets.CODE_SIGNING_CERT_SHA1_HASH }}
+          
 
       - name: Signing dig.server.exe
         if: matrix.os == 'Windows'
         uses: ./.github/actions/signing-steps
         with:
           artifactPath: ${{ github.workspace }}/publish/standalone/win-x64/dig.server.exe
+          artifact-path: ${{ github.workspace }}/path/to/artifact
+          cert-file-b64: ${{ secrets.CERT_FILE_B64 }}
+          sm-host: ${{ secrets.SM_HOST }}
+          sm-api-key: ${{ secrets.SM_API_KEY }}
+          sm-client-cert-file: D:\Certificate_pkcs12.p12
+          sm-client-cert-password: ${{ secrets.SM_CLIENT_CERT_PASSWORD }}
+          code-signing-cert-sha1-hash: ${{ secrets.CODE_SIGNING_CERT_SHA1_HASH }}
       
       - name: Download and Bundle Server Coin Binary
-        uses: ./.github/actions/signing-steps
+        uses: ./.github/actions/download-server-coin
         with:
           runtime: ${{matrix.runtime}}
           path: publish/standalone/${{matrix.runtime}}
+          gh-pat: ${{ secrets.GH_ACCESS_TOKEN }}
       
       - name: Copy License
         run: |
@@ -114,10 +130,11 @@ jobs:
           path: publish/standalone/${{matrix.runtime}}
 
       - name: Download and Bundle Server Coin Binary
-        uses: ./.github/actions/signing-steps
+        uses: ./.github/actions/download-server-coin
         with:
           runtime: ${{matrix.runtime}}
           path: thirdparty
+          gh-pat: ${{ secrets.GH_ACCESS_TOKEN }}
 
       - name: Build MSI
         run: ${{ github.workspace }}\build-msi.ps1
@@ -127,6 +144,13 @@ jobs:
         uses: ./.github/workflows/signing-steps
         with:
           artifactPath: ${{ github.workspace }}/publish/Distributed-Internet-Gateway-${{matrix.runtime}}.msi
+          artifact-path: ${{ github.workspace }}/path/to/artifact
+          cert-file-b64: ${{ secrets.CERT_FILE_B64 }}
+          sm-host: ${{ secrets.SM_HOST }}
+          sm-api-key: ${{ secrets.SM_API_KEY }}
+          sm-client-cert-file: D:\Certificate_pkcs12.p12
+          sm-client-cert-password: ${{ secrets.SM_CLIENT_CERT_PASSWORD }}
+          code-signing-cert-sha1-hash: ${{ secrets.CODE_SIGNING_CERT_SHA1_HASH }}
 
       - name: Upload Windows MSI Artifacts
         uses: actions/upload-artifact@v3
