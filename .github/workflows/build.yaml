@@ -109,7 +109,7 @@ jobs:
         uses: ./.github/actions/download-server-coin
         with:
           runtime: ${{matrix.runtime}}
-          path: ${{ github.workspace }}\thirdparty
+          path: thirdparty
           GH_ACCESS_TOKEN: ${{ secrets.GH_ACCESS_TOKEN }}
 
       - name: Build MSI
@@ -179,6 +179,7 @@ jobs:
           j2 -o "deb/$CLI_DEB_BASE/DEBIAN/control" build-scripts/deb/control.j2
           cp -r ${{matrix.artifact-name}} "deb/$CLI_DEB_BASE/opt/${{matrix.pkg-name}}"
           cp build-scripts/deb/dig@.service deb/$CLI_DEB_BASE/etc/systemd/system/dig@.service
+          ls -la deb/$CLI_DEB_BASE/opt/${{matrix.pkg-name}}
           chmod +x deb/$CLI_DEB_BASE/opt/${{matrix.pkg-name}}/dig
           chmod +x deb/$CLI_DEB_BASE/opt/${{matrix.pkg-name}}/dig.server
           ln -s ../../opt/${{matrix.pkg-name}}/dig.server "deb/$CLI_DEB_BASE/usr/bin/dig.server"
