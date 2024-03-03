@@ -19,7 +19,7 @@ inputs:
   sm-client-cert-password:
     description: 'Password for the client certificate'
     required: true
-  code-signing-cert-sha1-hash:
+  sm-code-signing-cert-sha1-hash:
     description: 'SHA1 hash of the code signing certificate'
     required: true
 
