@@ -14,6 +14,17 @@ inputs:
 runs:
   using: 'composite'
   steps:
+    - name: Ensure destination path exists
+      run: |
+        $destPath = Join-Path -Path $env:GITHUB_WORKSPACE -ChildPath "${{ inputs.path }}"
+        if (-not (Test-Path $destPath)) {
+          New-Item -ItemType Directory -Path $destPath | Out-Null
+          Write-Host "Created directory: $destPath"
+        } else {
+          Write-Host "Directory already exists: $destPath"
+        }
+      shell: pwsh
+      
     - name: Download server_coin assets from the latest release and rename
       run: |
         # Fetch the latest release data from GitHub API

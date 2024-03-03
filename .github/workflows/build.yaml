@@ -48,20 +48,6 @@ jobs:
         with:
           dotnet-version: '8.0.x'
 
-      - name: Create publish folder
-        run: |
-          $publishPath = Join-Path -Path $env:GITHUB_WORKSPACE -ChildPath "publish"
-
-          # Check if the publish folder already exists
-          if (-not (Test-Path $publishPath)) {
-            # Create the publish folder
-            New-Item -ItemType Directory -Path $publishPath | Out-Null
-            Write-Host "publish folder created at $publishPath"
-          } else {
-            Write-Host "publish folder already exists at $publishPath"
-          }
-        shell: pwsh
-
       - name: Build Projects
         run: ${{ github.workspace }}\publish.ps1 ${{ matrix.runtime }}
         shell: pwsh
