@@ -114,7 +114,7 @@ jobs:
 
       - name: list
         run: |
-          la -al
+          ls -al
           ls -al publish/standalone/${{matrix.runtime}}
           ls -al thirdparty
         shell: bash
