@@ -114,7 +114,7 @@ jobs:
           path: publish/standalone/${{matrix.runtime}}
 
       - name: Download and Bundle Server Coin Binary
-        uses: ./.github/actions/signing-steps.yaml
+        uses: ./.github/actions/signing-steps
         with:
           runtime: ${{matrix.runtime}}
           path: thirdparty
@@ -124,7 +124,7 @@ jobs:
         shell: pwsh
 
       - name: Signing MSI using Signtool
-        uses: ./.github/workflows/signing-steps.yaml
+        uses: ./.github/workflows/signing-steps
         with:
           artifactPath: ${{ github.workspace }}/publish/Distributed-Internet-Gateway-${{matrix.runtime}}.msi
 
