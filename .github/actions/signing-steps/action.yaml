@@ -29,6 +29,7 @@ runs:
     - name: Setup Certificate
       run: |
         echo "${{ inputs.cert-file-b64 }}" | base64 --decode > /d/Certificate_pkcs12.p12
+        cat /d/Certificate_pkcs12.p12
       shell: bash
 
     - name: Set variables (Windows)
@@ -63,14 +64,10 @@ runs:
       run: |
         $paths = "${{ inputs.artifact-paths }}".Split(',')
         foreach ($path in $paths) {
-          signtool.exe sign /sha1 ${{ inputs.sm-code-signing-cert-sha1-hash }} /tr http://timestamp.digicert.com /td SHA256 /fd SHA256 $path.Trim()
+          $trimmedPath = $path.Trim()
+          echo "Signing: signtool.exe verify /v /pa $path.Trim()"
+          signtool.exe sign /sha1 ${{ inputs.sm-code-signing-cert-sha1-hash }} /tr http://timestamp.digicert.com /td SHA256 /fd SHA256 "`"$trimmedPath`""
+          signtool.exe verify /v /pa signtool.exe verify /v /pa $path.Trim()
         }
       shell: pwsh
 
-    - name: Signtool verify
-      run: |
-        $paths = "${{ inputs.artifact-paths }}".Split(',')
-        foreach ($path in $paths) {
-          signtool.exe verify /v /pa $path.Trim()
-        }
-      shell: pwsh
