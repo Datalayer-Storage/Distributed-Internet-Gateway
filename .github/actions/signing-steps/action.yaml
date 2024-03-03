@@ -63,7 +63,7 @@ runs:
       run: |
         $paths = "${{ inputs.artifact-paths }}".Split(',')
         foreach ($path in $paths) {
-          signtool.exe sign /sha1 ${{ inputs.code-signing-cert-sha1-hash }} /tr http://timestamp.digicert.com /td SHA256 /fd SHA256 $path.Trim()
+          signtool.exe sign /sha1 ${{ inputs.sm-code-signing-cert-sha1-hash }} /tr http://timestamp.digicert.com /td SHA256 /fd SHA256 $path.Trim()
         }
       shell: cmd
 
