@@ -23,18 +23,14 @@ runs:
         $latestRelease = Invoke-RestMethod -Uri "https://api.github.com/repos/Datalayer-Storage/chia-server-coin-cli/releases/latest" -Headers $headers
         $tagName = $latestRelease.tag_name
 
-        # Define asset filenames based on the tag name
-        $fileNames = @("server_coin-win-x64-$tagName.zip", "server_coin-linux-x64-$tagName.zip", "server_coin-linux-arm64-$tagName.zip")
+        # Define the asset filename based on the tag name
+        $fileName = "server_coin-${{ inputs.runtime }}-$tagName.zip"
 
-        # Loop through each filename to download and rename
-        foreach ($fileName in $fileNames) {
-          # Find the asset download URL
-          $asset = $latestRelease.assets | Where-Object {$_.name -eq $fileName}
-          if ($null -eq $asset) {
-            Write-Warning "Asset URL for $fileName not found"
-            continue
-          }
-
+        # Find the asset download URL
+        $asset = $latestRelease.assets | Where-Object { $_.name -eq $fileName }
+        if ($null -eq $asset) {
+          Write-Warning "Asset URL for $fileName not found"
+        } else {
           # Download the asset
           $downloadPath = Join-Path -Path $env:GITHUB_WORKSPACE -ChildPath $asset.name
           Invoke-WebRequest -Uri $asset.browser_download_url -Headers $headers -OutFile $downloadPath
@@ -44,41 +40,28 @@ runs:
           $newPath = Join-Path -Path $env:GITHUB_WORKSPACE -ChildPath $newName
           Rename-Item -Path $downloadPath -NewName $newPath
         }
+
       shell: pwsh
       env:
         GH_PAT: ${{ inputs.GH_ACCESS_TOKEN }}
 
     - name: Unzip downloaded assets
       run: |
-        # Define the paths for the zip files and their destination directories
-        $zipFiles = @{
-          "server_coin-win-x64.zip" = "publish/standalone/win-x64";
-          "server_coin-linux-x64.zip" = "publish/standalone/linux-x64";
-          "server_coin-linux-arm64.zip" = "publish/standalone/linux-arm64"
-        }
-    
-        # Iterate through each zip file and extract it to the specified destination
-        foreach ($zipFile in $zipFiles.GetEnumerator()) {
-          $zipPath = Join-Path -Path $env:GITHUB_WORKSPACE -ChildPath $zipFile.Name
-          $destPath = Join-Path -Path $env:GITHUB_WORKSPACE -ChildPath $zipFile.Value
-    
-          # Check if the zip file exists before attempting to extract
-          if (Test-Path $zipPath) {
-            # Create the destination directory if it doesn't exist
-            if (-not (Test-Path $destPath)) {
-              New-Item -ItemType Directory -Path $destPath | Out-Null
-            }
-    
-            # Extract the zip file to a temporary location
-            $tempPath = Join-Path -Path $env:TEMP -ChildPath ([System.IO.Path]::GetRandomFileName())
-            Expand-Archive -Path $zipPath -DestinationPath $tempPath -Force
-    
-            # Move the contents from the temporary location to the final destination
-            Get-ChildItem -Path $tempPath | Move-Item -Destination $destPath
-            Remove-Item -Path $tempPath -Recurse -Force
+        # Define the zip file path and its destination directory
+        $zipFileName = "server_coin-${{ inputs.runtime }}.zip"
+        $zipPath = Join-Path -Path $env:GITHUB_WORKSPACE -ChildPath $zipFileName
+        $destPath = Join-Path -Path $env:GITHUB_WORKSPACE -ChildPath "publish/standalone/${{ inputs.runtime }}"
+
+        # Check if the zip file exists before attempting to extract
+        if (Test-Path $zipPath) {
+          # Create the destination directory if it doesn't exist
+          if (-not (Test-Path $destPath)) {
+            New-Item -ItemType Directory -Path $destPath | Out-Null
           }
-          else {
-            Write-Warning "Zip file $zipFile.Name does not exist and cannot be unzipped."
-          }
+
+          # Extract the zip file to the destination directory
+          Expand-Archive -Path $zipPath -DestinationPath $destPath -Force
+        } else {
+          Write-Warning "Zip file $zipFileName does not exist and cannot be unzipped."
         }
       shell: pwsh

@@ -189,7 +189,7 @@ jobs:
           mkdir -p "deb/$CLI_DEB_BASE/etc/systemd/system"
           mkdir -p "deb/$CLI_DEB_BASE/DEBIAN"
           j2 -o "deb/$CLI_DEB_BASE/DEBIAN/control" build-scripts/deb/control.j2
-          cp -r ${{matrix.artifact-name}}/${{ matrix.runtime }} "deb/$CLI_DEB_BASE/opt/${{matrix.pkg-name}}/${{matrix.binary-name}}"
+          cp -r ${{matrix.artifact-name}} "deb/$CLI_DEB_BASE/opt/${{matrix.pkg-name}}/${{matrix.binary-name}}"
           cp build-scripts/deb/dig@.service deb/$CLI_DEB_BASE/etc/systemd/system/dig@.service
           chmod +x deb/$CLI_DEB_BASE/opt/${{matrix.pkg-name}}/${{matrix.binary-name}}
           ln -s ../../opt/${{matrix.pkg-name}}/${{matrix.binary-name}} "deb/$CLI_DEB_BASE/usr/bin/${{matrix.pkg-name}}"
