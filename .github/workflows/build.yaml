@@ -263,7 +263,7 @@ jobs:
           if aptly publish list | grep -q '${{ env.REPO_NAME }}'; then
             aptly -batch -yes -passphrase="${{ secrets.GPG_PASSPHRASE }}" publish update ${{ env.DISTRIBUTION }} s3:${{ env.REPO_NAME }}:
           else
-            aptly -batch -yes -passphrase="${{ secrets.GPG_PASSPHRASE }}" publish snapshot -distribution=${{ env.DISTRIBUTION }} -gpg-key="YOUR_GPG_KEY_ID" snapshot-from-${{ env.REPO_NAME }} s3:${{ env.REPO_NAME }}:
+            aptly -batch -yes -passphrase="${{ secrets.GPG_PASSPHRASE }}" publish snapshot -distribution=${{ env.DISTRIBUTION }} -gpg-key="${{ secrets.GPG_KEY_ID}}" snapshot-from-${{ env.REPO_NAME }} s3:dlaas/releases/${{ env.REPO_NAME }}:
   
       - name: Create GPG Public Key File
         run: |
@@ -281,10 +281,10 @@ jobs:
         run: |
           echo "To install the package from the repository, run the following commands:"
           echo "1. Add the repository to your system:"
-          echo "   echo 'deb [trusted=yes] http://your-s3-bucket-url/ubuntu/ ${DISTRIBUTION} main' | sudo tee /etc/apt/sources.list.d/${REPO_NAME}.list"
+          echo "   echo 'deb [trusted=yes] http://cdn.datalayer.storage/releases/ubuntu/ ${DISTRIBUTION} main' | sudo tee /etc/apt/sources.list.d/${REPO_NAME}.list"
           echo ""
           echo "2. Import the GPG key (replace 'http://cdn.datalayer.storage/releases/repo-key.gpg' with the actual URL of your GPG key):"
-          echo "   curl -s http://your-s3-bucket-url/repo-key.gpg | gpg --dearmor | sudo tee /usr/share/keyrings/${REPO_NAME}-archive-keyring.gpg > /dev/null"
+          echo "   curl -s http://cdn.datalayer.storage/releases/repo-key.gpg | gpg --dearmor | sudo tee /usr/share/keyrings/${REPO_NAME}-archive-keyring.gpg > /dev/null"
           echo ""
           echo "3. Update your package lists:"
           echo "   sudo apt-get update"
