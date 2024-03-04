@@ -212,8 +212,10 @@ jobs:
           sudo apt-get install -y aptly awscli gnupg
   
       - name: Import GPG Key
+        env:
+          GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
         run: |
-          echo "${{ secrets.GPG_PRIVATE_KEY }}" | gpg --import
+          echo "${{ secrets.GPG_PRIVATE_KEY }}" | gpg --batch --yes --pinentry-mode loopback --import
         shell: bash
   
       - name: Sync Aptly Database from S3
@@ -251,7 +253,6 @@ jobs:
   
       - name: Publish or Update Repository with Signing
         run: |
-          export GPG_TTY=$(tty)
           if aptly publish list | grep -q '${{ env.REPO_NAME }}'; then
             aptly -batch -yes -passphrase="${{ secrets.GPG_PASSPHRASE }}" publish update ${{ env.DISTRIBUTION }} s3:${{ env.REPO_NAME }}:
           else
