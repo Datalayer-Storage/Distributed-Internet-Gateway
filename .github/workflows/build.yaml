@@ -248,10 +248,10 @@ jobs:
         run: |
           SNAPSHOT_NAME="snapshot-$(date +%Y%m%d%H%M%S)"
           aptly snapshot create $SNAPSHOT_NAME from repo ${{ env.REPO_NAME }}
-          PUBLISH_RESULT=$(aptly publish snapshot -distribution=${{ env.DISTRIBUTION }} -gpg-key="YOUR_GPG_KEY_ID" $SNAPSHOT_NAME s3:dlaas/releases/${{ env.REPO_NAME }} 2>&1 || echo "PUBLISH_FAILED")
+          PUBLISH_RESULT=$(aptly publish snapshot -distribution=${{ env.DISTRIBUTION }} -gpg-key="${{ secrets.GPG_KEY_ID}}" $SNAPSHOT_NAME s3:dlaas/releases/${{ env.REPO_NAME }} 2>&1 || echo "PUBLISH_FAILED")
           if [[ "$PUBLISH_RESULT" == *"PUBLISH_FAILED"* ]]; then
             echo "Publication exists, updating..."
-            aptly publish update -gpg-key="YOUR_GPG_KEY_ID" ${{ env.DISTRIBUTION }} s3:dlaas/releases/${{ env.REPO_NAME }}
+            aptly publish update -gpg-key="${{ secrets.GPG_KEY_ID}}" ${{ env.DISTRIBUTION }} s3:dlaas/releases/${{ env.REPO_NAME }}
           else
             echo "Published new snapshot."
           fi
