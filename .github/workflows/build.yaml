@@ -200,13 +200,13 @@ jobs:
 
   publish_apt:
     runs-on: ubuntu-latest
-    needs: [build, debs]  # Ensure this job waits for the 'debs' job to complete
+    needs: [build, debs]
   
     steps:
       - uses: actions/checkout@v2
         name: Checkout code
   
-      - name: Setup Aptly and AWS CLI
+      - name: Setup Aptly, AWS CLI, and GnuPG
         run: |
           sudo apt-get update
           sudo apt-get install -y aptly awscli gnupg
@@ -216,11 +216,10 @@ jobs:
           GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
         run: |
           echo "${{ secrets.GPG_PRIVATE_KEY }}" | gpg --batch --yes --pinentry-mode loopback --import
-        shell: bash
   
       - name: Sync Aptly Database from S3
         run: |
-          aws s3 sync ${{ secrets.APTLY_S3_PATH }} ~/.aptly/
+          aws s3 sync ${{ secrets.APTLY_S3_PATH }} ~/.aptly/ || echo "No existing Aptly database found in S3, proceeding without error."
   
       - name: Set Repository and Distribution Names
         run: |
@@ -257,11 +256,34 @@ jobs:
             aptly -batch -yes -passphrase="${{ secrets.GPG_PASSPHRASE }}" publish update ${{ env.DISTRIBUTION }} s3:${{ env.REPO_NAME }}:
           else
             aptly -batch -yes -passphrase="${{ secrets.GPG_PASSPHRASE }}" publish snapshot -distribution=${{ env.DISTRIBUTION }} -gpg-key="YOUR_GPG_KEY_ID" snapshot-from-${{ env.REPO_NAME }} s3:${{ env.REPO_NAME }}:
-        shell: bash
+  
+      - name: Create GPG Public Key File
+        run: |
+          echo "${{ secrets.GPG_PUBLIC_KEY }}" | base64 --decode > repo-key.gpg
+  
+      - name: Upload GPG Public Key to S3
+        run: |
+          aws s3 cp repo-key.gpg s3://${{ secrets.PUBLIC_RELEASE_BUCKET }}/repo-key.gpg
   
       - name: Sync Updated Aptly Database to S3
         run: |
           aws s3 sync ~/.aptly/ ${{ secrets.APTLY_S3_PATH }}
+  
+      - name: Print Installation Instructions
+        run: |
+          echo "To install the package from the repository, run the following commands:"
+          echo "1. Add the repository to your system:"
+          echo "   echo 'deb [trusted=yes] https://s3.amazonaws.com/${{ secrets.PUBLIC_RELEASE_BUCKET }}/ubuntu/ ${DISTRIBUTION} main' | sudo tee /etc/apt/sources.list.d/${REPO_NAME}.list"
+          echo ""
+          echo "2. Import the GPG key:"
+          echo "   curl -s https://s3.amazonaws.com/${{ secrets.PUBLIC_RELEASE_BUCKET }}/repo-key.gpg | gpg --dearmor | sudo tee /usr/share/keyrings/${REPO_NAME}-archive-keyring.gpg > /dev/null"
+          echo ""
+          echo "3. Update your package lists:"
+          echo "   sudo apt-get update"
+          echo ""
+          echo "4. Install the package:"
+          echo "   sudo apt-get install your-package-name"  # Replace 'your-package-name' with the actual package name
+  
     
   release:
     runs-on: ubuntu-latest
