@@ -210,6 +210,9 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y aptly awscli gnupg
+          aws configure set default.region your-region  # Replace with your AWS region
+          aws configure set aws_access_key_id ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws configure set aws_secret_access_key ${{ secrets.AWS_SECRET_ACCESS_KEY }}
   
       - name: Import GPG Key
         env:
@@ -245,6 +248,11 @@ jobs:
         with:
           name: dig-linux-x64-deb
           path: artifacts
+      
+      - name: Set Package Name
+        run: |
+          echo "PACKAGE_NAME=dig-linux-x64" >> $GITHUB_ENV  # Adjust this line to correctly set your package name
+  
   
       - name: Add .deb Packages to Repository
         run: |
@@ -263,7 +271,7 @@ jobs:
   
       - name: Upload GPG Public Key to S3
         run: |
-          aws s3 cp repo-key.gpg s3://${{ secrets.PUBLIC_RELEASE_BUCKET }}/repo-key.gpg
+          aws s3 cp repo-key.gpg s3://${{ secrets.PUBLIC_RELEASE_BUCKET }}/releases/repo-key.gpg
   
       - name: Sync Updated Aptly Database to S3
         run: |
@@ -273,17 +281,20 @@ jobs:
         run: |
           echo "To install the package from the repository, run the following commands:"
           echo "1. Add the repository to your system:"
-          echo "   echo 'deb [trusted=yes] https://s3.amazonaws.com/${{ secrets.PUBLIC_RELEASE_BUCKET }}/ubuntu/ ${DISTRIBUTION} main' | sudo tee /etc/apt/sources.list.d/${REPO_NAME}.list"
+          echo "   echo 'deb [trusted=yes] http://your-s3-bucket-url/ubuntu/ ${DISTRIBUTION} main' | sudo tee /etc/apt/sources.list.d/${REPO_NAME}.list"
           echo ""
-          echo "2. Import the GPG key:"
-          echo "   curl -s https://s3.amazonaws.com/${{ secrets.PUBLIC_RELEASE_BUCKET }}/repo-key.gpg | gpg --dearmor | sudo tee /usr/share/keyrings/${REPO_NAME}-archive-keyring.gpg > /dev/null"
+          echo "2. Import the GPG key (replace 'http://cdn.datalayer.storage/releases/repo-key.gpg' with the actual URL of your GPG key):"
+          echo "   curl -s http://your-s3-bucket-url/repo-key.gpg | gpg --dearmor | sudo tee /usr/share/keyrings/${REPO_NAME}-archive-keyring.gpg > /dev/null"
           echo ""
           echo "3. Update your package lists:"
           echo "   sudo apt-get update"
           echo ""
           echo "4. Install the package:"
-          echo "   sudo apt-get install your-package-name"  # Replace 'your-package-name' with the actual package name
-  
+          echo "   sudo apt-get install ${PACKAGE_NAME}"
+        env:
+          DISTRIBUTION: ${{ env.DISTRIBUTION }}
+          REPO_NAME: ${{ env.REPO_NAME }}
+          PACKAGE_NAME: ${{ env.PACKAGE_NAME }}
     
   release:
     runs-on: ubuntu-latest
