@@ -45,19 +45,24 @@
         @RenderBody()
     </div>
     <footer class="text-center text-lg-start bg-transparent text-muted">
-        <section class="d-flexp-4">
+        <section>
             <div class="text-center p-1">
-                <a href="https://github.com/Datalayer-Storage/Distributed-Internet-Gateway" class="me-4"
-                    target="_blank">
-                    <img height="24" alt="github" src="~/images/github-mark.png">
-                </a>
-                <a href="https://twitter.com/dkackman" class="me-4" target="_blank">
-                    <img height="24" alt="twitter" src="~/images/Twitter social icons - circle - blue.png">
-                </a>
-            </div>
-            <div class="text-center p-1">
-                v<code>@ViewBag.WellKnown.server_version</code>
-                &nbsp; <code>@ViewBag.WellKnown.donation_address</code>&nbsp;
+                <div class="w-50 mx-auto text-center">
+                    <a href="https://github.com/Datalayer-Storage/Distributed-Internet-Gateway" target="_blank">
+                        <img height="24" alt="github" src="~/images/github-mark.png">
+                    </a>
+                    <a href="https://twitter.com/dkackman" target="_blank">
+                        <img height="24" alt="twitter" src="~/images/Twitter social icons - circle - blue.png">
+                    </a>
+                </div>
+                <div>
+                    @if (!string.IsNullOrEmpty(ViewBag.WellKnown?.xch_address))
+                    {
+                        <div><small>Node owner <code>@ViewBag.WellKnown?.xch_address</code></small></div>
+                    }
+                    <div><small>DIG maintainers <code>@ViewBag.WellKnown?.donation_address</code></small></div>
+                    <div><small><code>@ViewBag.WellKnown?.server_version</code></small></div>
+                </div>
             </div>
         </section>
     </footer>
