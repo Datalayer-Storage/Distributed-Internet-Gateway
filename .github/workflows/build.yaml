@@ -116,13 +116,6 @@ jobs:
           # Copy the file
           Copy-Item -Path $sourcePath -Destination $destinationPath
         shell: pwsh
-        
-      - name: list
-        run: |
-          ls -al
-          ls -al publish/standalone/${{matrix.runtime}}
-          ls -al thirdparty
-        shell: bash
 
       - name: Build MSI
         run: ${{ github.workspace }}\build-msi.ps1
@@ -155,10 +148,12 @@ jobs:
         include:
           - artifact-name: dig-linux-x64
             runtime: linux-x64
+            platform: amd64
             pkg-name: distributed-internet-gateway
             binary-name: dig
           - artifact-name: dig-linux-arm64
             runtime: linux-arm64
+            platform: arm64
             pkg-name: distributed-internet-gateway
             binary-name: dig
 
@@ -180,7 +175,7 @@ jobs:
       - name: Build .deb
         env:
           VERSION: ${{ steps.tag-name.outputs.TAGNAME }}
-          PLATFORM: ${{ matrix.runtime }}
+          PLATFORM: ${{ matrix.platform }}
         run: |
           pip install j2cli
           CLI_DEB_BASE="${{matrix.pkg-name}}_${{ steps.tag-name.outputs.TAGNAME }}-1_${PLATFORM}"
