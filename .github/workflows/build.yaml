@@ -211,9 +211,36 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y aptly awscli gnupg
-          aws configure set default.region your-region  # Replace with your AWS region
+          aws configure set default.region us-east-1
           aws configure set aws_access_key_id ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws configure set aws_secret_access_key ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      
+          # Create a custom aptly.conf file
+          echo '{
+            "rootDir": "$HOME/.aptly",
+            "downloadConcurrency": 4,
+            "downloadSpeedLimit": 0,
+            "architectures": [],
+            "dependencyFollowSuggests": false,
+            "dependencyFollowRecommends": false,
+            "dependencyFollowAllVariants": false,
+            "dependencyFollowSource": false,
+            "gpgDisableSign": false,
+            "gpgDisableVerify": false,
+            "downloadSourcePackages": false,
+            "ppaDistributorID": "ubuntu",
+            "ppaCodename": "",
+            "S3PublishEndpoints": {
+              "dlaas": {
+                "region": "us-east-1",
+                "bucket": "dlaas",
+                "endpoint": "",
+                "awsAccessKeyID": "${{ secrets.AWS_ACCESS_KEY_ID }}",
+                "awsSecretAccessKey": "${{ secrets.AWS_SECRET_ACCESS_KEY }}",
+                "acl": "public-read"
+              }
+            }
+          }' > $HOME/.aptly.conf
   
       - name: Import GPG Key
         env:
@@ -248,21 +275,18 @@ jobs:
         run: |
           SNAPSHOT_NAME="snapshot-$(date +%Y%m%d%H%M%S)"
           aptly snapshot create $SNAPSHOT_NAME from repo ${{ env.REPO_NAME }}
-      
-          # Attempt to publish the new snapshot. If it fails because the publication already exists, then update.
-          if ! aptly publish snapshot -distribution=${{ env.DISTRIBUTION }} -gpg-key="${{ secrets.GPG_KEY_ID }}" $SNAPSHOT_NAME s3:dlaas/releases/${{ env.REPO_NAME }}; then
+        
+          if ! aptly publish snapshot -distribution=${{ env.DISTRIBUTION }} -gpg-key="${{ secrets.GPG_KEY_ID }}" $SNAPSHOT_NAME dlaas:releases/${{ env.REPO_NAME }}; then
             echo "Publication exists, attempting to update..."
-            # Check if a publication for the distribution already exists before attempting to update
             if aptly publish list | grep -q "${{ env.DISTRIBUTION }}"; then
               echo "Updating existing publication..."
-              aptly publish switch -distribution=${{ env.DISTRIBUTION }} -gpg-key="${{ secrets.GPG_KEY_ID }}" s3:dlaas/releases $SNAPSHOT_NAME
+              aptly publish switch -distribution=${{ env.DISTRIBUTION }} -gpg-key="${{ secrets.GPG_KEY_ID }}" dlaas:releases $SNAPSHOT_NAME
             else
               echo "No publication found for distribution ${{ env.DISTRIBUTION }}. Initial publish attempt may have failed."
               exit 1
             fi
           else
             echo "Published new snapshot."
-          fi
         shell: bash
   
       - name: Create GPG Public Key File
