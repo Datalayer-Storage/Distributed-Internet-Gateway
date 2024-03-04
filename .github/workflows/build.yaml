@@ -234,10 +234,9 @@ jobs:
               "dlaas": {
                 "region": "us-east-1",
                 "bucket": "dlaas",
-                "endpoint": "",
-                "awsAccessKeyID": "${{ secrets.AWS_ACCESS_KEY_ID }}",
-                "awsSecretAccessKey": "${{ secrets.AWS_SECRET_ACCESS_KEY }}",
-                "acl": "public-read"
+                "endpoint": "s3.amazonaws.com",
+                "accessKeyID": "${{ secrets.AWS_ACCESS_KEY_ID }}",
+                "secretAccessKey": "${{ secrets.AWS_SECRET_ACCESS_KEY }}"
               }
             }
           }' > $HOME/.aptly.conf
@@ -277,20 +276,15 @@ jobs:
           aptly snapshot create $SNAPSHOT_NAME from repo ${{ env.REPO_NAME }}
           
           # Try to publish the snapshot directly
-          PUBLISH_CMD="aptly publish snapshot -distribution=${{ env.DISTRIBUTION }} -gpg-key=${{ secrets.GPG_KEY_ID }} $SNAPSHOT_NAME dlaas:releases/${{ env.REPO_NAME }}"
-          if $PUBLISH_CMD; then
-            echo "Published new snapshot successfully."
-          else
-            echo "Failed to publish new snapshot, attempting to update existing publication..."
+          if ! aptly publish snapshot -distribution=${{ env.DISTRIBUTION }} -gpg-key="${{ secrets.GPG_KEY_ID }}" $SNAPSHOT_NAME dlaas:${{ env.REPO_NAME }}; then
+            echo "Publication exists, attempting to update..."
             # Directly attempt to switch the published snapshot without checking if it exists
-            SWITCH_CMD="aptly publish switch -distribution=${{ env.DISTRIBUTION }} -gpg-key=${{ secrets.GPG_KEY_ID }} dlaas:releases $SNAPSHOT_NAME"
-            if $SWITCH_CMD; then
-              echo "Updated existing publication successfully."
-            else
+            if ! aptly publish switch ${DISTRIBUTION} dlaas $SNAPSHOT_NAME; then
               echo "Failed to update publication. Please check the repository and distribution names, and ensure the Aptly and S3 configurations are correct."
               exit 1
             fi
-          fi
+          else
+            echo "Published new snapshot successfully."
         shell: bash
   
       - name: Create GPG Public Key File
