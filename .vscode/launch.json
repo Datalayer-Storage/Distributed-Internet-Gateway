@@ -69,6 +69,18 @@
       "envFile": "${workspaceFolder}/.env"
     },
     {
+      "name": "dig cli stores unmirror-all",
+      "type": "coreclr",
+      "request": "launch",
+      "preLaunchTask": "build",
+      "program": "${workspaceFolder}/src/dig/bin/Debug/net8.0/dig.dll",
+      "args": ["stores", "unmirror-all"],
+      "cwd": "${workspaceFolder}/src/dig",
+      "console": "integratedTerminal",
+      "stopAtEntry": false,
+      "envFile": "${workspaceFolder}/.env"
+    },
+    {
       "name": "dig cli stores sync",
       "type": "coreclr",
       "request": "launch",
