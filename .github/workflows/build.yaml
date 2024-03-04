@@ -248,12 +248,7 @@ jobs:
         with:
           name: dig-linux-x64-deb
           path: artifacts
-      
-      - name: Set Package Name
-        run: |
-          echo "PACKAGE_NAME=dig-linux-x64" >> $GITHUB_ENV  # Adjust this line to correctly set your package name
-  
-  
+
       - name: Add .deb Packages to Repository
         run: |
           aptly repo add ${{ env.REPO_NAME }} artifacts/*.deb
@@ -261,7 +256,7 @@ jobs:
       - name: Publish or Update Repository with Signing
         run: |
           if aptly publish list | grep -q '${{ env.REPO_NAME }}'; then
-            aptly -batch -yes -passphrase="${{ secrets.GPG_PASSPHRASE }}" publish update ${{ env.DISTRIBUTION }} s3:${{ env.REPO_NAME }}:
+            aptly -batch -yes -passphrase="${{ secrets.GPG_PASSPHRASE }}" publish update ${{ env.DISTRIBUTION }} s3:dlaas/releases${{ env.REPO_NAME }}:
           else
             aptly -batch -yes -passphrase="${{ secrets.GPG_PASSPHRASE }}" publish snapshot -distribution=${{ env.DISTRIBUTION }} -gpg-key="${{ secrets.GPG_KEY_ID}}" snapshot-from-${{ env.REPO_NAME }} s3:dlaas/releases/${{ env.REPO_NAME }}:
   
@@ -271,7 +266,7 @@ jobs:
   
       - name: Upload GPG Public Key to S3
         run: |
-          aws s3 cp repo-key.gpg s3://${{ secrets.PUBLIC_RELEASE_BUCKET }}/releases/repo-key.gpg
+          aws s3 cp repo-key.gpg s3://dlaas/releases/repo-key.gpg
   
       - name: Sync Updated Aptly Database to S3
         run: |
@@ -290,11 +285,10 @@ jobs:
           echo "   sudo apt-get update"
           echo ""
           echo "4. Install the package:"
-          echo "   sudo apt-get install ${PACKAGE_NAME}"
+          echo "   sudo apt-get install ${REPO_NAME}"
         env:
           DISTRIBUTION: ${{ env.DISTRIBUTION }}
           REPO_NAME: ${{ env.REPO_NAME }}
-          PACKAGE_NAME: ${{ env.PACKAGE_NAME }}
     
   release:
     runs-on: ubuntu-latest
