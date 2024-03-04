@@ -190,7 +190,19 @@ jobs:
           chmod +x deb/$CLI_DEB_BASE/opt/${{matrix.pkg-name}}/dig
           chmod +x deb/$CLI_DEB_BASE/opt/${{matrix.pkg-name}}/dig.server
           ln -s ../../opt/${{matrix.pkg-name}}/dig.server "deb/$CLI_DEB_BASE/usr/bin/dig.server"
-          dpkg-deb --build --root-owner-group "deb/$CLI_DEB_BASE"
+          # Create the control tarball using gzip for compression
+          tar czf "deb/$CLI_DEB_BASE/control.tar.gz" -C "deb/$CLI_DEB_BASE/DEBIAN" .
+          
+          # Create the data tarball using gzip for compression
+          tar czf "deb/$CLI_DEB_BASE/data.tar.gz" -C "deb/$CLI_DEB_BASE" --exclude=DEBIAN .
+          
+          # Create debian-binary file
+          echo "2.0" > "deb/$CLI_DEB_BASE/debian-binary"
+          
+          # Assemble the .deb package
+          cd "deb/$CLI_DEB_BASE"
+          ar rcs "../../${CLI_DEB_BASE}.deb" debian-binary control.tar.gz data.tar.gz
+          cd ../..
 
       - name: Upload deb
         uses: actions/upload-artifact@v3
