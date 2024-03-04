@@ -233,11 +233,6 @@ jobs:
       - name: Create or Ignore Existing Aptly Repository
         run: |
           aptly repo create "${{ env.REPO_NAME }}" || true
-      
-      - name: Create Aptly Repository if Not Exists
-        if: env.REPO_EXISTS == 'false'
-        run: |
-          aptly repo create ${{ env.REPO_NAME }}
   
       - name: Download Linux x64 Deb artifact
         uses: actions/download-artifact@v3
@@ -249,12 +244,17 @@ jobs:
         run: |
           aptly repo add ${{ env.REPO_NAME }} artifacts/*.deb
   
-      - name: Publish or Update Repository with Signing
+      - name: Publish or Update Aptly Repository
         run: |
-          if aptly publish list | grep -q '${{ env.REPO_NAME }}'; then
-            aptly -batch -yes -passphrase="${{ secrets.GPG_PASSPHRASE }}" publish update ${{ env.DISTRIBUTION }} s3:dlaas/releases${{ env.REPO_NAME }}:
+          SNAPSHOT_NAME="snapshot-$(date +%Y%m%d%H%M%S)"
+          aptly snapshot create $SNAPSHOT_NAME from repo ${{ env.REPO_NAME }}
+          PUBLISH_RESULT=$(aptly publish snapshot -distribution=${{ env.DISTRIBUTION }} -gpg-key="YOUR_GPG_KEY_ID" $SNAPSHOT_NAME s3:dlaas/releases/${{ env.REPO_NAME }} 2>&1 || echo "PUBLISH_FAILED")
+          if [[ "$PUBLISH_RESULT" == *"PUBLISH_FAILED"* ]]; then
+            echo "Publication exists, updating..."
+            aptly publish update -gpg-key="YOUR_GPG_KEY_ID" ${{ env.DISTRIBUTION }} s3:dlaas/releases/${{ env.REPO_NAME }}
           else
-            aptly -batch -yes -passphrase="${{ secrets.GPG_PASSPHRASE }}" publish snapshot -distribution=${{ env.DISTRIBUTION }} -gpg-key="${{ secrets.GPG_KEY_ID}}" snapshot-from-${{ env.REPO_NAME }} s3:dlaas/releases/${{ env.REPO_NAME }}:
+            echo "Published new snapshot."
+          fi
   
       - name: Create GPG Public Key File
         run: |
