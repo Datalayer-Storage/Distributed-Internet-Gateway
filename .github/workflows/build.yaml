@@ -229,17 +229,20 @@ jobs:
           echo "REPO_NAME=$(echo ${{ github.repository }} | cut -d'/' -f2-)" >> $GITHUB_ENV
           echo "DISTRIBUTION=$(echo ${{ github.repository }} | cut -d'/' -f1)" >> $GITHUB_ENV
       
+      - name: List Repositories
+        id: repo_list
+        run: aptly repo list -raw
+      
       - name: Check if Repository Exists
         run: |
-          set -x  # Enable debug tracing
-          if aptly repo list -raw | grep -q "^${{ env.REPO_NAME }}$"; then
+          echo "Checking if ${{ env.REPO_NAME }} exists in the repository list"
+          if echo '${{ steps.repo_list.outputs.stdout }}' | grep -q "^${{ env.REPO_NAME }}$"; then
             echo "Repo exists."
             echo "REPO_EXISTS=true" >> $GITHUB_ENV
           else
             echo "Repo does not exist."
             echo "REPO_EXISTS=false" >> $GITHUB_ENV
-        shell: bash
-        
+      
       - name: Create Aptly Repository if Not Exists
         if: env.REPO_EXISTS == 'false'
         run: |
