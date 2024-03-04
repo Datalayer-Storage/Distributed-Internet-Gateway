@@ -42,15 +42,15 @@ public class GatewayService
 
     public async Task<WellKnown> GetWellKnown(string baseUri, CancellationToken stoppingToken)
     {
-        var donation_address = await _memoryCache.GetOrCreateAsync("well_known.donation_address", async entry =>
+        var xch_address = await _memoryCache.GetOrCreateAsync("well_known.xch_address", async entry =>
         {
             entry.SlidingExpiration = TimeSpan.FromDays(1);
-            return await _chiaService.ResolveAddress(_configuration.GetValue("dig:DonationAddress", ""), stoppingToken);
-        });
+            return await _chiaService.ResolveAddress(_configuration.GetValue("dig:XchAddress", ""), stoppingToken);
+        }) ?? "";
 
-        return new WellKnown(xch_address: _configuration.GetValue("dig:XchAddress", "")!,
+        return new WellKnown(xch_address: xch_address,
                         known_stores_endpoint: $"{baseUri}/.well-known/known_stores",
-                        donation_address: donation_address ?? "",
+                        donation_address: "xch1ctvns8zcetux57xj4hjsh5hkr40c4ascvc5uaf7gvncc3dydj9eqxenmqt", // intentionally hardcoded
                         server_version: GetAssemblyVersion());
     }
 
