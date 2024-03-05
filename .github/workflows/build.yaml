@@ -282,7 +282,7 @@ jobs:
         env:
           SNAPSHOT_NAME: ${{ needs.create-snapshot.outputs.SNAPSHOT_NAME }}
         shell: bash
-        continue-on-error: true  # Continue to the next step if publishing fails
+        continue-on-error: true
       
       - name: Update Existing Publication
         if: ${{ failure() }}  # This step runs only if the previous step failed
@@ -291,10 +291,11 @@ jobs:
         env:
           SNAPSHOT_NAME: ${{ needs.create-snapshot.outputs.SNAPSHOT_NAME }}
         shell: bash
+        continue-on-error: true
         
-      - name: Create GPG Public Key File
-        run: |
-          echo "${{ secrets.GPG_PUBLIC_KEY }}" | base64 --decode > repo-key.gpg
+    ##  - name: Create GPG Public Key File
+    #    run: |
+    #      echo "${{ secrets.GPG_PUBLIC_KEY }}" | base64 --decode > repo-key.gpg
   
       - name: Upload GPG Public Key to S3
         run: |
