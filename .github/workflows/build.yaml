@@ -224,7 +224,7 @@ jobs:
     
       - name: Pull Aptly Config from S3
         run: |
-          aws s3 cp ${{ secrets.APTLY_S3_PATH }}${{ env.REPO_NAME }}.aptly.conf ~/.aptly.conf || echo "No existing Aptly config found in S3, generating new config."
+          aws s3 cp ${{ secrets.APTLY_S3_PATH }}.aptly.conf ~/.aptly.conf || echo "No existing Aptly config found in S3, generating new config."
         shell: bash
 
       - name: Display Aptly Config
@@ -294,7 +294,7 @@ jobs:
   
       - name: Upload Aptly Config to S3
         run: |
-          aws s3 cp ~/.aptly.conf ${{ secrets.APTLY_S3_PATH }}${{ env.REPO_NAME }}.aptly.conf
+          aws s3 cp ~/.aptly.conf ${{ secrets.APTLY_S3_PATH }}.aptly.conf
         shell: bash
     
   release:
