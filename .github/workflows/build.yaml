@@ -229,7 +229,6 @@ jobs:
   
       - name: Generate Default Aptly Config
         run: |
-          if [ ! -f ~/.aptly.conf ]; then
             cat > ~/.aptly.conf <<'EOF'
             {
               "rootDir": "$HOME/.aptly",
@@ -256,7 +255,6 @@ jobs:
               }
             }
             EOF
-          fi
         shell: bash
         env:
           S3_BUCKET: ${{ env.S3_BUCKET }}
