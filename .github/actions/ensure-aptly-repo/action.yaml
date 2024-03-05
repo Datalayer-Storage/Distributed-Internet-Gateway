@@ -27,17 +27,21 @@ runs:
         aws configure set default.region ${{ inputs.AWS_REGION }}
         aws configure set aws_access_key_id ${{ inputs.AWS_ACCESS_KEY_ID }}
         aws configure set aws_secret_access_key ${{ inputs.AWS_SECRET_ACCESS_KEY }}
+      shell: bash
   
     - name: Sync Aptly Database from S3
       run: |
         aws s3 sync ${{ inputs.S3_PATH }} ~/.aptly/ || echo "No existing Aptly database found in S3, proceeding without error."
+      shell: bash
   
     - name: Create New Aptly Repository
       run: |
         aptly repo create "${{ inputs.REPO_NAME }}"
+      shell: bash
       continue-on-error: true
   
     - name: Sync Updated Aptly Database to S3
       run: |
         aws s3 sync ~/.aptly/ ${{ inputs.S3_PATH }}
+      shell: bash
     
