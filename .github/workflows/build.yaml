@@ -230,9 +230,9 @@ jobs:
       - name: Generate Default Aptly Config
         run: |
           if [ ! -f ~/.aptly.conf ]; then
-            cat > ~/.aptly.conf <<EOF
+            cat > ~/.aptly.conf <<'EOF'
             {
-              "rootDir": "\$HOME/.aptly",
+              "rootDir": "$HOME/.aptly",
               "downloadConcurrency": 4,
               "downloadSpeedLimit": 0,
               "architectures": [],
@@ -246,18 +246,23 @@ jobs:
               "ppaDistributorID": "ubuntu",
               "ppaCodename": "",
               "S3PublishEndpoints": {
-                "${{ env.S3_BUCKET }}": {
-                  "region": "${{ secrets.AWS_REGION }}",
-                  "bucket": "${{ env.S3_BUCKET }}",
+                "${S3_BUCKET}": {
+                  "region": "${AWS_REGION}",
+                  "bucket": "${S3_BUCKET}",
                   "endpoint": "s3.amazonaws.com",
-                  "accessKeyID": "${{ secrets.AWS_ACCESS_KEY_ID }}",
-                  "secretAccessKey": "${{ secrets.AWS_SECRET_ACCESS_KEY }}"
+                  "accessKeyID": "${AWS_ACCESS_KEY_ID}",
+                  "secretAccessKey": "${AWS_SECRET_ACCESS_KEY}"
                 }
               }
             }
             EOF
           fi
         shell: bash
+        env:
+          S3_BUCKET: ${{ env.S3_BUCKET }}
+          AWS_REGION: ${{ secrets.AWS_REGION }}
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
   
       - name: Import GPG Key
         env:
