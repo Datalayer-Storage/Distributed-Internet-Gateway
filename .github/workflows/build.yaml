@@ -207,31 +207,18 @@ jobs:
       - uses: actions/checkout@v2
         name: Checkout code
     
-      - name: Setup Aptly, AWS CLI, and GnuPG
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y aptly awscli gnupg
-          aws configure set default.region us-east-1
-          aws configure set aws_access_key_id ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws configure set aws_secret_access_key ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-    
-      - name: Sync Aptly Database from S3
-        run: |
-          aws s3 sync ${{ secrets.APTLY_S3_PATH }} ~/.aptly/ || echo "No existing Aptly database found in S3, proceeding without error."
-    
       - name: Set Repository Name to Organization Name
         run: |
           echo "REPO_NAME=$(echo ${{ github.repository }} | cut -d'/' -f1)" >> $GITHUB_ENV
-    
-      - name: Create New Aptly Repository
-        run: |
-          aptly repo create "${{ env.REPO_NAME }}"
-    
-      - name: Sync Updated Aptly Database to S3
-        run: |
-          aws s3 sync ~/.aptly/ ${{ secrets.APTLY_S3_PATH }}
-    
-    
+      
+      - name: Ensure Aptly Repo
+        uses: ./.github/actions/ensure-aptly-repo
+        with:
+          REPO_NAME: ${{ env.REPO_NAME }}
+          S3_PATH: ${{ secrets.APTLY_S3_PATH }}
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_REGION: us-east-1
     
   release:
     runs-on: ubuntu-latest

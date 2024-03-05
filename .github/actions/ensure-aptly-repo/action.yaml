@@ -1,0 +1,43 @@
+name: Ensure Aptly Repo
+description: Ensure an Aptly repository exists and is up to date
+inputs:
+  REPO_NAME:
+    required: true
+    description: Name of Aptly Repo
+  S3_PATH:
+    required: true
+    description: s3 path to aptly config folder
+  AWS_ACCESS_KEY_ID:
+    required: true
+    description: AWS Access Key ID
+  AWS_SECRET_ACCESS_KEY:
+    required: true
+    description: AWS Secret Access Key
+  AWS_REGION:
+    required: true
+    description: AWS Region
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Setup Aptly, AWS CLI
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y aptly awscli
+        aws configure set default.region ${{ inputs.AWS_REGION }}
+        aws configure set aws_access_key_id ${{ inputs.AWS_ACCESS_KEY_ID }}
+        aws configure set aws_secret_access_key ${{ inputs.AWS_SECRET_ACCESS_KEY }}
+  
+    - name: Sync Aptly Database from S3
+      run: |
+        aws s3 sync ${{ inputs.S3_PATH }} ~/.aptly/ || echo "No existing Aptly database found in S3, proceeding without error."
+  
+    - name: Create New Aptly Repository
+      run: |
+        aptly repo create "${{ inputs.REPO_NAME }}"
+      continue-on-error: true
+  
+    - name: Sync Updated Aptly Database to S3
+      run: |
+        aws s3 sync ~/.aptly/ ${{ inputs.S3_PATH }}
+    
