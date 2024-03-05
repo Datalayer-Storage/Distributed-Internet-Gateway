@@ -86,6 +86,7 @@ runs:
         GPG_PASSPHRASE: ${{ inputs.GPG_PASSPHRASE }}
       run: |
         echo "${{ inputs.GPG_PRIVATE_KEY }}" | gpg --batch --yes --pinentry-mode loopback --import
+      shell: bash
 
     - name: Sync Aptly Database from S3
       run: |
@@ -124,9 +125,7 @@ runs:
     - name: Update Existing Publication
       if: ${{ failure() }}  # This step runs only if the previous step failed
       run: |
-        aptly publish switch ${DISTRIBUTION} dlaas $SNAPSHOT_NAME
-      env:
-        SNAPSHOT_NAME: ${{ needs.create-snapshot.outputs.SNAPSHOT_NAME }}
+        aptly publish switch ${inputs.DISTRIBUTION_NAME} dlaas $SNAPSHOT_NAME
       shell: bash
       continue-on-error: true
 
