@@ -274,6 +274,7 @@ jobs:
         run: |
           SNAPSHOT_NAME="snapshot-$(date +%Y%m%d%H%M%S)"
           aptly snapshot create $SNAPSHOT_NAME from repo ${{ env.REPO_NAME }}
+          echo "SNAPSHOT_NAME=$SNAPSHOT_NAME" >> $GITHUB_ENV
         shell: bash
       
       - name: Publish New Snapshot
