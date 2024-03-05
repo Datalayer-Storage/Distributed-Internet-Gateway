@@ -297,9 +297,9 @@ jobs:
     #    run: |
     #      echo "${{ secrets.GPG_PUBLIC_KEY }}" | base64 --decode > repo-key.gpg
   
-      - name: Upload GPG Public Key to S3
-        run: |
-          aws s3 cp repo-key.gpg s3://dlaas/releases/repo-key.gpg
+   #   - name: Upload GPG Public Key to S3
+    #    run: |
+     #     aws s3 cp repo-key.gpg s3://dlaas/releases/repo-key.gpg
   
       - name: Sync Updated Aptly Database to S3
         run: |
