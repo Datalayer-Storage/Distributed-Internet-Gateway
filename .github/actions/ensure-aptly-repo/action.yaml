@@ -108,6 +108,7 @@ runs:
     - name: Add .deb Packages to Repository
       run: |
         aptly repo add ${{ inputs.DISTRIBUTION_NAME }} artifacts/*.deb
+      shell: bash
 
     - name: Create Snapshot
       run: |
