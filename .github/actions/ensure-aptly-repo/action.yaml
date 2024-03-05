@@ -110,28 +110,28 @@ runs:
         aptly repo add ${{ inputs.DISTRIBUTION_NAME }} ${{ inputs.DISTRIBUTION_NAME }}/*.deb
       shell: bash
 
-    - name: Create Snapshot
+    - name: Snapshot and Publish
       run: |
+        # Generate a unique snapshot name based on the current date and time
         SNAPSHOT_NAME="snapshot-$(date +%Y%m%d%H%M%S)"
+        echo "Creating snapshot with name: $SNAPSHOT_NAME"
         aptly snapshot create $SNAPSHOT_NAME from repo ${{ inputs.REPO_NAME }}
+        
+        # Make SNAPSHOT_NAME available to subsequent commands
         echo "SNAPSHOT_NAME=${SNAPSHOT_NAME}" >> "$GITHUB_ENV"
-        echo "SNAPSHOT_NAME=${SNAPSHOT_NAME}"
-      shell: bash
-
-    - name: Publish New Snapshot
-      run: |
-        CMD="aptly publish snapshot -distribution=${{ inputs.DISTRIBUTION_NAME }} -gpg-key='${{ inputs.GPG_KEY_ID }}' ${{ env.SNAPSHOT_NAME }} ${{ inputs.S3_BUCKET }}:${{ inputs.REPO_NAME }}"
-        echo $CMD
-        $CMD
-      shell: bash
-      continue-on-error: true
-
-    - name: Update Existing Publication
-      if: ${{ failure() }}  # This step runs only if the previous step failed
-      run: |
-        CMD="aptly publish switch ${{ inputs.DISTRIBUTION_NAME }} dlaas ${{ env.SNAPSHOT_NAME }}"
-        echo $CMD
-        $CMD
+        
+        # Attempt to publish the new snapshot
+        PUBLISH_CMD="aptly publish snapshot -distribution=${{ inputs.DISTRIBUTION_NAME }} -gpg-key='${{ inputs.GPG_KEY_ID }}' $SNAPSHOT_NAME ${{ inputs.S3_BUCKET }}:${{ inputs.REPO_NAME }}"
+        echo "Executing: $PUBLISH_CMD"
+        if $PUBLISH_CMD; then
+          echo "Snapshot published successfully."
+        else
+          echo "Publish failed, attempting to update existing publication..."
+          # If the publish command fails, attempt to switch the existing publication to the new snapshot
+          UPDATE_CMD="aptly publish switch ${{ inputs.DISTRIBUTION_NAME }} dlaas $SNAPSHOT_NAME"
+          echo "Executing: $UPDATE_CMD"
+          $UPDATE_CMD
+        fi
       shell: bash
       continue-on-error: true
 
