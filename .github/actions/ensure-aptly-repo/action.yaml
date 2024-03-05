@@ -39,32 +39,34 @@ runs:
 
     - name: Generate Default Aptly Config
       run: |
-        cat > ~/.aptly.conf <<EOF
-        {
-          "rootDir": "\$HOME/.aptly",
-          "downloadConcurrency": 4,
-          "downloadSpeedLimit": 0,
-          "architectures": [],
-          "dependencyFollowSuggests": false,
-          "dependencyFollowRecommends": false,
-          "dependencyFollowAllVariants": false,
-          "dependencyFollowSource": false,
-          "gpgDisableSign": false,
-          "gpgDisableVerify": false,
-          "downloadSourcePackages": false,
-          "ppaDistributorID": "ubuntu",
-          "ppaCodename": "",
-          "S3PublishEndpoints": {
-            "${{ inputs.S3_BUCKET }}": {
-              "region": "${{ inputs.AWS_REGION }}",
-              "bucket": "${{ inputs.S3_BUCKET }}",
-              "endpoint": "s3.amazonaws.com",
-              "accessKeyID": "${{ inputs.AWS_ACCESS_KEY_ID }}",
-              "secretAccessKey": "${{ inputs.AWS_SECRET_ACCESS_KEY }}"
+        if [ ! -f ~/.aptly.conf ]; then
+          cat > ~/.aptly.conf <<EOF
+          {
+            "rootDir": "\$HOME/.aptly",
+            "downloadConcurrency": 4,
+            "downloadSpeedLimit": 0,
+            "architectures": [],
+            "dependencyFollowSuggests": false,
+            "dependencyFollowRecommends": false,
+            "dependencyFollowAllVariants": false,
+            "dependencyFollowSource": false,
+            "gpgDisableSign": false,
+            "gpgDisableVerify": false,
+            "downloadSourcePackages": false,
+            "ppaDistributorID": "ubuntu",
+            "ppaCodename": "",
+            "S3PublishEndpoints": {
+              "${{ inputs.S3_BUCKET }}": {
+                "region": "${{ inputs.AWS_REGION }}",
+                "bucket": "${{ inputs.S3_BUCKET }}",
+                "endpoint": "s3.amazonaws.com",
+                "accessKeyID": "${{ inputs.AWS_ACCESS_KEY_ID }}",
+                "secretAccessKey": "${{ inputs.AWS_SECRET_ACCESS_KEY }}"
+              }
             }
           }
-        }
-        EOF
+          EOF
+        fi
       shell: bash
 
 
