@@ -25,6 +25,11 @@ public partial class StoresController(GatewayService gatewayService,
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<string>))]
     public async Task<IActionResult> GetStore(string storeId, CancellationToken cancellationToken)
     {
+        if (storeId is null || storeId.Length != 64)
+        {
+            return NotFound();
+        }
+
         try
         {
             storeId = storeId.TrimEnd('/');
@@ -112,6 +117,11 @@ public partial class StoresController(GatewayService gatewayService,
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<string>))]
     public async Task<IActionResult> GetStoreCatchAll(string storeId, string catchAll, CancellationToken cancellationToken)
     {
+        if (storeId is null || storeId.Length != 64)
+        {
+            return NotFound();
+        }
+
         try
         {
             var key = catchAll;

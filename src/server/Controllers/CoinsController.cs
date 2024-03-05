@@ -12,6 +12,11 @@ public class CoinsController(ServerCoinService serverCoinService, ILogger<CoinsC
     [HttpGet("{storeId}")]
     public IActionResult Get(string storeId)
     {
+        if (storeId is null || storeId.Length != 64)
+        {
+            return NotFound();
+        }
+
         try
         {
             return Ok(_serverCoinService.GetCoins(storeId));
