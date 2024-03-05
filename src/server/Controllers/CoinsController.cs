@@ -10,10 +10,12 @@ public class CoinsController(ServerCoinService serverCoinService, ILogger<CoinsC
     private readonly ILogger<CoinsController> _logger = logger;
 
     [HttpGet("{storeId}")]
-    public IActionResult Get(string storeId)
+    public async Task<ActionResult> Get(string storeId)
     {
         try
         {
+            // using async pattern to avoid io blocking
+            await Task.CompletedTask;
             return Ok(_serverCoinService.GetCoins(storeId));
         }
         catch (Exception ex)

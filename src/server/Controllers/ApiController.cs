@@ -11,4 +11,10 @@ public class ApiController : ControllerBase
     {
         return Ok("api root");
     }
+
+    [HttpGet("healthz")]
+    public IActionResult Test()
+    {
+        return Ok(new { status = "aok" });
+    }
 }
