@@ -215,6 +215,7 @@ jobs:
         uses: ./.github/actions/ensure-aptly-repo
         with:
           REPO_NAME: ${{ env.REPO_NAME }}
+          DISTRIBUTION_NAME: 'dig-linux-x64-deb'
           S3_PATH: ${{ secrets.APTLY_S3_PATH }}
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}

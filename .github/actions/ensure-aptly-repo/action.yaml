@@ -102,7 +102,7 @@ runs:
     - name: Download Linux x64 Deb artifact
       uses: actions/download-artifact@v3
       with:
-        name: dig-linux-x64-deb
+        name: ${{ inputs.DISTRIBUTION_NAME }}
         path: artifacts
 
     - name: Add .deb Packages to Repository
@@ -115,6 +115,7 @@ runs:
         SNAPSHOT_NAME="snapshot-$(date +%Y%m%d%H%M%S)"
         aptly snapshot create $SNAPSHOT_NAME from repo ${{ inputs.REPO_NAME }}
         echo "SNAPSHOT_NAME=${SNAPSHOT_NAME}" >> "$GITHUB_ENV"
+        echo "SNAPSHOT_NAME=${SNAPSHOT_NAME}"
       shell: bash
 
     - name: Publish New Snapshot
