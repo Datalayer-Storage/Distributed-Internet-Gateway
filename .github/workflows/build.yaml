@@ -227,6 +227,12 @@ jobs:
           aws s3 cp ${{ secrets.APTLY_S3_PATH }}${{ env.REPO_NAME }}.aptly.conf ~/.aptly.conf || echo "No existing Aptly config found in S3, generating new config."
         shell: bash
 
+      - name: Display Aptly Config
+        run: |
+          echo "Contents of .aptly.conf:"
+          cat ~/.aptly.conf
+        shell: bash
+
       - name: Import GPG Key
         env:
           GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
