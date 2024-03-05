@@ -39,8 +39,9 @@ runs:
 
     - name: Generate Default Aptly Config
       run: |
-        echo '{
-          "rootDir": "$HOME/.aptly",
+        cat > ~/.aptly.conf <<EOF
+        {
+          "rootDir": "\$HOME/.aptly",
           "downloadConcurrency": 4,
           "downloadSpeedLimit": 0,
           "architectures": [],
@@ -62,8 +63,10 @@ runs:
               "secretAccessKey": "${{ inputs.AWS_SECRET_ACCESS_KEY }}"
             }
           }
-        }' > ~/.aptly.conf
+        }
+        EOF
       shell: bash
+
 
 
     - name: Sync Aptly Database from S3
