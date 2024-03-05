@@ -85,5 +85,5 @@ runs:
 
     - name: Upload Aptly Config to S3
       run: |
-        aws s3 cp ~/.aptly.conf ${{ inputs.S3_PATH }}/.aptly.conf
+        aws s3 sync ~/.aptly.conf ${{ inputs.S3_PATH }}/.aptly.conf
       shell: bash
