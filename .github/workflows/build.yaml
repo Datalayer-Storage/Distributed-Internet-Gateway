@@ -273,7 +273,7 @@ jobs:
           echo "SNAPSHOT_NAME=${SNAPSHOT_NAME}" >> "$GITHUB_ENV"
           
           # Attempt to publish the new snapshot
-          PUBLISH_CMD="aptly publish repo -distribution=${{ env.DISTRIBUTION_NAME }} -component='main' -gpg-key='${{ secrets.GPG_KEY_ID }}' ${{ env.REPO_NAME }} s3:${{ env.S3_BUCKET }}:"
+          PUBLISH_CMD="aptly publish repo -distribution=${{ env.DISTRIBUTION_NAME }} -component='main' ${{ env.REPO_NAME }} s3:${{ env.S3_BUCKET }}:"
           echo "Executing: $PUBLISH_CMD"
           if $PUBLISH_CMD; then
             echo "Snapshot published successfully."
