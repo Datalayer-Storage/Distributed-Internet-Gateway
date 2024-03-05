@@ -273,7 +273,7 @@ jobs:
           echo "SNAPSHOT_NAME=${SNAPSHOT_NAME}" >> "$GITHUB_ENV"
           
           # Attempt to publish the new snapshot
-          PUBLISH_CMD="aptly publish snapshot -distribution=${{ env.DISTRIBUTION_NAME }} -gpg-key='${{ secrets.GPG_KEY_ID }}' $SNAPSHOT_NAME ${{ secrets.APTLY_S3_PATH }}:${{ env.REPO_NAME }}"
+          PUBLISH_CMD="aptly publish snapshot -distribution=${{ env.DISTRIBUTION_NAME }} -gpg-key='${{ secrets.GPG_KEY_ID }}' $SNAPSHOT_NAME dlass-repo:${{ env.REPO_NAME }}"
           echo "Executing: $PUBLISH_CMD"
           if $PUBLISH_CMD; then
             echo "Snapshot published successfully."
