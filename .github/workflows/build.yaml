@@ -270,23 +270,28 @@ jobs:
         run: |
           aptly repo add ${{ env.REPO_NAME }} artifacts/*.deb
   
-      - name: Publish or Update Aptly Repository
+      - name: Create Snapshot
         run: |
           SNAPSHOT_NAME="snapshot-$(date +%Y%m%d%H%M%S)"
           aptly snapshot create $SNAPSHOT_NAME from repo ${{ env.REPO_NAME }}
-          
-          # Try to publish the snapshot directly
-          if ! aptly publish snapshot -distribution=${{ env.DISTRIBUTION }} -gpg-key="${{ secrets.GPG_KEY_ID }}" $SNAPSHOT_NAME dlaas:${{ env.REPO_NAME }}; then
-            echo "Publication exists, attempting to update..."
-            # Directly attempt to switch the published snapshot without checking if it exists
-            if ! aptly publish switch ${DISTRIBUTION} dlaas $SNAPSHOT_NAME; then
-              echo "Failed to update publication. Please check the repository and distribution names, and ensure the Aptly and S3 configurations are correct."
-              exit 1
-            fi
-          else
-            echo "Published new snapshot successfully."
         shell: bash
-  
+      
+      - name: Publish New Snapshot
+        run: |
+          aptly publish snapshot -distribution=${{ env.DISTRIBUTION }} -gpg-key="${{ secrets.GPG_KEY_ID }}" $SNAPSHOT_NAME dlaas:${{ env.REPO_NAME }}
+        env:
+          SNAPSHOT_NAME: ${{ needs.create-snapshot.outputs.SNAPSHOT_NAME }}
+        shell: bash
+        continue-on-error: true  # Continue to the next step if publishing fails
+      
+      - name: Update Existing Publication
+        if: ${{ failure() }}  # This step runs only if the previous step failed
+        run: |
+          aptly publish switch ${DISTRIBUTION} dlaas $SNAPSHOT_NAME
+        env:
+          SNAPSHOT_NAME: ${{ needs.create-snapshot.outputs.SNAPSHOT_NAME }}
+        shell: bash
+        
       - name: Create GPG Public Key File
         run: |
           echo "${{ secrets.GPG_PUBLIC_KEY }}" | base64 --decode > repo-key.gpg
