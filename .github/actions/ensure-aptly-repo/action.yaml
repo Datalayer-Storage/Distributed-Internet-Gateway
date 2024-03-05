@@ -119,21 +119,20 @@ runs:
 
     - name: Publish New Snapshot
       run: |
-        aptly publish snapshot -distribution=${{ inputs.DISTRIBUTION_NAME }} -gpg-key="${{ inputs.GPG_KEY_ID }}" ${{ env.SNAPSHOT_NAME }} ${{ inputs.S3_BUCKET }}:${{ inputs.REPO_NAME }}
+        CMD="aptly publish snapshot -distribution=${{ inputs.DISTRIBUTION_NAME }} -gpg-key='${{ inputs.GPG_KEY_ID }}' ${{ env.SNAPSHOT_NAME }} ${{ inputs.S3_BUCKET }}:${{ inputs.REPO_NAME }}"
+        echo $CMD
+        $CMD
       shell: bash
       continue-on-error: true
-      env:
-        SNAPSHOT_NAME: ${{ env.SNAPSHOT_NAME }}
 
     - name: Update Existing Publication
       if: ${{ failure() }}  # This step runs only if the previous step failed
       run: |
-        aptly publish switch ${{ inputs.DISTRIBUTION_NAME }} dlaas ${{ env.SNAPSHOT_NAME }}
+        CMD="aptly publish switch ${{ inputs.DISTRIBUTION_NAME }} dlaas ${{ env.SNAPSHOT_NAME }}"
+        echo $CMD
+        $CMD
       shell: bash
       continue-on-error: true
-      env:
-        SNAPSHOT_NAME: ${{ env.SNAPSHOT_NAME }}
-
 
     - name: Sync Updated Aptly Database to S3
       run: |
