@@ -210,20 +210,118 @@ jobs:
       - name: Set Repository Name to Organization Name
         run: |
           echo "REPO_NAME=$(echo ${{ github.repository }} | cut -d'/' -f1)" >> $GITHUB_ENV
-      
-      - name: Ensure Aptly Repo
-        uses: ./.github/actions/ensure-aptly-repo
-        with:
-          REPO_NAME: ${{ env.REPO_NAME }}
-          DISTRIBUTION_NAME: 'dig-linux-x64-deb'
-          S3_PATH: ${{ secrets.APTLY_S3_PATH }}
-          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          AWS_REGION: us-east-1
-          S3_BUCKET: dlass-repo
-          GPG_KEY_ID: ${{ secrets.GPG_KEY_ID }}
+          echo "DISTRIBUTION_NAME=dig-linux-x64-deb" >> $GITHUB_ENV
+          echo "S3_BUCKET=dlass-repo" >> $GITHUB_ENV
+
+      - name: Setup Aptly, AWS CLI
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y aptly awscli gnupg
+          aws configure set default.region us-east-1
+          aws configure set aws_access_key_id ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws configure set aws_secret_access_key ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        shell: bash
+    
+      - name: Pull Aptly Config from S3
+        run: |
+          aws s3 cp ${{ secrets.APTLY_S3_PATH }}${{ env.REPO_NAME }}.aptly.conf ~/.aptly.conf || echo "No existing Aptly config found in S3, generating new config."
+        shell: bash
+  
+      - name: Generate Default Aptly Config
+        run: |
+          if [ ! -f ~/.aptly.conf ]; then
+            cat > ~/.aptly.conf <<EOF
+            {
+              "rootDir": "\$HOME/.aptly",
+              "downloadConcurrency": 4,
+              "downloadSpeedLimit": 0,
+              "architectures": [],
+              "dependencyFollowSuggests": false,
+              "dependencyFollowRecommends": false,
+              "dependencyFollowAllVariants": false,
+              "dependencyFollowSource": false,
+              "gpgDisableSign": false,
+              "gpgDisableVerify": false,
+              "downloadSourcePackages": false,
+              "ppaDistributorID": "ubuntu",
+              "ppaCodename": "",
+              "S3PublishEndpoints": {
+                "${{ env.S3_BUCKET }}": {
+                  "region": "${{ secrets.AWS_REGION }}",
+                  "bucket": "${{ env.S3_BUCKET }}",
+                  "endpoint": "s3.amazonaws.com",
+                  "accessKeyID": "${{ secrets.AWS_ACCESS_KEY_ID }}",
+                  "secretAccessKey": "${{ secrets.AWS_SECRET_ACCESS_KEY }}"
+                }
+              }
+            }
+            EOF
+          fi
+        shell: bash
+  
+      - name: Import GPG Key
+        env:
           GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
-          GPG_PRIVATE_KEY: ${{ secrets.GPG_PRIVATE_KEY }}
+        run: |
+          echo "${{ secrets.GPG_PRIVATE_KEY }}" | gpg --batch --yes --pinentry-mode loopback --import
+        shell: bash
+  
+      - name: Sync Aptly Database from S3
+        run: |
+          aws s3 sync ${{ secrets.APTLY_S3_PATH }} ~/.aptly/ || echo "No existing Aptly database found in S3, proceeding without error."
+        shell: bash
+  
+      - name: Create New Aptly Repository
+        run: |
+          aptly repo create "${{ secrets.REPO_NAME }}"
+        shell: bash
+        continue-on-error: true
+  
+      - name: Download Linux x64 Deb artifact
+        uses: actions/download-artifact@v3
+        with:
+          name: ${{ env.DISTRIBUTION_NAME }}
+          path: ${{ env.DISTRIBUTION_NAME }}
+  
+      - name: Add .deb Packages to Repository
+        run: |
+          aptly repo add ${{ env.DISTRIBUTION_NAME }} ${{ env.DISTRIBUTION_NAME }}/*.deb
+        shell: bash
+  
+      - name: Snapshot and Publish
+        run: |
+          # Generate a unique snapshot name based on the current date and time
+          SNAPSHOT_NAME="snapshot-$(date +%Y%m%d%H%M%S)"
+          echo "Creating snapshot with name: $SNAPSHOT_NAME"
+          aptly snapshot create $SNAPSHOT_NAME from repo ${{ env.REPO_NAME }}
+          
+          # Make SNAPSHOT_NAME available to subsequent commands
+          echo "SNAPSHOT_NAME=${SNAPSHOT_NAME}" >> "$GITHUB_ENV"
+          
+          # Attempt to publish the new snapshot
+          PUBLISH_CMD="aptly publish snapshot -distribution=${{ env.DISTRIBUTION_NAME }} -gpg-key='${{ secrets.GPG_KEY_ID }}' $SNAPSHOT_NAME ${{ secrets.APTLY_S3_PATH }}:${{ env.REPO_NAME }}"
+          echo "Executing: $PUBLISH_CMD"
+          if $PUBLISH_CMD; then
+            echo "Snapshot published successfully."
+          else
+            echo "Publish failed, attempting to update existing publication..."
+            # If the publish command fails, attempt to switch the existing publication to the new snapshot
+            UPDATE_CMD="aptly publish switch ${{ secrets.DISTRIBUTION_NAME }} dlaas $SNAPSHOT_NAME"
+            echo "Executing: $UPDATE_CMD"
+            $UPDATE_CMD
+          fi
+        shell: bash
+        continue-on-error: true
+  
+      - name: Sync Updated Aptly Database to S3
+        run: |
+          aws s3 sync ~/.aptly/ ${{ secrets.APTLY_S3_PATH }}
+        shell: bash
+  
+      - name: Upload Aptly Config to S3
+        run: |
+          aws s3 cp ~/.aptly.conf ${{ secrets.APTLY_S3_PATH }}${{ secrets.REPO_NAME }}.aptly.conf
+        shell: bash
     
   release:
     runs-on: ubuntu-latest
