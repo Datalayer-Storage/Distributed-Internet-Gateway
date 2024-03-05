@@ -241,7 +241,7 @@ jobs:
   
       - name: Create New Aptly Repository
         run: |
-          aptly repo create "${{ secrets.REPO_NAME }}"
+          aptly repo create "${{ env.REPO_NAME }}"
         shell: bash
         continue-on-error: true
   
@@ -253,7 +253,7 @@ jobs:
   
       - name: Add .deb Packages to Repository
         run: |
-          aptly repo add ${{ secrets.REPO_NAME }} ${{ env.DISTRIBUTION_NAME }}/*.deb
+          aptly repo add ${{ env.REPO_NAME }} ${{ env.DISTRIBUTION_NAME }}/*.deb
         shell: bash
   
       - name: Snapshot and Publish
@@ -288,7 +288,7 @@ jobs:
   
       - name: Upload Aptly Config to S3
         run: |
-          aws s3 cp ~/.aptly.conf ${{ secrets.APTLY_S3_PATH }}${{ secrets.REPO_NAME }}.aptly.conf
+          aws s3 cp ~/.aptly.conf ${{ secrets.APTLY_S3_PATH }}${{ env.REPO_NAME }}.aptly.conf
         shell: bash
     
   release:
