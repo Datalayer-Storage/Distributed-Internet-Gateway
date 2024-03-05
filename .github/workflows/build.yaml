@@ -229,6 +229,7 @@ jobs:
   
       - name: Generate Default Aptly Config
         run: |
+          if [ ! -f ~/.aptly.conf ]; then
             cat > ~/.aptly.conf <<'EOF'
             {
               "rootDir": "$HOME/.aptly",
@@ -255,12 +256,16 @@ jobs:
               }
             }
             EOF
+          else
+            echo "File exists: ~/.aptly.conf"
+          fi
         shell: bash
         env:
           S3_BUCKET: ${{ env.S3_BUCKET }}
           AWS_REGION: ${{ secrets.AWS_REGION }}
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      
   
       - name: Import GPG Key
         env:
@@ -288,7 +293,7 @@ jobs:
   
       - name: Add .deb Packages to Repository
         run: |
-          aptly repo add ${{ env.DISTRIBUTION_NAME }} ${{ env.DISTRIBUTION_NAME }}/*.deb
+          aptly repo add ${{ secrets.REPO_NAME }} ${{ env.DISTRIBUTION_NAME }}/*.deb
         shell: bash
   
       - name: Snapshot and Publish
