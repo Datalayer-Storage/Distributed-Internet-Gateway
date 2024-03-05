@@ -4,6 +4,9 @@ inputs:
   REPO_NAME:
     required: true
     description: Name of Aptly Repo
+  DISTRIBUTION_NAME:
+    required: true
+    description: Name of Aptly Distribution
   S3_PATH:
     required: true
     description: S3 path to aptly config folder
@@ -19,6 +22,15 @@ inputs:
   S3_BUCKET:
     required: true
     description: S3 bucket for Aptly
+  GPG_KEY_ID:
+    required: true
+    description: GPG Key ID
+  GPG_PASSPHRASE:
+    required: true
+    description: GPG Passphrase
+  GPG_PRIVATE_KEY:
+    required: true
+    description: GPG Private Key
 
 runs:
   using: 'composite'
@@ -26,7 +38,7 @@ runs:
     - name: Setup Aptly, AWS CLI
       run: |
         sudo apt-get update
-        sudo apt-get install -y aptly awscli
+        sudo apt-get install -y aptly awscli gnupg
         aws configure set default.region ${{ inputs.AWS_REGION }}
         aws configure set aws_access_key_id ${{ inputs.AWS_ACCESS_KEY_ID }}
         aws configure set aws_secret_access_key ${{ inputs.AWS_SECRET_ACCESS_KEY }}
@@ -69,7 +81,11 @@ runs:
         fi
       shell: bash
 
-
+    - name: Import GPG Key
+      env:
+        GPG_PASSPHRASE: ${{ inputs.GPG_PASSPHRASE }}
+      run: |
+        echo "${{ inputs.GPG_PRIVATE_KEY }}" | gpg --batch --yes --pinentry-mode loopback --import
 
     - name: Sync Aptly Database from S3
       run: |
@@ -79,6 +95,38 @@ runs:
     - name: Create New Aptly Repository
       run: |
         aptly repo create "${{ inputs.REPO_NAME }}"
+      shell: bash
+      continue-on-error: true
+
+    - name: Download Linux x64 Deb artifact
+      uses: actions/download-artifact@v3
+      with:
+        name: dig-linux-x64-deb
+        path: artifacts
+
+    - name: Add .deb Packages to Repository
+      run: |
+        aptly repo add ${{ inputs.DISTRIBUTION_NAME }} artifacts/*.deb
+
+    - name: Create Snapshot
+      run: |
+        SNAPSHOT_NAME="snapshot-$(date +%Y%m%d%H%M%S)"
+        aptly snapshot create $SNAPSHOT_NAME from repo ${{ inputs.REPO_NAME }}
+        echo "SNAPSHOT_NAME=${SNAPSHOT_NAME}" >> "$GITHUB_ENV"
+      shell: bash
+
+    - name: Publish New Snapshot
+      run: |
+        aptly publish snapshot -distribution=${{ inputs.DISTRIBUTION_NAME }} -gpg-key="${{ inputs.GPG_KEY_ID }}" $SNAPSHOT_NAME ${{ inputs.S3_BUCKET }}:${{ inputs.REPO_NAME }}
+      shell: bash
+      continue-on-error: true
+
+    - name: Update Existing Publication
+      if: ${{ failure() }}  # This step runs only if the previous step failed
+      run: |
+        aptly publish switch ${DISTRIBUTION} dlaas $SNAPSHOT_NAME
+      env:
+        SNAPSHOT_NAME: ${{ needs.create-snapshot.outputs.SNAPSHOT_NAME }}
       shell: bash
       continue-on-error: true
 
