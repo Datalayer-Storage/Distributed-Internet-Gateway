@@ -280,7 +280,7 @@ jobs:
           else
             echo "Publish failed, attempting to update existing publication..."
             # If the publish command fails, attempt to switch the existing publication to the new snapshot
-            UPDATE_CMD="aptly publish switch ${{ secrets.DISTRIBUTION_NAME }} dlaas $SNAPSHOT_NAME"
+            UPDATE_CMD="aptly publish switch ${{ secrets.DISTRIBUTION_NAME }} dlaas-repo $SNAPSHOT_NAME"
             echo "Executing: $UPDATE_CMD"
             $UPDATE_CMD
           fi
