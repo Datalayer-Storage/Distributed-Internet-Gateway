@@ -3,10 +3,10 @@ name: Build Binaries
 on:
   push:
     tags:
-      - '**'
+      - "**"
   pull_request:
     branches:
-      - '**'
+      - "**"
 
 concurrency:
   group: ${{ github.ref }}-${{ github.workflow }}-${{ github.event_name }}
@@ -46,7 +46,7 @@ jobs:
       - name: Install .NET SDK 8.0
         uses: actions/setup-dotnet@v2
         with:
-          dotnet-version: '8.0.x'
+          dotnet-version: "8.0.x"
 
       - name: Build Projects
         run: ${{ github.workspace }}\publish.ps1 ${{ matrix.runtime }}
@@ -62,14 +62,14 @@ jobs:
           SM_API_KEY: ${{ secrets.SM_API_KEY }}
           SM_CLIENT_CERT_PASSWORD: ${{ secrets.SM_CLIENT_CERT_PASSWORD }}
           SM_CODE_SIGNING_CERT_SHA1_HASH: ${{ secrets.SM_CODE_SIGNING_CERT_SHA1_HASH }}
-                
+
       - name: Download and Bundle Server Coin Binary
         uses: ./.github/actions/download-server-coin
         with:
           runtime: ${{matrix.runtime}}
           path: publish/standalone/${{matrix.runtime}}
           GH_ACCESS_TOKEN: ${{ secrets.GH_ACCESS_TOKEN }}
-      
+
       - name: Copy License
         run: |
           Copy-Item -Path "${env:GITHUB_WORKSPACE}\COPYING" -Destination "${env:GITHUB_WORKSPACE}\publish\standalone\${{matrix.runtime}}"
@@ -86,7 +86,7 @@ jobs:
     runs-on: windows-2019
     needs:
       - build
-    
+
     strategy:
       matrix:
         include:
@@ -136,7 +136,7 @@ jobs:
         with:
           name: ${{matrix.artifact-name}}-msi
           path: publish/Distributed-Internet-Gateway-${{matrix.runtime}}.msi
-        
+
   debs:
     name: Build ${{matrix.artifact-name}} deb
     runs-on: ubuntu-latest
@@ -176,7 +176,7 @@ jobs:
         env:
           VERSION: ${{ steps.tag-name.outputs.TAGNAME }}
           PLATFORM: ${{ matrix.platform }}
-          DPKG_DEB_COMPRESSOR: gzip  # Ensure gzip compression for the control tarball
+          DPKG_DEB_COMPRESSOR: gzip # Ensure gzip compression for the control tarball
         run: |
           pip install j2cli
           CLI_DEB_BASE="${{matrix.pkg-name}}_${{ steps.tag-name.outputs.TAGNAME }}-1_${PLATFORM}"
@@ -202,11 +202,11 @@ jobs:
   publish_apt:
     runs-on: ubuntu-latest
     needs: [build, debs]
-  
+
     steps:
       - uses: actions/checkout@v2
         name: Checkout code
-    
+
       - name: Set Repository Name to Organization Name
         run: |
           echo "REPO_NAME=$(echo ${{ github.repository }} | cut -d'/' -f1)" >> $GITHUB_ENV
@@ -221,7 +221,7 @@ jobs:
           aws configure set aws_access_key_id ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws configure set aws_secret_access_key ${{ secrets.AWS_SECRET_ACCESS_KEY }}
         shell: bash
-    
+
       - name: Pull Aptly Config from S3
         run: |
           aws s3 cp ${{ secrets.APTLY_S3_PATH }}.aptly.conf ~/.aptly.conf || echo "No existing Aptly config found in S3, generating new config."
@@ -239,64 +239,53 @@ jobs:
         run: |
           echo "${{ secrets.GPG_PRIVATE_KEY }}" | gpg --batch --yes --pinentry-mode loopback --import
         shell: bash
-  
+
       - name: Sync Aptly Database from S3
         run: |
           aws s3 sync ${{ secrets.APTLY_S3_PATH }} ~/.aptly/ || echo "No existing Aptly database found in S3, proceeding without error."
         shell: bash
-  
+
       - name: Create New Aptly Repository
         run: |
           aptly repo create "${{ env.REPO_NAME }}"
         shell: bash
         continue-on-error: true
-  
+
       - name: Download Linux x64 Deb artifact
         uses: actions/download-artifact@v3
         with:
           name: ${{ env.DISTRIBUTION_NAME }}
           path: ${{ env.DISTRIBUTION_NAME }}
-  
+
       - name: Add .deb Packages to Repository
         run: |
           aptly repo add ${{ env.REPO_NAME }} ${{ env.DISTRIBUTION_NAME }}/*.deb
         shell: bash
-  
+
       - name: Snapshot and Publish
         run: |
           # Generate a unique snapshot name based on the current date and time
           SNAPSHOT_NAME="snapshot-$(date +%Y%m%d%H%M%S)"
           echo "Creating snapshot with name: $SNAPSHOT_NAME"
           aptly snapshot create $SNAPSHOT_NAME from repo ${{ env.REPO_NAME }}
-          
+
           # Make SNAPSHOT_NAME available to subsequent commands
           echo "SNAPSHOT_NAME=${SNAPSHOT_NAME}" >> "$GITHUB_ENV"
-          
-          # Attempt to publish the new snapshot
-          PUBLISH_CMD="aptly publish repo -distribution=${{ env.DISTRIBUTION_NAME }} -component='main' ${{ env.REPO_NAME }} s3:${{ env.S3_BUCKET }}:"
-          echo "Executing: $PUBLISH_CMD"
-          if $PUBLISH_CMD; then
-            echo "Snapshot published successfully."
-          else
-            echo "Publish failed, attempting to update existing publication..."
-            # If the publish command fails, attempt to switch the existing publication to the new snapshot
-            UPDATE_CMD="aptly publish switch ${{ secrets.DISTRIBUTION_NAME }} dlaas-repo $SNAPSHOT_NAME"
-            echo "Executing: $UPDATE_CMD"
-            $UPDATE_CMD
-          fi
+
+          aptly publish switch --batch=true --gpg-key=${{ secrets.GPG_KEY_ID }} --passphrase=${{ secrets.GPG_PASSPHRASE }} stable s3:${{ env.S3_BUCKET }}:${{ env.DISTRIBUTION_NAME }}/debian $SNAPSHOT_NAME
         shell: bash
         continue-on-error: true
-  
+
       - name: Sync Updated Aptly Database to S3
         run: |
           aws s3 sync ~/.aptly/ ${{ secrets.APTLY_S3_PATH }}
         shell: bash
-  
+
       - name: Upload Aptly Config to S3
         run: |
           aws s3 cp ~/.aptly.conf ${{ secrets.APTLY_S3_PATH }}.aptly.conf
         shell: bash
-    
+
   release:
     runs-on: ubuntu-latest
     if: startsWith(github.ref, 'refs/tags/')
@@ -323,13 +312,12 @@ jobs:
         with:
           name: dig-linux-x64
           path: dig-linux-x64
-        
+
       - name: Download Linux arm64 deb
         uses: actions/download-artifact@v3
         with:
           name: dig-linux-arm64
           path: dig-linux-arm64
-
 
       - name: Download Linux x64 Deb artifacts
         uses: actions/download-artifact@v3
@@ -347,7 +335,7 @@ jobs:
         id: tag-name
         run: |
           echo "TAGNAME=$(echo $GITHUB_REF | cut -d / -f 3)" >>$GITHUB_OUTPUT
-      
+
       - name: Create zips
         run: |
           zip -r dig-win-x64-${{ steps.tag-name.outputs.TAGNAME }}.zip dig-win-x64
@@ -356,7 +344,7 @@ jobs:
           mv dig-win-x64-msi/Distributed-Internet-Gateway-win-x64.msi dig-win-x64-${{ steps.tag-name.outputs.TAGNAME }}.msi
           mv dig-linux-x64-deb/*.deb dig-linux-x64-${{ steps.tag-name.outputs.TAGNAME }}.deb
           mv dig-linux-arm64-deb/*.deb dig-linux-arm64-${{ steps.tag-name.outputs.TAGNAME }}.deb
-        
+
       - name: Release
         uses: softprops/action-gh-release@v0.1.15
         with:
