@@ -13,6 +13,11 @@ public class StatusController(DataLayerProxy dataLayer, ILogger<StatusController
     [HttpGet("{storeId}")]
     public async Task<IActionResult> GetStatusAsync(string storeId, CancellationToken cancellationToken)
     {
+        if (storeId is null || storeId.Length != 64)
+        {
+            return NotFound();
+        }
+
         try
         {
             var status = await _dataLayer.GetSyncStatus(storeId, cancellationToken);

@@ -1,27 +1,191 @@
-# Distributed-Internet-Gateway
-
-Chia expressed as a webserver
-
-[![.NET](https://github.com/Datalayer-Storage/Decentralized-Internet-Gateway/actions/workflows/dotnet.yml/badge.svg)](https://github.com/Datalayer-Storage/Decentralized-Internet-Gateway/actions/workflows/dotnet.yml)
-[![CodeQL](https://github.com/Datalayer-Storage/Decentralized-Internet-Gateway/actions/workflows/github-code-scanning/codeql/badge.svg)](https://github.com/Datalayer-Storage/Decentralized-Internet-Gateway/actions/workflows/github-code-scanning/codeql)
+# Distributed-Internet-Gateway (DIG) Comprehensive Guide
 
 ## Introduction
 
-DIG is a web 2 gateway for content hosted on the [chia datalayer](https://www.chia.net/datalayer/). Each DIG node will soon(tm) become part of a mesh network of content hosts, that work together to create a fully decentralized, p2p, and verifiable content delivery network. 
+DIG (Distributed-Internet-Gateway) serves as a Web 2.0 gateway to content hosted on the Chia datalayer, aiming to integrate into a decentralized, peer-to-peer (P2P), and verifiable content delivery network (CDN). It provides web interface access to the Chia datalayer, facilitates integration into a mesh network for decentralized content hosting, and offers cross-platform compatibility.
+
+## Prerequisites
+
+1. **Chia Node**: Running a DIG node requires a full Chia Node, including its wallet and datalayer. Understanding Chia node operations is recommended.
+2. **Dedicated Server**: For reliability and optimal performance, running a DIG node on a dedicated, always-on server is recommended.
+3. **.NET 8 SDK**: Necessary for building DIG from source.
 
 ## Getting Started
 
-Today you can host a DIG node and mirror data layer stores of your choosing. The following assumes you have a passing familiairty with [running chia](https://docs.chia.net/introduction/). DIG allows access to the dtata layer on the internet, but [chia data layer](https://docs.chia.net/guides/datalayer-user-guide/) stores and synchornizes the data. You will need a chia node with the `data_layer` service running. `data_layer_http` is not required but encouraged. Built on dotnet, it is fully cross platform and can run in the cloud all the way to a pi.
+### Download
 
-### Build
+Latest DIG releases are available on the GitHub releases page: [Download DIG from GitHub Releases](https://github.com/Datalayer-Storage/Distributed-Internet-Gateway/releases)
 
-#### Prequisites
+### Supported Binaries
 
-The [dotnet 8 sdk](https://dotnet.microsoft.com/en-us/download/dotnet/8.0) for you platform is required for building. 
+- Linux (Ubuntu): `dig-linux-arm64-<tag>.deb`, `dig-linux-arm64-<tag>.zip`, `dig-linux-x64-<tag>.deb`, `dig-linux-x64-<tag>.zip`
+- Windows: `dig-win-x64-<tag>.msi`, `dig-win-x64-<tag>.zip`
+- OSX: Not Available Yet, Maybe one day
 
-### Install
+### Installation
 
-### Run
-___
+#### Windows
 
-_chia and its logo are the registered trademark or trademark of Chia Network, Inc. in the United States and worldwide._
+- **MSI**: The `.msi` installer will set up DIG as a Windows service.
+
+#### Linux
+
+- **DEB**: The `.deb` package will install DIG and include a templated `systemctl dig@.service`.
+
+### Systemctl Usage for Linux
+
+To enable and start the `dig@<user>.service` for a specific user (replace `<user>` with the actual username):
+Following these steps will keep the node running in the background.
+
+```bash
+# Enable the service
+sudo systemctl enable dig@<user>.service
+
+# Reload systemctl to recognize the new service
+sudo systemctl daemon-reload
+
+# Start the service
+sudo systemctl start dig@<user>.service
+```
+
+# DIG CLI Commands Guide
+
+This guide provides a comprehensive overview of the Distributed-Internet-Gateway (DIG) Command Line Interface (CLI). DIG CLI is a tool for managing the Chia Data Layer Distributed Internet Gateway, enabling you to control server coins, hosts, datalayer.place configurations, local gateway server operations, and store subscriptions/mirrors directly from the command line.
+
+## General Syntax
+
+The general syntax for using the DIG CLI commands is as follows:
+
+```bash
+dig [command] [subcommand] [options] [arguments]
+```
+
+## Command Overview
+
+### 1. Coins
+
+Manage server coins associated with your DIG node.
+
+#### Commands
+
+- **Add**: Adds a new server coin.
+  ```bash
+  dig coins add [options]
+  ```
+- **Delete**: Deletes an existing server coin.
+  ```bash
+  dig coins delete [options]
+  ```
+- **List**: Lists all server coins associated with the node.
+  ```bash
+  dig coins list [options]
+  ```
+
+### 2. Host
+
+Configure and manage host settings for the DIG node.
+
+#### Commands
+
+- **Check**: Verifies the accessibility of a specified mirror host.
+  ```bash
+  dig host check [host] [options]
+  ```
+- **Check Chia**: Checks the accessibility to Chia network endpoints.
+  ```bash
+  dig host check-chia [options]
+  ```
+- **Show Config**: Displays the current configuration of the host.
+  ```bash
+  dig host show-config [options]
+  ```
+
+### 3. Place
+
+Manage datalayer.place configurations, allowing for seamless integration with the Chia datalayer.
+
+#### Commands
+
+- **Login**: Logs into datalayer.place.
+  ```bash
+  dig place login [options]
+  ```
+- **Logout**: Logs out of datalayer.place.
+  ```bash
+  dig place logout [options]
+  ```
+- **Show**: Displays details about the current datalayer.place configuration.
+  ```bash
+  dig place show [options]
+  ```
+- **Update**: Updates the IP address for your datalayer.place proxy.
+  ```bash
+  dig place update [options]
+  ```
+
+### 4. Server
+
+Control the local gateway server's operations, such as starting, stopping, and checking the status.
+
+#### Commands
+
+- **Check**: Checks the current status of the DIG server.
+  ```bash
+  dig server check [options]
+  ```
+- **Start**: Starts the DIG server in a new process.
+  ```bash
+  dig server start [options]
+  ```
+- **Stop**: Stops the DIG server.
+  ```bash
+  dig server stop [options]
+  ```
+- **Restart**: Restarts the DIG server.
+  ```bash
+  dig server restart [options]
+  ```
+
+### 5. Stores
+
+Manage subscriptions to stores and mirrors, including adding, removing, and listing stores.
+
+#### Commands
+
+- **Add**: Subscribes to a store and creates a server coin.
+  ```bash
+  dig stores add [options]
+  ```
+- **Remove**: Unsubscribes from a store and deletes its associated coin.
+  ```bash
+  dig stores remove [options]
+  ```
+- **Unsubscribe All**: Unsubscribes from all stores and deletes their coins.
+  ```bash
+  dig stores unsubscribe-all [options]
+  ```
+- **Unmirror All**: Removes all mirrors from subscribed stores.
+  ```bash
+  dig stores unmirror-all [options]
+  ```
+- **List**: Lists all subscribed stores, their mirrors, and associated coins.
+  ```bash
+  dig stores list [options]
+  ```
+- **Sync**: Synchronizes the DIG node with the data layer.
+  ```bash
+  dig stores sync [options]
+  ```
+- **Check Fee**: Checks the fee for adding a new mirror or coin.
+  ```bash
+  dig stores check-fee [options]
+  ```
+
+## Conclusion
+
+Hosting a DIG node and mastering the DIG CLI commands contributes to a more decentralized, resilient, and user-centric internet, providing a bridge between traditional web services and the decentralized Chia datalayer.
+
+### Note
+
+- Chia and its logo are trademarks of Chia Network, Inc., in the U.S. and globally.
+- Ensure a stable internet connection and adequate resources to effectively support both a Chia node and DIG.
