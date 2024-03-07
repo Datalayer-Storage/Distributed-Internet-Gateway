@@ -10,6 +10,7 @@ public class GatewayService
 {
     private readonly DataLayerProxy _dataLayer;
     private readonly ChiaConfig _chiaConfig;
+    private readonly ChiaService _chiaService;
     private readonly StoreRegistryService _storeRegistryService;
     private readonly IMemoryCache _memoryCache;
     private readonly ILogger<GatewayService> _logger;
@@ -18,6 +19,7 @@ public class GatewayService
     private readonly StoreUpdateNotifierService _storeUpdateNotifierService;
 
     public GatewayService(DataLayerProxy dataLayer,
+                            ChiaService chiaService,
                             ChiaConfig chiaConfig,
                             AppStorage appStorage,
                             StoreRegistryService storeRegistryService,
@@ -26,21 +28,31 @@ public class GatewayService
                             IConfiguration configuration)
     {
         _dataLayer = dataLayer;
+        _chiaService = chiaService;
         _chiaConfig = chiaConfig;
         _storeRegistryService = storeRegistryService;
         _memoryCache = memoryCache;
         _logger = logger;
         _configuration = configuration;
         _fileCache = new FileCacheService(Path.Combine(appStorage.UserSettingsFolder, "store-cache"), _logger);
-    
+
         _storeUpdateNotifierService = new StoreUpdateNotifierService(dataLayer, memoryCache, logger, _fileCache);
         _storeUpdateNotifierService.StartWatcher(storeId => InvalidateStore(storeId), TimeSpan.FromMinutes(5), CancellationToken.None);
     }
 
-    public WellKnown GetWellKnown(string baseUri) => new(xch_address: _configuration.GetValue("dig:XchAddress", "")!,
-                                                            known_stores_endpoint: $"{baseUri}/.well-known/known_stores",
-                                                            donation_address: _configuration.GetValue("dig:DonationAddress", "")!,
-                                                            server_version: GetAssemblyVersion());
+    public async Task<WellKnown> GetWellKnown(string baseUri, CancellationToken stoppingToken)
+    {
+        var xch_address = await _memoryCache.GetOrCreateAsync("well_known.xch_address", async entry =>
+        {
+            entry.SlidingExpiration = TimeSpan.FromDays(1);
+            return await _chiaService.ResolveAddress(_configuration.GetValue("dig:XchAddress", ""), stoppingToken);
+        }) ?? "";
+
+        return new WellKnown(xch_address: xch_address,
+                        known_stores_endpoint: $"{baseUri}/.well-known/known_stores",
+                        donation_address: "xch1ctvns8zcetux57xj4hjsh5hkr40c4ascvc5uaf7gvncc3dydj9eqxenmqt", // intentionally hardcoded
+                        server_version: GetAssemblyVersion());
+    }
 
     public bool HaveDataLayerConfig() => _chiaConfig.GetEndpoint("data_layer") is not null;
 
@@ -57,20 +69,21 @@ public class GatewayService
         return Task.FromResult(true);
     }
 
-    public async Task<IEnumerable<string>> GetKnownStores()
+    public async Task<IEnumerable<string>> GetKnownStores(CancellationToken cancellationToken)
     {
         return await _memoryCache.GetOrCreateAsync("known-stores.cache", async entry =>
         {
             using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(_configuration.GetValue("dig:RpcTimeoutSeconds", 30)));
+            using var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(cts.Token, cancellationToken);
             entry.SlidingExpiration = TimeSpan.FromMinutes(15);
 
-            return await _dataLayer.Subscriptions(cts.Token);
+            return await _dataLayer.Subscriptions(linkedCts.Token);
         }) ?? [];
     }
 
-    public async Task<IEnumerable<Store>> GetKnownStoresWithNames()
+    public async Task<IEnumerable<Store>> GetKnownStoresWithNames(CancellationToken cancellationToken)
     {
-        var stores = await GetKnownStores();
+        var stores = await GetKnownStores(cancellationToken);
 
         return stores.Select(_storeRegistryService.GetStore);
     }

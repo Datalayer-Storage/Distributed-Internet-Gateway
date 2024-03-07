@@ -7,10 +7,10 @@ public class ErrorController(GatewayService gatewayService) : Controller
     private readonly GatewayService _gatewayService = gatewayService;
 
     [HttpGet("/error")]
-    public IActionResult Error(int? statusCode = null)
+    public async Task<IActionResult> ErrorAsync(int? statusCode = null, CancellationToken cancellationToken = default)
     {
         var request = HttpContext.Request;
-        ViewBag.WellKnown = _gatewayService.GetWellKnown($"{request.Scheme}://{request.Host}{request.PathBase}");
+        ViewBag.WellKnown = await _gatewayService.GetWellKnown($"{request.Scheme}://{request.Host}{request.PathBase}", cancellationToken);
         if (statusCode.HasValue)
         {
             HttpContext.Response.StatusCode = statusCode.Value;

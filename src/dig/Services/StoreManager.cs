@@ -1,6 +1,6 @@
 using chia.dotnet;
-namespace dig;
 
+namespace dig;
 
 internal class StoreManager(DataLayerProxy dataLayer,
                         ILogger<StoreManager> logger)
@@ -27,6 +27,8 @@ internal class StoreManager(DataLayerProxy dataLayer,
         var subscriptions = await _dataLayer.Subscriptions(token);
         foreach (var subscription in subscriptions)
         {
+            _logger.LogInformation("Getting mirrors for {storeId}", subscription);
+
             var mirrors = await _dataLayer.GetMirrors(subscription, token);
 
             foreach (var mirror in mirrors.Where(m => m.Ours))

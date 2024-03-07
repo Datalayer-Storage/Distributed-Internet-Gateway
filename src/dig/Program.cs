@@ -27,19 +27,17 @@ builder.Services.AddSingleton<StoreManager>()
     .AddSingleton<ServerCoinService>()
     .AddSingleton((provider) => appStorage)
     .AddHttpClient()
-    .AddSingleton(provider => new DataLayerProxy(provider.GetRequiredKeyedService<IRpcClient>("data_layer"), "dig.server"))
-    .AddSingleton(provider => new FullNodeProxy(provider.GetRequiredKeyedService<IRpcClient>("full_node"), "dig.server"))
+    .RegisterChiaEndPoint<DataLayerProxy>("dig.server")
+    .RegisterChiaEndPoint<FullNodeProxy>("dig.server")
+    .RegisterChiaEndPoint<WalletProxy>("dig.server")
     .AddDataProtection()
     .SetApplicationName("distributed-internet-gateway")
-    .SetDefaultKeyLifetime(TimeSpan.FromDays(180)); ;
+    .SetDefaultKeyLifetime(TimeSpan.FromDays(180));
 
 builder.Services.AddHttpClient("datalayer.storage", c =>
     {
         c.BaseAddress = new Uri(builder.Configuration.GetValue("dig:DataLayerStorageUri", "https://api.datalayer.storage")!);
     });
-
-builder.Services.AddRpcEndpoint("data_layer");
-builder.Services.AddRpcEndpoint("full_node");
 
 var host = builder.Build();
 

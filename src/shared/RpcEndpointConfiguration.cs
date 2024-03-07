@@ -1,13 +1,29 @@
 using System.Net.Security;
 using System.Security.Cryptography.X509Certificates;
 using chia.dotnet;
+
 namespace dig;
 
 internal static class RpcEndpointConfiguration
 {
+    public static IServiceCollection RegisterChiaEndPoint<T>(this IServiceCollection services, string applicationName) where T : ServiceProxy
+    {
+        var endpointName = typeof(T) == typeof(DataLayerProxy) ? "data_layer" :
+                           typeof(T) == typeof(FullNodeProxy) ? "full_node" :
+                           typeof(T) == typeof(WalletProxy) ? "wallet" :
+                           throw new InvalidOperationException("Unknown chia service type");
+
+        return services.AddRpcEndpoint(endpointName)
+            .AddSingleton(provider =>
+            {
+                var rpcClient = provider.GetRequiredKeyedService<IRpcClient>(endpointName);
+                return Activator.CreateInstance(typeof(T), rpcClient, applicationName) as T ?? throw new InvalidOperationException("Could not create service proxy");
+            });
+    }
+
     // this overrides the HttpHandler that chia.dotnet uses internally
     // and allows integration with aspnet core hosting and resilience providers
-    public static IHttpClientBuilder AddRpcEndpoint(this IServiceCollection services, string name)
+    private static IServiceCollection AddRpcEndpoint(this IServiceCollection services, string name)
     {
         // add a keyed singleton for the IRpcClient
         services.AddKeyedSingleton<IRpcClient>(name, (provider, key) =>
@@ -23,7 +39,7 @@ internal static class RpcEndpointConfiguration
 
         // register a named client with the IHttpFactory
         // and configure it to use a custom handler
-        return services.AddHttpClient(name, (provider, client) =>
+        _ = services.AddHttpClient(name, (provider, client) =>
         {
             var timeout = provider.GetRequiredService<IConfiguration>().GetValue("dig:RpcTimeoutSeconds", 60);
             var chiaConfig = provider.GetRequiredService<ChiaConfig>();
@@ -44,6 +60,8 @@ internal static class RpcEndpointConfiguration
                 socketHandler.SslOptions.ClientCertificates = endpoint.GetCert();
             }
         });
+
+        return services;
     }
 
     private static bool ValidateServerCertificate(object sender, X509Certificate? certificate, X509Chain? chain, SslPolicyErrors sslPolicyErrors)

@@ -59,33 +59,42 @@ public class ServerCoinService(ChiaConfig chiaConfig,
             throw new Exception($"Could not locate the server coin executable at {programPath}");
         }
 
-#warning server coin only works with chia_root local node
+        // here we pick up the full node and wallet endpoints from the already configured full node and wallet
+        var fullNode = _chiaConfig.GetEndpoint("full_node") ?? throw new Exception("Full node endpoint not found");
+        var wallet = _chiaConfig.GetEndpoint("wallet") ?? throw new Exception("Wallet endpoint not found");
 
-        // var fullNode = _chiaConfig.GetEndpoint("full_node") ?? throw new Exception("Full node endpoint not found");
-        // var wallet = _chiaConfig.GetEndpoint("wallet") ?? throw new Exception("Wallet endpoint not found");
+        if (fullNode.Uri.Host != wallet.Uri.Host)
+        {
+            throw new Exception("The full node and wallet must be on the same host for server coin to work.");
+        }
 
-        // args.Add("--fullNodeHost");
-        // args.Add(fullNode.Uri.Host);
+        // server_coin error if passed non-default ports
+
+        args.Add("--fullNodeHost");
+        args.Add(fullNode.Uri.Host);
         // args.Add("--fullNodePort");
         // args.Add(fullNode.Uri.Port.ToString());
 
-        // args.Add("--walletHost");
-        // args.Add(wallet.Uri.Host);
+        args.Add("--walletHost");
+        args.Add(wallet.Uri.Host);
         // args.Add("--walletPort");
         // args.Add(wallet.Uri.Port.ToString());
 
-        // var certDirectory = _configuration.GetValue("dig:ChiaCertDirectory", "");
-        // if (string.IsNullOrEmpty(certDirectory))
-        // {
-        //     certDirectory = Directory.GetParent(Path.GetDirectoryName(fullNode.KeyPath)!)?.ToString();
-        // }
+        var certificateFolderPath = _configuration.GetValue("dig:ChiaCertDirectory", "");
+        if (string.IsNullOrEmpty(certificateFolderPath))
+        {
+            certificateFolderPath = Directory.GetParent(Path.GetDirectoryName(fullNode.KeyPath)!)?.ToString();
+        }
 
-        // if (!Directory.Exists(certDirectory))
-        // {
-        //     throw new Exception($"Could not locate the chia cert directory at {certDirectory}");
-        // }
-        // args.Add("--certificateFolderPath");
-        // args.Add(certDirectory!);
+        if (!Directory.Exists(certificateFolderPath))
+        {
+            throw new Exception($"Could not locate the chia cert directory at {certificateFolderPath}");
+        }
+
+        args.Add("--certificateFolderPath");
+        args.Add(certificateFolderPath!);
+
+        var a = string.Join(" ", args);
 
         var p = new Process()
         {
