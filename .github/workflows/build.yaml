@@ -189,7 +189,7 @@ jobs:
           ls -la deb/$CLI_DEB_BASE/opt/${{matrix.pkg-name}}
           chmod +x deb/$CLI_DEB_BASE/opt/${{matrix.pkg-name}}/dig
           chmod +x deb/$CLI_DEB_BASE/opt/${{matrix.pkg-name}}/dig.server
-          ln -s ../../opt/${{matrix.pkg-name}}/dig.server "deb/$CLI_DEB_BASE/usr/bin/dig.server"
+          ln -s ../../opt/${{matrix.pkg-name}}/dig "deb/$CLI_DEB_BASE/usr/bin/dig"
           dpkg-deb --build --root-owner-group "deb/$CLI_DEB_BASE"
 
       - name: Upload deb
