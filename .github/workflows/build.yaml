@@ -286,6 +286,17 @@ jobs:
           aws s3 cp ~/.aptly.conf ${{ secrets.APTLY_S3_PATH }}.aptly.conf
         shell: bash
 
+      - name: Print Installation Instructions
+        run: |
+          echo "To install the package, add the repository to your sources:"
+          echo "echo 'deb [trusted=yes] https://$S3_BUCKET.s3.amazonaws.com/$DISTRIBUTION_NAME/debian stable main' | sudo tee /etc/apt/sources.list.d/$REPO_NAME.list"
+          echo "Then, update apt and install the package:"
+          echo "sudo apt-get update && sudo apt-get install <package-name>"
+        env:
+          S3_BUCKET: ${{ env.S3_BUCKET }}
+          DISTRIBUTION_NAME: ${{ env.DISTRIBUTION_NAME }}
+          REPO_NAME: ${{ env.REPO_NAME }}
+
   release:
     runs-on: ubuntu-latest
     if: startsWith(github.ref, 'refs/tags/')
