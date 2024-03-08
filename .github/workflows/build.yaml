@@ -210,7 +210,7 @@ jobs:
       - name: Set Repository Name to Organization Name
         run: |
           echo "REPO_NAME=$(echo ${{ github.repository }} | cut -d'/' -f1)" >> $GITHUB_ENV
-          echo "DISTRIBUTION_NAME=dig-linux-x64-deb" >> $GITHUB_ENV
+          echo "PROJECT_NAME=dig-linux-x64-deb" >> $GITHUB_ENV
           echo "S3_BUCKET=dlass-repo" >> $GITHUB_ENV
 
       - name: Setup Aptly, AWS CLI
@@ -247,32 +247,26 @@ jobs:
 
       - name: Create New Aptly Repository
         run: |
-          aptly repo create "${{ env.REPO_NAME }}"
+          aptly --config=aptly.conf repo create --distribution=stable --component=main ${{ env.PROJECT_NAME }}
         shell: bash
         continue-on-error: true
 
       - name: Download Linux x64 Deb artifact
         uses: actions/download-artifact@v3
         with:
-          name: ${{ env.DISTRIBUTION_NAME }}
-          path: ${{ env.DISTRIBUTION_NAME }}
+          name: ${{ env.PROJECT_NAME }}
+          path: ${{ env.PROJECT_NAME }}
 
       - name: Add .deb Packages to Repository
         run: |
-          aptly repo add ${{ env.REPO_NAME }} ${{ env.DISTRIBUTION_NAME }}/*.deb
+          aptly --config=aptly.conf repo add ${{ env.PROJECT_NAME }} ${{ env.PROJECT_NAME }}/*.deb
+          aptly --config=aptly.conf repo show --with-packages ${{ env.PROJECT_NAME }}
         shell: bash
 
       - name: Snapshot and Publish
         run: |
-          # Generate a unique snapshot name based on the current date and time
-          SNAPSHOT_NAME="snapshot-$(date +%Y%m%d%H%M%S)"
-          echo "Creating snapshot with name: $SNAPSHOT_NAME"
-          aptly snapshot create $SNAPSHOT_NAME from repo ${{ env.REPO_NAME }}
-
-          # Make SNAPSHOT_NAME available to subsequent commands
-          echo "SNAPSHOT_NAME=${SNAPSHOT_NAME}" >> "$GITHUB_ENV"
-
-          aptly publish switch --batch=true --gpg-key=${{ secrets.GPG_KEY_ID }} --passphrase=${{ secrets.GPG_PASSPHRASE }} stable s3:${{ env.S3_BUCKET }}:${{ env.DISTRIBUTION_NAME }}/debian $SNAPSHOT_NAME
+          aptly --config=aptly.conf snapshot create ${{ env.PROJECT_NAME }}-0.0.1 from repo ${{ env.PROJECT_NAME }}
+          aptly --config=aptly.conf publish snapshot --gpg-key=${{ secrets.GPG_KEY_ID }} --passphrase=${{ secrets.GPG_PASSPHRASE }} ${{ env.PROJECT_NAME }}-0.0.1  s3:${{ env.S3_BUCKET }}:${{ env.PROJECT_NAME }}/debian
         shell: bash
         continue-on-error: true
 

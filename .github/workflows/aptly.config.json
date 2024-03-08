@@ -1,0 +1,25 @@
+{
+    "rootDir": "$HOME/.aptly",
+    "downloadConcurrency": 4,
+    "downloadSpeedLimit": 0,
+    "architectures": [],
+    "dependencyFollowSuggests": false,
+    "dependencyFollowRecommends": false,
+    "dependencyFollowAllVariants": false,
+    "dependencyFollowSource": false,
+    "gpgDisableSign": false,
+    "gpgDisableVerify": false,
+    "downloadSourcePackages": false,
+    "ppaDistributorID": "ubuntu",
+    "ppaCodename": "",
+    "S3PublishEndpoints": {
+      "dlass-repo": {
+        "region": "us-east-1",
+        "bucket": "dlass-repo",
+        "endpoint": "s3.amazonaws.com",
+        "accessKeyID": "{{AWS_ACCESS}}",
+        "secretAccessKey": "{{AWS_ACCESS_SECRET}}"
+      }
+    }
+  }
+  
