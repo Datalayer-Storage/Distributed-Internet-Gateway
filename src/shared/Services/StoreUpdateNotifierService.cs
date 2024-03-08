@@ -94,7 +94,7 @@ public class StoreUpdateNotifierService(DataLayerProxy dataLayer,
                     await _fileCache.SetValueAsync(cacheKey, value, cancellationToken);
                 }
 
-                await Task.Delay(500, cancellationToken);
+                await Task.Delay(100, cancellationToken);
             }
         }
     }

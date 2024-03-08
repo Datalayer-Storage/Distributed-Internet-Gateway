@@ -1,13 +1,56 @@
+using EasyPipes;
+using Microsoft.Extensions.Caching.Memory;
+
 namespace dig.server;
 
-/// <summary>
-/// This service is responsible for managing the server's lifecycle.
-/// It is called by the server's host to check and stop the server.
-/// </summary>
-/// <param name="applicationLifetime"></param>
-internal class ServerService(IHostApplicationLifetime applicationLifetime) : IServer
+public class ServerService(IHostApplicationLifetime applicationLifetime,
+                                    IServiceProvider serviceProvider,
+                                    ILogger<ServerService> logger) : IHostedService, IServer
 {
     private readonly IHostApplicationLifetime _applicationLifetime = applicationLifetime;
+    private readonly IServiceProvider _serviceProvider = serviceProvider;
+    private readonly ILogger<ServerService> _logger = logger;
+
+    public async Task StartAsync(CancellationToken cancellationToken)
+    {
+        // start the IPC channel that the cli uses
+        var server = new Server("dig.server.ipc");
+        server.RegisterService<IServer>(this);
+        server.Start();
+
+        // start the store registry refresh
+        var registry = _serviceProvider.GetRequiredService<StoreRegistryService>();
+#pragma warning disable CA2016 // Forward the 'CancellationToken' parameter to methods
+        _ = Task.Run(() => registry.Refresh(cancellationToken), cancellationToken); // run this in the background
+#pragma warning restore CA2016 // Forward the 'CancellationToken' parameter to methods
+
+        // start the file cache services
+
+        // If the DIG node is just starting up, we want to clear the cache
+        // Because it could be super stale
+        var fileCacheService = _serviceProvider.GetRequiredService<FileCacheService>();
+        fileCacheService.InvalidateAllCache();
+
+        var memoryCache = _serviceProvider.GetRequiredService<IMemoryCache>();
+        var storeUpdateNotifierService = _serviceProvider.GetRequiredService<StoreUpdateNotifierService>();
+
+        // TODO remove asynchrony
+        storeUpdateNotifierService.StartWatcher(async (storeId) =>
+        {
+            fileCacheService.InvalidateStore(storeId, cacheKey =>
+            {
+                _logger.LogInformation("Removing {CacheKey} from memory cache", cacheKey);
+                memoryCache.Remove(cacheKey);
+                return Task.CompletedTask;
+            });
+
+            await Task.CompletedTask;
+        }, TimeSpan.FromMinutes(5), cancellationToken);
+
+        await Task.CompletedTask;
+    }
+
+    public Task StopAsync(CancellationToken cancellationToken) => Task.CompletedTask;
 
     public bool Ping() => true;
 

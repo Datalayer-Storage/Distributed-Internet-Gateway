@@ -13,10 +13,6 @@ public class FileCacheService
         {
             Directory.CreateDirectory(_cacheDirectory);
         }
-
-        // If the DIG node is just starting up, we want to clear the cache
-        // Because it could be super stale
-        InvalidateAllCache();
     }
 
     public async Task<string?> GetValueAsync(string key, CancellationToken token)
@@ -40,7 +36,7 @@ public class FileCacheService
     {
         if (Directory.Exists(_cacheDirectory))
         {
-            foreach (var file in Directory.GetFiles(_cacheDirectory, $"*"))
+            foreach (var file in Directory.GetFiles(_cacheDirectory, "*"))
             {
                 var sanitizedPath = file.SanitizePath(_cacheDirectory);
                 _logger.LogInformation("Deleting file {File}", sanitizedPath);

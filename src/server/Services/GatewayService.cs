@@ -6,19 +6,7 @@ using System.Text.Json;
 
 namespace dig.server;
 
-public class GatewayService
-{
-    private readonly DataLayerProxy _dataLayer;
-    private readonly ChiaConfig _chiaConfig;
-    private readonly ChiaService _chiaService;
-    private readonly StoreRegistryService _storeRegistryService;
-    private readonly IMemoryCache _memoryCache;
-    private readonly ILogger<GatewayService> _logger;
-    private readonly IConfiguration _configuration;
-    private readonly FileCacheService _fileCache;
-    private readonly StoreUpdateNotifierService _storeUpdateNotifierService;
-
-    public GatewayService(DataLayerProxy dataLayer,
+public class GatewayService(DataLayerProxy dataLayer,
                             ChiaService chiaService,
                             ChiaConfig chiaConfig,
                             StoreRegistryService storeRegistryService,
@@ -27,19 +15,16 @@ public class GatewayService
                             StoreUpdateNotifierService storeUpdateNotifierService,
                             ILogger<GatewayService> logger,
                             IConfiguration configuration)
-    {
-        _dataLayer = dataLayer;
-        _chiaService = chiaService;
-        _chiaConfig = chiaConfig;
-        _storeRegistryService = storeRegistryService;
-        _memoryCache = memoryCache;
-        _fileCache = fileCache;
-        _storeUpdateNotifierService = storeUpdateNotifierService;
-        _logger = logger;
-        _configuration = configuration;
-
-        _storeUpdateNotifierService.StartWatcher(InvalidateStore, TimeSpan.FromMinutes(5), CancellationToken.None);
-    }
+{
+    private readonly DataLayerProxy _dataLayer = dataLayer;
+    private readonly ChiaConfig _chiaConfig = chiaConfig;
+    private readonly ChiaService _chiaService = chiaService;
+    private readonly StoreRegistryService _storeRegistryService = storeRegistryService;
+    private readonly IMemoryCache _memoryCache = memoryCache;
+    private readonly ILogger<GatewayService> _logger = logger;
+    private readonly IConfiguration _configuration = configuration;
+    private readonly FileCacheService _fileCache = fileCache;
+    private readonly StoreUpdateNotifierService _storeUpdateNotifierService = storeUpdateNotifierService;
 
     public async Task<WellKnown> GetWellKnown(string baseUri, CancellationToken stoppingToken)
     {
@@ -58,17 +43,6 @@ public class GatewayService
     public bool HaveDataLayerConfig() => _chiaConfig.GetEndpoint("data_layer") is not null;
 
     private static string GetAssemblyVersion() => Assembly.GetExecutingAssembly().GetName().Version?.ToString() ?? "0.0.0.0";
-
-    public Task<bool> InvalidateStore(string storeId)
-    {
-        _fileCache.InvalidateStore(storeId, cacheKey =>
-        {
-            _logger.LogInformation("Removing {CacheKey} from memory cache", cacheKey);
-            _memoryCache.Remove(cacheKey);
-            return Task.CompletedTask;
-        });
-        return Task.FromResult(true);
-    }
 
     public async Task<IEnumerable<string>> GetKnownStores(CancellationToken cancellationToken)
     {
