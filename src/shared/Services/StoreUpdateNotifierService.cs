@@ -4,7 +4,7 @@ using Microsoft.Extensions.Caching.Memory;
 using System.Collections.Concurrent;
 using System.Diagnostics;
 
-namespace dig.server;
+namespace dig;
 
 public class StoreUpdateNotifierService(DataLayerProxy dataLayer,
                                         IMemoryCache memoryCache,

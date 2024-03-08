@@ -7,23 +7,27 @@ internal sealed class AddStoreCommand()
     [Option("s", "store", ArgumentHelpName = "STORE_ID", Description = "Store ID you want to create a server coin for.")]
     public string Store { get; init; } = string.Empty;
 
-    [Option("u", "url", ArgumentHelpName = "URL", Description = "Server url override. If not provided, the server will use the configured url.")]
-    public string? Url { get; init; }
-
     [Option("f", "fee", ArgumentHelpName = "MOJOS", Description = "Fee override.")]
     public ulong? Fee { get; init; }
 
     [Option("m", "mirror-reserve", Default = 300000001UL, ArgumentHelpName = "MOJOS", Description = "The amount to reserve with the mirror coin.")]
     public ulong? MirrorReserve { get; init; } = 300000001UL;
 
+    [Option("p", "precache", Description = "Precache the store's data.")]
+    public bool Precache { get; init; }
+
     [Option("r", "server-reserve", Default = 300000001UL, ArgumentHelpName = "MOJOS", Description = "The amount to reserve with the server coin.")]
     public ulong? ServerReserve { get; init; } = 300000001UL;
+
+    [Option("u", "url", ArgumentHelpName = "URL", Description = "Server url override. If not provided, the server will use the configured url.")]
+    public string? Url { get; init; }
 
     [CommandTarget]
     public async Task<int> Execute(StoreService storeService,
                                     ChiaService chiaService,
                                     DnsService dnsService,
                                     DataLayerProxy dataLayer,
+                                    StoreUpdateNotifierService storeUpdateNotifierService,
                                     IConfiguration configuration)
     {
         if (string.IsNullOrEmpty(Store))
@@ -51,14 +55,25 @@ internal sealed class AddStoreCommand()
         var fee = await chiaService.ResolveFee(Fee, Math.Max(serverCoinReserve, mirrorCoinReserve), cts.Token);
         var subscriptions = await dataLayer.Subscriptions(cts.Token);
 
-        var (haveFunds, addedStore) = await storeService.AddStore(Store, subscriptions, mirrorCoinReserve, serverCoinReserve, fee, true, true, url, cts.Token);
+        var (addedStore, addedMirror, addedServerCoin) = await storeService.AddStore(Store, subscriptions, mirrorCoinReserve, serverCoinReserve, fee, true, url, cts.Token);
         if (addedStore)
         {
             Console.WriteLine($"Added store.");
         }
-        else
+        if (addedMirror)
         {
-            Console.WriteLine("Did not add store. It may already exist."); // TODO improve this
+            Console.WriteLine($"Added mirror.");
+        }
+        if (addedServerCoin)
+        {
+            Console.WriteLine($"Added server coin.");
+        }
+
+        if (Precache)
+        {
+            Console.WriteLine($"Caching...");
+
+            await storeUpdateNotifierService.PreCacheStore(Store, CancellationToken.None);
         }
 
         return 0;

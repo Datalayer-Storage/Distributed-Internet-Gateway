@@ -27,7 +27,8 @@
         "stores",
         "add",
         "-s",
-        "26632ad912845e6f77714ca0996b21eb647803162dd444275ab5c09bea9426ea"
+        "26632ad912845e6f77714ca0996b21eb647803162dd444275ab5c09bea9426ea",
+        "--precache"
       ],
       "cwd": "${workspaceFolder}/src/dig",
       "console": "integratedTerminal",

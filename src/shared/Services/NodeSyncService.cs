@@ -14,7 +14,7 @@ internal sealed class NodeSyncService(DataLayerProxy dataLayer,
     private readonly ILogger<NodeSyncService> _logger = logger;
     private readonly IConfiguration _configuration = configuration;
 
-    public async Task SyncWithDataLayer(ulong mirrorReserveAmount,
+    public async Task<IEnumerable<string>> SyncWithDataLayer(ulong mirrorReserveAmount,
                                             ulong serverReserveAmount,
                                             ulong fee,
                                             CancellationToken stoppingToken)
@@ -58,6 +58,7 @@ internal sealed class NodeSyncService(DataLayerProxy dataLayer,
             }
         }
 
+        return subscriptions;
         //
         // TODO - is there a way to get server coins without a matching subscription?
         // if so, we should delete them
