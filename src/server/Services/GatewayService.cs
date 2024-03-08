@@ -15,15 +15,16 @@ public class GatewayService
     private readonly IMemoryCache _memoryCache;
     private readonly ILogger<GatewayService> _logger;
     private readonly IConfiguration _configuration;
-    private FileCacheService _fileCache;
+    private readonly FileCacheService _fileCache;
     private readonly StoreUpdateNotifierService _storeUpdateNotifierService;
 
     public GatewayService(DataLayerProxy dataLayer,
                             ChiaService chiaService,
                             ChiaConfig chiaConfig,
-                            AppStorage appStorage,
                             StoreRegistryService storeRegistryService,
                             IMemoryCache memoryCache,
+                            FileCacheService fileCache,
+                            StoreUpdateNotifierService storeUpdateNotifierService,
                             ILogger<GatewayService> logger,
                             IConfiguration configuration)
     {
@@ -32,12 +33,12 @@ public class GatewayService
         _chiaConfig = chiaConfig;
         _storeRegistryService = storeRegistryService;
         _memoryCache = memoryCache;
+        _fileCache = fileCache;
+        _storeUpdateNotifierService = storeUpdateNotifierService;
         _logger = logger;
         _configuration = configuration;
-        _fileCache = new FileCacheService(Path.Combine(appStorage.UserSettingsFolder, "store-cache"), _logger);
 
-        _storeUpdateNotifierService = new StoreUpdateNotifierService(dataLayer, memoryCache, logger, _fileCache);
-        _storeUpdateNotifierService.StartWatcher(storeId => InvalidateStore(storeId), TimeSpan.FromMinutes(5), CancellationToken.None);
+        _storeUpdateNotifierService.StartWatcher(InvalidateStore, TimeSpan.FromMinutes(5), CancellationToken.None);
     }
 
     public async Task<WellKnown> GetWellKnown(string baseUri, CancellationToken stoppingToken)

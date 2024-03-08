@@ -8,6 +8,9 @@ internal sealed class SyncStoresCommand()
     [Option("m", "mirror-reserve", Default = 300000001UL, ArgumentHelpName = "MOJOS", Description = "The amount to reserve with each mirror coin.")]
     public ulong? MirrorReserve { get; init; } = 300000001UL;
 
+    [Option("p", "precache", Description = "Precache the store's data and proof of inclusion.")]
+    public bool Precache { get; init; }
+
     [Option("r", "server-reserve", Default = 300000001UL, ArgumentHelpName = "MOJOS", Description = "The amount to reserve with each server coin.")]
     public ulong? ServerReserve { get; init; } = 300000001UL;
 

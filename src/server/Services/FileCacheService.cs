@@ -3,12 +3,12 @@ namespace dig.server;
 public class FileCacheService
 {
     private readonly string _cacheDirectory;
-    private readonly ILogger _logger;
+    private readonly ILogger<FileCacheService> _logger;
 
-    public FileCacheService(string cacheDirectory, ILogger logger)
+    public FileCacheService(AppStorage appStorage, ILogger<FileCacheService> logger)
     {
         _logger = logger;
-        _cacheDirectory = cacheDirectory;
+        _cacheDirectory = Path.Combine(appStorage.UserSettingsFolder, "store-cache");
         if (!Directory.Exists(_cacheDirectory))
         {
             Directory.CreateDirectory(_cacheDirectory);

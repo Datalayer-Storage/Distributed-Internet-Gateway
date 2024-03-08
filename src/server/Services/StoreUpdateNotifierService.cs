@@ -6,15 +6,18 @@ using System.Diagnostics;
 
 namespace dig.server;
 
-public class StoreUpdateNotifierService(DataLayerProxy dataLayer, IMemoryCache memoryCache, ILogger logger, FileCacheService fileCache) : IDisposable
+public class StoreUpdateNotifierService(DataLayerProxy dataLayer,
+                                        IMemoryCache memoryCache,
+                                        FileCacheService fileCache,
+                                        ILogger<StoreUpdateNotifierService> logger) : IDisposable
 {
     private readonly DataLayerProxy _dataLayer = dataLayer;
     private readonly IMemoryCache _memoryCache = memoryCache;
-    private readonly ILogger _logger = logger;
+    private readonly FileCacheService _fileCache = fileCache;
+    private readonly ILogger<StoreUpdateNotifierService> _logger = logger;
     private readonly List<Func<string, Task>> _callbacks = [];
     private Timer? _timer;
     private bool disposedValue;
-    private readonly FileCacheService _fileCache = fileCache;
     private readonly ConcurrentDictionary<string, string> _storeIds = new();
     private readonly ConcurrentQueue<string> _preCacheQueue = new();
     private readonly SemaphoreSlim _preCacheLock = new(1, 1);
