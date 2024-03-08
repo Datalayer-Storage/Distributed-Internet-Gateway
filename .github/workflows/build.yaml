@@ -3,10 +3,10 @@ name: Build Binaries
 on:
   push:
     tags:
-      - '**'
+      - "**"
   pull_request:
     branches:
-      - '**'
+      - "**"
 
 concurrency:
   group: ${{ github.ref }}-${{ github.workflow }}-${{ github.event_name }}
@@ -46,7 +46,7 @@ jobs:
       - name: Install .NET SDK 8.0
         uses: actions/setup-dotnet@v2
         with:
-          dotnet-version: '8.0.x'
+          dotnet-version: "8.0.x"
 
       - name: Build Projects
         run: ${{ github.workspace }}\publish.ps1 ${{ matrix.runtime }}
@@ -62,14 +62,14 @@ jobs:
           SM_API_KEY: ${{ secrets.SM_API_KEY }}
           SM_CLIENT_CERT_PASSWORD: ${{ secrets.SM_CLIENT_CERT_PASSWORD }}
           SM_CODE_SIGNING_CERT_SHA1_HASH: ${{ secrets.SM_CODE_SIGNING_CERT_SHA1_HASH }}
-                
+
       - name: Download and Bundle Server Coin Binary
         uses: ./.github/actions/download-server-coin
         with:
           runtime: ${{matrix.runtime}}
           path: publish/standalone/${{matrix.runtime}}
           GH_ACCESS_TOKEN: ${{ secrets.GH_ACCESS_TOKEN }}
-      
+
       - name: Copy License
         run: |
           Copy-Item -Path "${env:GITHUB_WORKSPACE}\COPYING" -Destination "${env:GITHUB_WORKSPACE}\publish\standalone\${{matrix.runtime}}"
@@ -86,7 +86,7 @@ jobs:
     runs-on: windows-2019
     needs:
       - build
-    
+
     strategy:
       matrix:
         include:
@@ -136,7 +136,7 @@ jobs:
         with:
           name: ${{matrix.artifact-name}}-msi
           path: publish/Distributed-Internet-Gateway-${{matrix.runtime}}.msi
-        
+
   debs:
     name: Build ${{matrix.artifact-name}} deb
     runs-on: ubuntu-latest
@@ -176,6 +176,7 @@ jobs:
         env:
           VERSION: ${{ steps.tag-name.outputs.TAGNAME }}
           PLATFORM: ${{ matrix.platform }}
+          DPKG_DEB_COMPRESSOR: gzip # Ensure gzip compression for the control tarball
         run: |
           pip install j2cli
           CLI_DEB_BASE="${{matrix.pkg-name}}_${{ steps.tag-name.outputs.TAGNAME }}-1_${PLATFORM}"
@@ -190,13 +191,101 @@ jobs:
           chmod +x deb/$CLI_DEB_BASE/opt/${{matrix.pkg-name}}/dig
           chmod +x deb/$CLI_DEB_BASE/opt/${{matrix.pkg-name}}/dig.server
           ln -s ../../opt/${{matrix.pkg-name}}/dig "deb/$CLI_DEB_BASE/usr/bin/dig"
-          dpkg-deb --build --root-owner-group "deb/$CLI_DEB_BASE"
+          dpkg-deb --build --root-owner-group -Zgzip "deb/$CLI_DEB_BASE"
 
       - name: Upload deb
         uses: actions/upload-artifact@v3
         with:
           name: ${{ matrix.artifact-name }}-deb
           path: ${{ github.workspace }}/deb/*.deb
+
+  publish_apt:
+    runs-on: ubuntu-latest
+    needs: [build, debs]
+
+    steps:
+      - uses: actions/checkout@v2
+        name: Checkout code
+
+      - name: Set Repository Name to Organization Name
+        run: |
+          echo "REPO_NAME=$(echo ${{ github.repository }} | cut -d'/' -f1)" >> $GITHUB_ENV
+          echo "PROJECT_NAME=dig-linux-x64-deb" >> $GITHUB_ENV
+          echo "S3_BUCKET=dlass-repo" >> $GITHUB_ENV
+
+      - name: Setup Aptly, AWS CLI
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y aptly awscli gnupg
+          aws configure set default.region us-east-1
+          aws configure set aws_access_key_id ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws configure set aws_secret_access_key ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        shell: bash
+
+      - name: Pull Aptly Config from S3
+        run: |
+          aws s3 cp ${{ secrets.APTLY_S3_PATH }}.aptly.conf ~/.aptly.conf || echo "No existing Aptly config found in S3, generating new config."
+        shell: bash
+
+      - name: Display Aptly Config
+        run: |
+          echo "Contents of .aptly.conf:"
+          cat ~/.aptly.conf
+        shell: bash
+
+      - name: Import GPG Key
+        env:
+          GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
+        run: |
+          echo "${{ secrets.GPG_PRIVATE_KEY }}" | gpg --batch --yes --pinentry-mode loopback --import
+        shell: bash
+
+      - name: Sync Aptly Database from S3
+        run: |
+          aws s3 sync ${{ secrets.APTLY_S3_PATH }} ~/.aptly/ || echo "No existing Aptly database found in S3, proceeding without error."
+        shell: bash
+
+      - name: Create New Aptly Repository
+        run: |
+          aptly --config=~/.aptly.confrepo create --distribution=stable --component=main ${{ env.PROJECT_NAME }}
+        shell: bash
+        continue-on-error: true
+
+      - name: Download Linux x64 Deb artifact
+        uses: actions/download-artifact@v3
+        with:
+          name: ${{ env.PROJECT_NAME }}
+          path: ${{ env.PROJECT_NAME }}
+
+      - name: Add .deb Packages to Repository
+        run: |
+          aptly --config=~/.aptly.conf repo add ${{ env.PROJECT_NAME }} ${{ env.PROJECT_NAME }}/*.deb
+          aptly --config=~/.aptly.conf repo show --with-packages ${{ env.PROJECT_NAME }}
+        shell: bash
+
+      - name: Snapshot and Publish
+        run: |
+          aptly --config=~/.aptly.conf snapshot create ${{ env.PROJECT_NAME }}-0.0.1 from repo ${{ env.PROJECT_NAME }}
+          aptly --config=~/.aptly.confpublish snapshot --gpg-key=${{ secrets.GPG_KEY_ID }} --passphrase=${{ secrets.GPG_PASSPHRASE }} ${{ env.PROJECT_NAME }}-0.0.1 s3:${{ env.S3_BUCKET }}:${{ env.PROJECT_NAME }}/debian
+        shell: bash
+        continue-on-error: true
+
+      - name: Sync Updated Aptly Database to S3
+        run: |
+          aws s3 sync ~/.aptly/ ${{ secrets.APTLY_S3_PATH }}
+        shell: bash
+
+      - name: Upload Aptly Config to S3
+        run: |
+          aws s3 cp ~/.aptly.conf ${{ secrets.APTLY_S3_PATH }}.aptly.conf
+        shell: bash
+
+      - name: Print Installation Instructions
+        run: |
+          echo "To install the package, add the repository to your sources:"
+          echo "echo 'deb [trusted=yes] https://${{ env.S3_BUCKET }}.s3.amazonaws.com/${{ env.DISTRIBUTION_NAME }}/debian stable main' | sudo tee /etc/apt/sources.list.d/${{ env.REPO_NAME }}.list"
+          echo "Then, update apt and install the package:"
+          echo "sudo apt-get update && sudo apt-get install <package-name>"
 
   release:
     runs-on: ubuntu-latest
@@ -224,13 +313,12 @@ jobs:
         with:
           name: dig-linux-x64
           path: dig-linux-x64
-        
+
       - name: Download Linux arm64 deb
         uses: actions/download-artifact@v3
         with:
           name: dig-linux-arm64
           path: dig-linux-arm64
-
 
       - name: Download Linux x64 Deb artifacts
         uses: actions/download-artifact@v3
@@ -248,7 +336,7 @@ jobs:
         id: tag-name
         run: |
           echo "TAGNAME=$(echo $GITHUB_REF | cut -d / -f 3)" >>$GITHUB_OUTPUT
-      
+
       - name: Create zips
         run: |
           zip -r dig-win-x64-${{ steps.tag-name.outputs.TAGNAME }}.zip dig-win-x64
@@ -257,7 +345,7 @@ jobs:
           mv dig-win-x64-msi/Distributed-Internet-Gateway-win-x64.msi dig-win-x64-${{ steps.tag-name.outputs.TAGNAME }}.msi
           mv dig-linux-x64-deb/*.deb dig-linux-x64-${{ steps.tag-name.outputs.TAGNAME }}.deb
           mv dig-linux-arm64-deb/*.deb dig-linux-arm64-${{ steps.tag-name.outputs.TAGNAME }}.deb
-        
+
       - name: Release
         uses: softprops/action-gh-release@v0.1.15
         with:
