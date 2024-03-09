@@ -17,6 +17,7 @@ internal sealed class SyncStoresCommand()
     [CommandTarget]
     public async Task<int> Execute(NodeSyncService syncService,
                                     ChiaService chiaService,
+                                    StoreCacheService storeCacheService,
                                     IConfiguration configuration)
     {
         ulong mirrorCoinReserve = MirrorReserve ?? configuration.GetValue<ulong>("dig:AddMirrorReserveAmount", 0);
@@ -42,14 +43,13 @@ internal sealed class SyncStoresCommand()
                                         fee,
                                         CancellationToken.None);
 
-
         if (Precache)
         {
             Console.WriteLine($"Caching...");
 
             foreach (var store in stores)
             {
-                throw new NotImplementedException();
+                await storeCacheService.CacheStore(store, CancellationToken.None);
             }
         }
 

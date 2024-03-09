@@ -9,6 +9,7 @@ public class GatewayService(DataLayerProxy dataLayer,
                             ChiaConfig chiaConfig,
                             StoreRegistryService storeRegistryService,
                             CacheService cacheService,
+                            StoreCacheService storeCacheService,
                             ILogger<GatewayService> logger,
                             IConfiguration configuration)
 {
@@ -17,6 +18,7 @@ public class GatewayService(DataLayerProxy dataLayer,
     private readonly ChiaService _chiaService = chiaService;
     private readonly StoreRegistryService _storeRegistryService = storeRegistryService;
     private readonly CacheService _cacheService = cacheService;
+    private readonly StoreCacheService _storeCacheService = storeCacheService;
     private readonly ILogger<GatewayService> _logger = logger;
     private readonly IConfiguration _configuration = configuration;
 
@@ -59,27 +61,14 @@ public class GatewayService(DataLayerProxy dataLayer,
     {
         try
         {
-            var rootHistory = await _cacheService.GetOrCreateAsync($"{storeId}-root-history",
-                TimeSpan.FromSeconds(30),
-                async () =>
-                {
-                    _logger.LogInformation("Getting root history for {StoreId}", storeId.SanitizeForLog());
-                    return await _dataLayer.GetRootHistory(storeId, cancellationToken);
-                },
+            await _storeCacheService.VerifyStoreCache(storeId, cancellationToken);
+
+            var lastRoot = await _cacheService.GetOrCreateAsync($"{storeId}-last-root",
+                TimeSpan.FromMinutes(15),
+                async () => await _dataLayer.GetRoot(storeId, cancellationToken),
                 cancellationToken);
 
-            var lastRootHistoryItem = rootHistory?.LastOrDefault();
-            if (lastRootHistoryItem is not null)
-            {
-                return await _cacheService.GetOrCreateAsync($"root_hash_{storeId}",
-                TimeSpan.FromMinutes(15),
-                async () =>
-                {
-                    await Task.CompletedTask;
-                    return lastRootHistoryItem.RootHash;
-                },
-                cancellationToken);
-            }
+            return lastRoot?.Hash;
         }
         catch (Exception e)
         {
@@ -93,7 +82,8 @@ public class GatewayService(DataLayerProxy dataLayer,
     {
         try
         {
-            // memory cache is used to cache the keys for 15 minutes
+            await _storeCacheService.VerifyStoreCache(storeId, cancellationToken);
+
             var keys = await _cacheService.GetOrCreateAsync($"{storeId}-keys",
                 TimeSpan.FromMinutes(15),
                 async () =>
@@ -141,6 +131,8 @@ public class GatewayService(DataLayerProxy dataLayer,
     {
         try
         {
+            await _storeCacheService.VerifyStoreCache(storeId, cancellationToken);
+            
             var value = await _cacheService.GetOrCreateAsync($"{storeId}-{key}",
                 TimeSpan.FromMinutes(15),
                 async () =>

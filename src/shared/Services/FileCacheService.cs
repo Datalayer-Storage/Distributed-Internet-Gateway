@@ -17,15 +17,26 @@ public class FileCacheService
         }
     }
 
-    public async Task<string?> GetValueAsync(string key, CancellationToken token)
+    public async Task<TItem?> GetOrCreateAsync<TItem>(string key, Func<Task<TItem>> factory, CancellationToken token)
     {
-        var filePath = GetFilePath(key).SanitizePath(_cacheDirectory);
-        if (File.Exists(filePath))
+        var fileValue = await GetValueAsync<TItem>(key, token);
+
+        // the value is in the file cache, add it to the memory cache and return it
+        if (fileValue is not null)
         {
-            return await File.ReadAllTextAsync(filePath, token);
+            return fileValue;
         }
 
-        return null;
+        // it's not cached so create it and add it to the file cache if it's not null
+        _logger.LogWarning("File cache miss for {key}", key.SanitizeForLog());
+        var newValue = await factory();
+
+        if (newValue is not null)
+        {
+            await SetValueAsync(key, newValue, token);
+        }
+
+        return newValue;
     }
 
     public async Task<TItem?> GetValueAsync<TItem>(string key, CancellationToken token)
@@ -40,37 +51,32 @@ public class FileCacheService
                 return (TItem)(object)item; //coerce the string to TItem
             }
 
+            // otherwise assume it's json and deserialize it
             return item.ToObject<TItem>();
         }
 
         return default;
     }
 
-    public async Task SetValueAsync(string key, object? value, CancellationToken token)
+    public async Task SetValueAsync<TItem>(string key, TItem? value, CancellationToken token)
     {
         if (value is not null)
         {
             var filePath = GetFilePath(key).SanitizePath(_cacheDirectory);
-            if (value is string stringValue)
+            if (typeof(TItem) == typeof(string))
             {
-                await File.WriteAllTextAsync(filePath, stringValue, token);
+                await File.WriteAllTextAsync(filePath, value.ToString(), token);
             }
             else
             {
                 await File.WriteAllTextAsync(filePath, value.ToJson(), token);
             }
 
-            _logger.LogWarning("Cached {Key} of type {Type}", key, value.GetType().Name);
+            _logger.LogWarning("Cached {Key} of type {Type}", key, typeof(TItem).Name);
         }
     }
 
-    public async Task SetValueAsync(string key, string value, CancellationToken token)
-    {
-        var filePath = GetFilePath(key).SanitizePath(_cacheDirectory);
-        await File.WriteAllTextAsync(filePath, value, token);
-    }
-
-    public void InvalidateAllCache()
+    public void Clear()
     {
         if (Directory.Exists(_cacheDirectory))
         {
@@ -83,7 +89,7 @@ public class FileCacheService
         }
     }
 
-    public void InvalidateStore(string storeId, Func<string, Task> callback)
+    public void RemoveStore(string storeId)
     {
         _logger.LogInformation("Invalidating store {storeId}", storeId);
         if (Directory.Exists(_cacheDirectory))
@@ -93,10 +99,17 @@ public class FileCacheService
                 var sanitizedPath = file.SanitizePath(_cacheDirectory);
                 _logger.LogInformation("Deleting file {File}", sanitizedPath);
                 File.Delete(sanitizedPath);
-
-                var fileNameWithoutExtension = Path.GetFileNameWithoutExtension(sanitizedPath);
-                callback(fileNameWithoutExtension);
             }
+        }
+    }
+
+    public void RemoveKey(string key)
+    {
+        var filePath = GetFilePath(key).SanitizePath(_cacheDirectory);
+        if (File.Exists(filePath))
+        {
+            _logger.LogInformation("Deleting file {File}", filePath);
+            File.Delete(filePath);
         }
     }
 

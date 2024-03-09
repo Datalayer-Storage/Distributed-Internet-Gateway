@@ -29,7 +29,7 @@ public class ServerService(IHostApplicationLifetime applicationLifetime,
         // If the DIG node is just starting up, we want to clear the cache
         // Because it could be super stale
         var fileCacheService = _serviceProvider.GetRequiredService<FileCacheService>();
-        fileCacheService.InvalidateAllCache();
+        //fileCacheService.Clear();
 
         await Task.CompletedTask;
     }

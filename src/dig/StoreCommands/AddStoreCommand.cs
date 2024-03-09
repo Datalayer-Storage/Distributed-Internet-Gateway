@@ -27,6 +27,7 @@ internal sealed class AddStoreCommand()
                                     ChiaService chiaService,
                                     DnsService dnsService,
                                     DataLayerProxy dataLayer,
+                                    StoreCacheService storeCacheService,
                                     IConfiguration configuration)
     {
         if (string.IsNullOrEmpty(Store))
@@ -59,10 +60,12 @@ internal sealed class AddStoreCommand()
         {
             Console.WriteLine($"Added store.");
         }
+
         if (addedMirror)
         {
             Console.WriteLine($"Added mirror.");
         }
+
         if (addedServerCoin)
         {
             Console.WriteLine($"Added server coin.");
@@ -72,7 +75,7 @@ internal sealed class AddStoreCommand()
         {
             Console.WriteLine($"Caching...");
 
-            throw new NotImplementedException("Caching is not yet implemented.");
+            await storeCacheService.CacheStore(Store, CancellationToken.None);
         }
 
         return 0;
