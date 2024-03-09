@@ -78,7 +78,7 @@ public partial class StoresController(GatewayService gatewayService,
                     }
                 }
 
-                string htmlContent = IndexRenderer.Render(storeId, decodedKeys ?? [], Request);
+                var htmlContent = IndexRenderer.Render(storeId, decodedKeys ?? []);
 
                 return Content(htmlContent, "text/html");
             }
@@ -157,15 +157,13 @@ public partial class StoresController(GatewayService gatewayService,
                 var keys = await _gatewayService.GetKeys(storeId, cancellationToken);
                 if (keys is not null)
                 {
-                    var decodedKeys = keys.Select(HexUtils.FromHex).ToList();
-                    string htmlContent = IndexRenderer.Render(storeId, decodedKeys, Request);
+                    var htmlContent = IndexRenderer.Render(storeId, keys.Select(HexUtils.FromHex));
 
                     return Content(htmlContent, "text/html");
                 }
             }
 
             var hexKey = key.StartsWith("0x") ? key : HexUtils.ToHex(key);
-
             var disableProof = _configuration.GetValue<bool>("dig:DisableProofOfInclusion");
 
             if (!disableProof)
@@ -186,7 +184,6 @@ public partial class StoresController(GatewayService gatewayService,
                     HttpContext.Response.Headers.TryAdd("X-Gen-Time", stopwatch.ElapsedMilliseconds.ToString());
                 }
             }
-
 
             // Requesting GetValue only from the last root hash onchain ensures that only
             // nodes that have the latest state will respond to the request
@@ -211,17 +208,15 @@ public partial class StoresController(GatewayService gatewayService,
                 if (actAsCdn)
                 {
                     var content = await _meshNetworkRoutingService.GetMeshNetworkContentsAsync(storeId, key);
-
                     if (content is not null)
                     {
-                        string mimeType = GetMimeType(fileExtension) ?? "application/octet-stream";
+                        var mimeType = GetMimeType(fileExtension) ?? "application/octet-stream";
                         return Content(content, mimeType);
                     }
                 }
                 else
                 {
                     var redirect = await _meshNetworkRoutingService.GetMeshNetworkLocationAsync(storeId, key);
-
                     if (redirect is not null)
                     {
                         _logger.LogInformation("Redirecting to {redirect}", redirect.SanitizeForLog());
@@ -237,10 +232,10 @@ public partial class StoresController(GatewayService gatewayService,
 
             if (Utils.TryParseJson(decodedValue, out var json))
             {
-                IDictionary<string, object>? expando = json as IDictionary<string, object>;
+                var expando = json as IDictionary<string, object>;
                 if (expando is not null && expando.TryGetValue("type", out var type) && type?.ToString() == "multipart")
                 {
-                    string mimeType = GetMimeType(fileExtension) ?? "application/octet-stream";
+                    var mimeType = GetMimeType(fileExtension) ?? "application/octet-stream";
                     var bytes = await _gatewayService.GetValuesAsBytes(storeId, json, lastStoreRootHash, cancellationToken);
 
                     return Results.File(bytes, mimeType);
@@ -249,8 +244,8 @@ public partial class StoresController(GatewayService gatewayService,
 
             if (!string.IsNullOrEmpty(fileExtension))
             {
-                string? renderContents = RenderFactory.Render(storeId, decodedValue, fileExtension, Request);
-                string mimeType = GetMimeType(fileExtension) ?? "application/octet-stream";
+                var renderContents = RenderFactory.Render(storeId, decodedValue, fileExtension, Request);
+                var mimeType = GetMimeType(fileExtension) ?? "application/octet-stream";
 
                 if (renderContents is not null)
                 {
@@ -259,19 +254,21 @@ public partial class StoresController(GatewayService gatewayService,
 
                 return File(Convert.FromHexString(rawValue), mimeType);
             }
-            else if (json is not null)
+
+            if (json is not null)
             {
                 return Results.Ok(json);
             }
-            else if (Utils.IsBase64Image(decodedValue))
+
+            if (Utils.IsBase64Image(decodedValue))
             {
                 // figure out the mime type
                 var regex = MimeTypeRegex();
                 var match = regex.Match(decodedValue);
 
                 // convert the base64 string to a byte array
-                string base64Image = decodedValue.Split(";base64,")[^1];
-                byte[] imageBuffer = Convert.FromBase64String(base64Image);
+                var base64Image = decodedValue.Split(";base64,")[^1];
+                var imageBuffer = Convert.FromBase64String(base64Image);
 
                 return File(imageBuffer, match.Value);
             }
@@ -303,7 +300,7 @@ public partial class StoresController(GatewayService gatewayService,
 
     private static readonly Dictionary<string, string> otherMimeTypes = new()
     {
-        { "offer", "text/html"}
+        { "offer", "text/html" }
     };
 
     [GeneratedRegex(@"[^:]\w+\/[\w-+\d.]+(?=;|,)")]

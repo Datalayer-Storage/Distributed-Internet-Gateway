@@ -31,22 +31,6 @@ public class ServerService(IHostApplicationLifetime applicationLifetime,
         var fileCacheService = _serviceProvider.GetRequiredService<FileCacheService>();
         fileCacheService.InvalidateAllCache();
 
-        var memoryCache = _serviceProvider.GetRequiredService<IMemoryCache>();
-        var storeUpdateNotifierService = _serviceProvider.GetRequiredService<StoreUpdateNotifierService>();
-
-        // TODO remove asynchrony
-        storeUpdateNotifierService.StartWatcher(async (storeId) =>
-        {
-            fileCacheService.InvalidateStore(storeId, cacheKey =>
-            {
-                _logger.LogInformation("Removing {CacheKey} from memory cache", cacheKey);
-                memoryCache.Remove(cacheKey);
-                return Task.CompletedTask;
-            });
-
-            await Task.CompletedTask;
-        }, TimeSpan.FromMinutes(5), cancellationToken);
-
         await Task.CompletedTask;
     }
 

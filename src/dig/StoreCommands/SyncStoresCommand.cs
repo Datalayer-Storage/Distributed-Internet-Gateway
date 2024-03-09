@@ -17,7 +17,6 @@ internal sealed class SyncStoresCommand()
     [CommandTarget]
     public async Task<int> Execute(NodeSyncService syncService,
                                     ChiaService chiaService,
-                                    StoreUpdateNotifierService storeUpdateNotifierService,
                                     IConfiguration configuration)
     {
         ulong mirrorCoinReserve = MirrorReserve ?? configuration.GetValue<ulong>("dig:AddMirrorReserveAmount", 0);
@@ -50,7 +49,7 @@ internal sealed class SyncStoresCommand()
 
             foreach (var store in stores)
             {
-                await storeUpdateNotifierService.PreCacheStore(store, CancellationToken.None);
+                throw new NotImplementedException();
             }
         }
 

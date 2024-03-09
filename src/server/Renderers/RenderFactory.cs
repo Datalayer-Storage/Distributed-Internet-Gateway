@@ -11,13 +11,11 @@ public class RenderFactory
     private static IRenderer? GetRendererForFileExtension(string fileExtension)
     {
         // Example for selecting different renderers based on MIME type
-        switch (fileExtension)
+        return fileExtension switch
         {
-            case ".offer":
-                return new OfferRenderer();
+            ".offer" => new OfferRenderer(),
             // Add cases for other MIME types and their corresponding renderers
-            default:
-                return null; // or throw an exception, based on how you want to handle unsupported MIME types
-        }
+            _ => null,// or throw an exception, based on how you want to handle unsupported MIME types
+        };
     }
 }

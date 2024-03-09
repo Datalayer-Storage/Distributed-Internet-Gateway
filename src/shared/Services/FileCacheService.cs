@@ -1,3 +1,5 @@
+using chia.dotnet;
+
 namespace dig;
 
 public class FileCacheService
@@ -24,6 +26,42 @@ public class FileCacheService
         }
 
         return null;
+    }
+
+    public async Task<TItem?> GetValueAsync<TItem>(string key, CancellationToken token)
+    {
+        var filePath = GetFilePath(key).SanitizePath(_cacheDirectory);
+        if (File.Exists(filePath))
+        {
+            var item = await File.ReadAllTextAsync(filePath, token);
+
+            if (typeof(TItem) == typeof(string))
+            {
+                return (TItem)(object)item; //coerce the string to TItem
+            }
+
+            return item.ToObject<TItem>();
+        }
+
+        return default;
+    }
+
+    public async Task SetValueAsync(string key, object? value, CancellationToken token)
+    {
+        if (value is not null)
+        {
+            var filePath = GetFilePath(key).SanitizePath(_cacheDirectory);
+            if (value is string stringValue)
+            {
+                await File.WriteAllTextAsync(filePath, stringValue, token);
+            }
+            else
+            {
+                await File.WriteAllTextAsync(filePath, value.ToJson(), token);
+            }
+
+            _logger.LogWarning("Cached {Key} of type {Type}", key, value.GetType().Name);
+        }
     }
 
     public async Task SetValueAsync(string key, string value, CancellationToken token)

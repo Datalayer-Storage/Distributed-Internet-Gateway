@@ -55,8 +55,8 @@ builder.Services.AddSingleton<ChiaConfig>()
     .AddSingleton<MeshNetworkRoutingService>()
     .AddSingleton<ServerCoinService>()
     .AddSingleton<ChiaService>()
-    .AddSingleton<StoreUpdateNotifierService>()
     .AddSingleton<FileCacheService>()
+    .AddSingleton<CacheService>()
     .AddMemoryCache()
     .RegisterChiaEndPoint<DataLayerProxy>("dig.server")
     .RegisterChiaEndPoint<FullNodeProxy>("dig.server")
@@ -120,4 +120,4 @@ app.UseEndpoints(endpoints =>
 });
 #pragma warning restore ASP0014
 
-app.Run();
+app.Run(); // see the ServerService for various tasks that start here

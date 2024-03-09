@@ -1,39 +1,37 @@
-using Microsoft.AspNetCore.Http;
-using System.Collections.Generic;
+using System.Text;
 
-namespace dig.server
+namespace dig.server;
+
+public static class IndexRenderer
 {
-    public static class IndexRenderer
+    public static string Render(string storeId, object contents)
     {
-        public static string Render(string storeId, object contents, HttpRequest request)
+        if (contents is not IEnumerable<string> decodedKeys)
         {
-            if (contents is not List<string> decodedKeys)
-            {
-                return $"<html><body><h1>Index of {storeId}</h1><p>This store is empty.</p></body></html>";
-            }
-
-            var htmlContent = $"<html><body><h1>Index of {storeId}</h1>";
-
-            if (decodedKeys?.Count > 0)
-            {
-                htmlContent += "<ul>";
-                foreach (var key in decodedKeys)
-                {
-                    // Use cdnOverride if it exists, otherwise use the original request scheme and host
-                    var link = $"/{storeId}/{key}";
-
-                    htmlContent += $"<li><a href='{link}'>{key}</a></li>";
-                }
-                htmlContent += "</ul>";
-            }
-            else
-            {
-                htmlContent += "<p>This store is empty.</p>";
-            }
-
-            htmlContent += "</body></html>";
-
-            return htmlContent;
+            return $"<html><body><h1>Index of {storeId}</h1><p>This store is empty.</p></body></html>";
         }
+
+        var sb = new StringBuilder($"<html><body><h1>Index of {storeId}</h1>");
+
+        if (decodedKeys.Any())
+        {
+            sb.Append("<ul>");
+            foreach (var key in decodedKeys)
+            {
+                // Use cdnOverride if it exists, otherwise use the original request scheme and host
+                var link = $"/{storeId}/{key}";
+
+                sb.Append($"<li><a href='{link}'>{key}</a></li>");
+            }
+            sb.Append("</ul>");
+        }
+        else
+        {
+            sb.Append("<p>This store is empty.</p>");
+        }
+
+        sb.Append("</body></html>");
+
+        return sb.ToString();
     }
 }
