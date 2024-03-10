@@ -17,11 +17,11 @@ public class FileCacheService
         }
     }
 
-    public async Task<TItem?> GetOrCreateAsync<TItem>(string storeId, string key, Func<Task<TItem>> factory, CancellationToken token)
+    public async Task<TItem?> GetOrCreateAsync<TItem>(string storeId, string rootHash, string key, Func<Task<TItem>> factory, CancellationToken token)
     {
-        var fileValue = await GetValueAsync<TItem>(storeId, key, token);
+        var fileValue = await GetValueAsync<TItem>(storeId, rootHash, key, token);
 
-        // the value is in the file cache, add it to the memory cache and return it
+        // the value is in the file cache just return it
         if (fileValue is not null)
         {
             return fileValue;
@@ -33,15 +33,15 @@ public class FileCacheService
 
         if (newValue is not null)
         {
-            await SetValueAsync(storeId, key, newValue, token);
+            await SetValueAsync(storeId, rootHash, key, newValue, token);
         }
 
         return newValue;
     }
 
-    public async Task<TItem?> GetValueAsync<TItem>(string storeId, string key, CancellationToken token)
+    public async Task<TItem?> GetValueAsync<TItem>(string storeId, string rootHash, string key, CancellationToken token)
     {
-        var filePath = GetFilePath(storeId, key).SanitizePath(_cacheDirectory);
+        var filePath = GetFilePath(storeId, rootHash, key).SanitizePath(_cacheDirectory);
         if (File.Exists(filePath))
         {
             var item = await File.ReadAllTextAsync(filePath, token);
@@ -58,11 +58,11 @@ public class FileCacheService
         return default;
     }
 
-    public async Task SetValueAsync<TItem>(string storeId, string key, TItem? value, CancellationToken token)
+    public async Task SetValueAsync<TItem>(string storeId, string rootHash, string key, TItem? value, CancellationToken token)
     {
         if (value is not null)
         {
-            var filePath = GetFilePath(storeId, key).SanitizePath(_cacheDirectory);
+            var filePath = GetFilePath(storeId, rootHash, key).SanitizePath(_cacheDirectory);
             if (typeof(TItem) == typeof(string))
             {
                 await File.WriteAllTextAsync(filePath, value.ToString(), token);
@@ -72,7 +72,7 @@ public class FileCacheService
                 await File.WriteAllTextAsync(filePath, value.ToJson(), token);
             }
 
-            _logger.LogWarning("Cached {Key} of type {Type}", key, typeof(TItem).Name);
+            _logger.LogInformation("Cached {Key} of type {Type}", key, typeof(TItem).Name);
         }
     }
 
@@ -98,7 +98,7 @@ public class FileCacheService
 
     public void RemoveStore(string storeId)
     {
-        _logger.LogInformation("Invalidating store {storeId}", storeId);
+        _logger.LogWarning("Invalidating store {storeId}", storeId);
         var storeCacheDirectory = Path.Combine(_cacheDirectory, storeId).SanitizePath(_cacheDirectory);
 
         if (Directory.Exists(storeCacheDirectory))
@@ -107,7 +107,7 @@ public class FileCacheService
         }
     }
 
-    private string GetFilePath(string storeId, string key)
+    private string GetFilePath(string storeId, string rootHash, string key)
     {
         var storeCacheDirectory = Path.Combine(_cacheDirectory, storeId).SanitizePath(_cacheDirectory);
         if (!Directory.Exists(storeCacheDirectory))
@@ -115,6 +115,7 @@ public class FileCacheService
             Directory.CreateDirectory(storeCacheDirectory);
         }
 
-        return Path.Combine(storeCacheDirectory, key);
+        var combinedKey = string.Concat(rootHash, key);
+        return Path.Combine(storeCacheDirectory, combinedKey.MD5Hash());
     }
 }

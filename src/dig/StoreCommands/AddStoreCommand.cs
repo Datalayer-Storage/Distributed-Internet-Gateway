@@ -1,4 +1,5 @@
 using chia.dotnet;
+using System.Diagnostics;
 
 namespace dig;
 
@@ -27,7 +28,7 @@ internal sealed class AddStoreCommand()
                                     ChiaService chiaService,
                                     DnsService dnsService,
                                     DataLayerProxy dataLayer,
-                                    StoreCacheService storeCacheService,
+                                    StorePreCacheService storeCacheService,
                                     IConfiguration configuration)
     {
         if (string.IsNullOrEmpty(Store))
@@ -73,9 +74,11 @@ internal sealed class AddStoreCommand()
 
         if (Precache)
         {
-            Console.WriteLine($"Caching...");
-
+            Console.WriteLine($"Pre-caching...");
+            var stopwatch = Stopwatch.StartNew();
             await storeCacheService.CacheStore(Store, CancellationToken.None);
+            stopwatch.Stop();
+            Console.WriteLine($"Caching took: {stopwatch.Elapsed.TotalSeconds} seconds");
         }
 
         return 0;

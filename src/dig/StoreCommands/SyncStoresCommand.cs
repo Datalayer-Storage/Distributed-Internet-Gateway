@@ -17,7 +17,7 @@ internal sealed class SyncStoresCommand()
     [CommandTarget]
     public async Task<int> Execute(NodeSyncService syncService,
                                     ChiaService chiaService,
-                                    StoreCacheService storeCacheService,
+                                    StorePreCacheService storeCacheService,
                                     IConfiguration configuration)
     {
         ulong mirrorCoinReserve = MirrorReserve ?? configuration.GetValue<ulong>("dig:AddMirrorReserveAmount", 0);

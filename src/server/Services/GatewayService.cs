@@ -1,6 +1,7 @@
 using System.Reflection;
 using chia.dotnet;
 using System.Web;
+using System.Text;
 using Microsoft.Extensions.Caching.Memory;
 
 namespace dig.server;
@@ -11,7 +12,6 @@ public class GatewayService(DataLayerProxy dataLayer,
                             StoreRegistryService storeRegistryService,
                             FileCacheService fileCacheService,
                             IMemoryCache memoryCache,
-                            StoreCacheService storeCacheService,
                             ILogger<GatewayService> logger,
                             IConfiguration configuration)
 {
@@ -21,7 +21,6 @@ public class GatewayService(DataLayerProxy dataLayer,
     private readonly StoreRegistryService _storeRegistryService = storeRegistryService;
     private readonly FileCacheService _fileCacheService = fileCacheService;
     private readonly IMemoryCache _memoryCache = memoryCache;
-    private readonly StoreCacheService _storeCacheService = storeCacheService;
     private readonly ILogger<GatewayService> _logger = logger;
     private readonly IConfiguration _configuration = configuration;
 
@@ -61,6 +60,22 @@ public class GatewayService(DataLayerProxy dataLayer,
         return stores.Select(_storeRegistryService.GetStore);
     }
 
+    private async Task<string> RefreshStoreRootHash(string storeId, CancellationToken cancellationToken)
+    {
+        var currentRoot = await _dataLayer.GetRoot(storeId, cancellationToken);
+        var cachedRootHash = await _fileCacheService.GetValueAsync<RootHash>(storeId, "", "last-root", cancellationToken);
+
+        // the current hash doesn't match the persistent cache
+        if (cachedRootHash?.Hash != currentRoot.Hash)
+        {
+            _logger.LogWarning("Invalidating cache for {StoreId}", storeId.SanitizeForLog());
+            _fileCacheService.RemoveStore(storeId);
+            await _fileCacheService.SetValueAsync(storeId, "", "last-root", currentRoot, cancellationToken);
+        }
+
+        return currentRoot.Hash;
+    }
+
     public async Task<string?> GetLastRoot(string storeId, CancellationToken cancellationToken)
     {
         try
@@ -71,7 +86,7 @@ public class GatewayService(DataLayerProxy dataLayer,
             return await _memoryCache.GetOrCreateAsync($"{storeId}-last-root", async (entry) =>
             {
                 entry.SlidingExpiration = TimeSpan.FromSeconds(15);
-                return await _storeCacheService.RefreshStoreRootHash(storeId, cancellationToken);
+                return await RefreshStoreRootHash(storeId, cancellationToken);
             });
         }
         catch (Exception e)
@@ -86,7 +101,7 @@ public class GatewayService(DataLayerProxy dataLayer,
     {
         try
         {
-            var keys = await _fileCacheService.GetOrCreateAsync(storeId, "keys",
+            var keys = await _fileCacheService.GetOrCreateAsync(storeId, rootHash, "keys",
                 async () =>
                 {
                     _logger.LogInformation("Getting keys for {StoreId}", storeId.SanitizeForLog());
@@ -104,34 +119,37 @@ public class GatewayService(DataLayerProxy dataLayer,
         return null;  // 404 in the api
     }
 
-    public async Task<string?> GetProof(string storeId, string key, CancellationToken cancellationToken)
+    public async Task<byte[]?> GetProof(string storeId, string rootHash, string key, CancellationToken cancellationToken)
     {
-        try
+        if (!_configuration.GetValue("dig:DisableProofOfInclusion", true))
         {
-            var proof = await _fileCacheService.GetOrCreateAsync(storeId, $"{key}-proof",
-                async () =>
-                {
-                    _logger.LogInformation("Getting proof for {StoreId} {Key}", storeId.SanitizeForLog(), key.SanitizeForLog());
-                    var proofResponse = await _dataLayer.GetProof(storeId, [HttpUtility.UrlDecode(key)], cancellationToken);
-                    return proofResponse.ToJson();
-                },
-                cancellationToken);
+            try
+            {
+                var proof = await _fileCacheService.GetOrCreateAsync(storeId, rootHash, $"{key}-proof",
+                    async () =>
+                    {
+                        _logger.LogInformation("Getting proof for {StoreId} {Key}", storeId.SanitizeForLog(), key.SanitizeForLog());
+                        var proof = await _dataLayer.GetProof(storeId, [HttpUtility.UrlDecode(key)], cancellationToken);
+                        return proof.ToJson();
+                    },
+                    cancellationToken);
 
-            return proof;
-        }
-        catch (Exception e)
-        {
-            _logger.LogError(e, "Failed to get proof for {StoreId}", storeId.SanitizeForLog());
+                return proof is not null ? Encoding.UTF8.GetBytes(proof) : null;
+            }
+            catch (Exception e)
+            {
+                _logger.LogError(e, "Failed to get proof for {StoreId}", storeId.SanitizeForLog());
+            }
         }
 
-        return null; // 404 in the api
+        return null;
     }
 
     public async Task<string?> GetValue(string storeId, string key, string rootHash, CancellationToken cancellationToken)
     {
         try
         {
-            var value = await _fileCacheService.GetOrCreateAsync(storeId, key,
+            var value = await _fileCacheService.GetOrCreateAsync(storeId, rootHash, key,
                 async () =>
                 {
                     _logger.LogInformation("Getting value for {StoreId} {Key}", storeId.SanitizeForLog(), key.SanitizeForLog());

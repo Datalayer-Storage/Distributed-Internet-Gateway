@@ -47,13 +47,13 @@ public partial class StoresController(GatewayService gatewayService,
             // nodes that have the latest state will respond to the request
             // This helps prevent a mismatch between the state of the store and
             // the data when pulled across decentralized nodes
-            var lastRootHash = await _gatewayService.GetLastRoot(storeId, cancellationToken);
-            if (lastRootHash is null)
+            var rootHash = await _gatewayService.GetLastRoot(storeId, cancellationToken);
+            if (rootHash is null)
             {
                 return NotFound();
             }
 
-            var keys = await _gatewayService.GetKeys(storeId, lastRootHash, cancellationToken);
+            var keys = await _gatewayService.GetKeys(storeId, rootHash, cancellationToken);
 
             if (keys is not null)
             {
@@ -62,19 +62,14 @@ public partial class StoresController(GatewayService gatewayService,
                 // the key represents a SPA app, so we want to return the index.html
                 if (decodedKeys != null && decodedKeys.Count > 0 && decodedKeys.Contains("index.html"))
                 {
-                    HttpContext.Response.Headers.TryAdd("X-Generation-Hash", lastRootHash);
-                    var html = await _gatewayService.GetValueAsHtml(storeId, lastRootHash, cancellationToken);
+                    HttpContext.Response.Headers.TryAdd("X-Generation-Hash", rootHash);
+                    var html = await _gatewayService.GetValueAsHtml(storeId, rootHash, cancellationToken);
                     if (html is not null)
                     {
-                        var disableProof = _configuration.GetValue<bool>("dig:DisableProofOfInclusion");
-
-                        if (!disableProof)
+                        var proof = await _gatewayService.GetProof(storeId, rootHash, HexUtils.ToHex("index.html"), cancellationToken);
+                        if (proof is not null)
                         {
-                            var proof = await _gatewayService.GetProof(storeId, HexUtils.ToHex("index.html"), cancellationToken);
-                            if (proof is not null)
-                            {
-                                HttpContext.Response.Headers.TryAdd("X-Proof-of-Inclusion", proof);
-                            }
+                            HttpContext.Response.Headers.TryAdd("X-Proof-of-Inclusion", Convert.ToBase64String(proof));
                         }
 
                         return Content(html, "text/html");
@@ -92,7 +87,6 @@ public partial class StoresController(GatewayService gatewayService,
             if (actAsCdn)
             {
                 var content = await _meshNetworkRoutingService.GetMeshNetworkContentsAsync(storeId, null);
-
                 if (content is not null)
                 {
                     return Content(content, "text/html");
@@ -101,7 +95,6 @@ public partial class StoresController(GatewayService gatewayService,
             else
             {
                 var redirect = await _meshNetworkRoutingService.GetMeshNetworkLocationAsync(storeId, null);
-
                 if (redirect is not null)
                 {
                     _logger.LogInformation("Redirecting to {redirect}", redirect.SanitizeForLog());
@@ -176,25 +169,10 @@ public partial class StoresController(GatewayService gatewayService,
             }
 
             var hexKey = key.StartsWith("0x") ? key : HexUtils.ToHex(key);
-            var disableProof = _configuration.GetValue<bool>("dig:DisableProofOfInclusion");
-
-            if (!disableProof)
+            var proof = await _gatewayService.GetProof(storeId, lastRootHash, hexKey, cancellationToken);
+            if (proof is not null)
             {
-                var stopwatch = System.Diagnostics.Stopwatch.StartNew();
-                var proof = await _gatewayService.GetProof(storeId, hexKey, cancellationToken);
-                _logger.LogInformation($"GetProof {proof} ms");
-                stopwatch.Stop();
-                _logger.LogInformation($"GetProof command completed in {stopwatch.ElapsedMilliseconds} ms");
-
-                if (proof is not null)
-                {
-                    byte[] proofBytes = Encoding.UTF8.GetBytes(proof);
-
-                    // Convert the byte array to a Base64 string
-                    string proofBase64 = Convert.ToBase64String(proofBytes);
-                    HttpContext.Response.Headers.TryAdd("X-Proof-of-Inclusion", proofBase64);
-                    HttpContext.Response.Headers.TryAdd("X-Gen-Time", stopwatch.ElapsedMilliseconds.ToString());
-                }
+                HttpContext.Response.Headers.TryAdd("X-Proof-of-Inclusion", Convert.ToBase64String(proof));
             }
 
             HttpContext.Response.Headers.TryAdd("X-Generation-Hash", lastRootHash);
