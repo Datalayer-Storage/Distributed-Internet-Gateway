@@ -1,4 +1,3 @@
-using System.Text;
 using Microsoft.AspNetCore.Mvc;
 using System.Text.RegularExpressions;
 
@@ -168,6 +167,7 @@ public partial class StoresController(GatewayService gatewayService,
                 }
             }
 
+            // support requesting keys by hex or utf8
             var hexKey = key.StartsWith("0x") ? key : HexUtils.ToHex(key);
             var proof = await _gatewayService.GetProof(storeId, lastRootHash, hexKey, cancellationToken);
             if (proof is not null)
