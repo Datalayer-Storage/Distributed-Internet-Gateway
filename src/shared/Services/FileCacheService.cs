@@ -17,9 +17,9 @@ public class FileCacheService
         }
     }
 
-    public async Task<TItem?> GetOrCreateAsync<TItem>(string key, Func<Task<TItem>> factory, CancellationToken token)
+    public async Task<TItem?> GetOrCreateAsync<TItem>(string storeId, string key, Func<Task<TItem>> factory, CancellationToken token)
     {
-        var fileValue = await GetValueAsync<TItem>(key, token);
+        var fileValue = await GetValueAsync<TItem>(storeId, key, token);
 
         // the value is in the file cache, add it to the memory cache and return it
         if (fileValue is not null)
@@ -33,15 +33,15 @@ public class FileCacheService
 
         if (newValue is not null)
         {
-            await SetValueAsync(key, newValue, token);
+            await SetValueAsync(storeId, key, newValue, token);
         }
 
         return newValue;
     }
 
-    public async Task<TItem?> GetValueAsync<TItem>(string key, CancellationToken token)
+    public async Task<TItem?> GetValueAsync<TItem>(string storeId, string key, CancellationToken token)
     {
-        var filePath = GetFilePath(key).SanitizePath(_cacheDirectory);
+        var filePath = GetFilePath(storeId, key).SanitizePath(_cacheDirectory);
         if (File.Exists(filePath))
         {
             var item = await File.ReadAllTextAsync(filePath, token);
@@ -58,11 +58,11 @@ public class FileCacheService
         return default;
     }
 
-    public async Task SetValueAsync<TItem>(string key, TItem? value, CancellationToken token)
+    public async Task SetValueAsync<TItem>(string storeId, string key, TItem? value, CancellationToken token)
     {
         if (value is not null)
         {
-            var filePath = GetFilePath(key).SanitizePath(_cacheDirectory);
+            var filePath = GetFilePath(storeId, key).SanitizePath(_cacheDirectory);
             if (typeof(TItem) == typeof(string))
             {
                 await File.WriteAllTextAsync(filePath, value.ToString(), token);
@@ -86,32 +86,35 @@ public class FileCacheService
                 _logger.LogInformation("Deleting file {File}", sanitizedPath);
                 File.Delete(sanitizedPath);
             }
+
+            foreach (var dir in Directory.GetDirectories(_cacheDirectory))
+            {
+                var sanitizedPath = dir.SanitizePath(_cacheDirectory);
+                _logger.LogInformation("Deleting directory {Directory}", sanitizedPath);
+                Directory.Delete(sanitizedPath, true);
+            }
         }
     }
 
     public void RemoveStore(string storeId)
     {
         _logger.LogInformation("Invalidating store {storeId}", storeId);
-        if (Directory.Exists(_cacheDirectory))
+        var storeCacheDirectory = Path.Combine(_cacheDirectory, storeId).SanitizePath(_cacheDirectory);
+
+        if (Directory.Exists(storeCacheDirectory))
         {
-            foreach (var file in Directory.GetFiles(_cacheDirectory, $"{storeId}*"))
-            {
-                var sanitizedPath = file.SanitizePath(_cacheDirectory);
-                _logger.LogInformation("Deleting file {File}", sanitizedPath);
-                File.Delete(sanitizedPath);
-            }
+            Directory.Delete(storeCacheDirectory, true);
         }
     }
 
-    public void RemoveKey(string key)
+    private string GetFilePath(string storeId, string key)
     {
-        var filePath = GetFilePath(key).SanitizePath(_cacheDirectory);
-        if (File.Exists(filePath))
+        var storeCacheDirectory = Path.Combine(_cacheDirectory, storeId).SanitizePath(_cacheDirectory);
+        if (!Directory.Exists(storeCacheDirectory))
         {
-            _logger.LogInformation("Deleting file {File}", filePath);
-            File.Delete(filePath);
+            Directory.CreateDirectory(storeCacheDirectory);
         }
-    }
 
-    private string GetFilePath(string key) => Path.Combine(_cacheDirectory, key);
+        return Path.Combine(storeCacheDirectory, key);
+    }
 }

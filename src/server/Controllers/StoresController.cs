@@ -43,7 +43,17 @@ public partial class StoresController(GatewayService gatewayService,
                 return Redirect($"{referer}/{storeId}");
             }
 
-            var keys = await _gatewayService.GetKeys(storeId, cancellationToken);
+            // Requesting GetValue only from the last root hash onchain ensures that only
+            // nodes that have the latest state will respond to the request
+            // This helps prevent a mismatch between the state of the store and
+            // the data when pulled across decentralized nodes
+            var lastRootHash = await _gatewayService.GetLastRoot(storeId, cancellationToken);
+            if (lastRootHash is null)
+            {
+                return NotFound();
+            }
+
+            var keys = await _gatewayService.GetKeys(storeId, lastRootHash, cancellationToken);
 
             if (keys is not null)
             {
@@ -52,14 +62,8 @@ public partial class StoresController(GatewayService gatewayService,
                 // the key represents a SPA app, so we want to return the index.html
                 if (decodedKeys != null && decodedKeys.Count > 0 && decodedKeys.Contains("index.html"))
                 {
-                    var lastStoreRootHash = await _gatewayService.GetLastRoot(storeId, cancellationToken);
-
-                    if (lastStoreRootHash is not null)
-                    {
-                        HttpContext.Response.Headers.TryAdd("X-Generation-Hash", lastStoreRootHash);
-                    }
-
-                    var html = await _gatewayService.GetValueAsHtml(storeId, lastStoreRootHash, cancellationToken);
+                    HttpContext.Response.Headers.TryAdd("X-Generation-Hash", lastRootHash);
+                    var html = await _gatewayService.GetValueAsHtml(storeId, lastRootHash, cancellationToken);
                     if (html is not null)
                     {
                         var disableProof = _configuration.GetValue<bool>("dig:DisableProofOfInclusion");
@@ -73,14 +77,14 @@ public partial class StoresController(GatewayService gatewayService,
                             }
                         }
 
-
                         return Content(html, "text/html");
                     }
+
+                    //  could not get the root hash nor the html for this store
+                    return NotFound();
                 }
 
-                var htmlContent = IndexRenderer.Render(storeId, decodedKeys ?? []);
-
-                return Content(htmlContent, "text/html");
+                return Content(IndexRenderer.Render(storeId, decodedKeys ?? []), "text/html");
             }
 
             var actAsCdn = _configuration.GetValue<bool>("dig:ActAsCdn");
@@ -106,9 +110,7 @@ public partial class StoresController(GatewayService gatewayService,
                 }
             }
 
-
             return NotFound();
-
         }
         catch (Exception ex)
         {
@@ -149,12 +151,22 @@ public partial class StoresController(GatewayService gatewayService,
                 return Redirect($"{referer}/{storeId}/{key}");
             }
 
+            // Requesting GetValue only from the last root hash onchain ensures that only
+            // nodes that have the latest state will respond to the request
+            // This helps prevent a mismatch between the state of the store and
+            // the data when pulled across decentralized nodes
+            var lastRootHash = await _gatewayService.GetLastRoot(storeId, cancellationToken);
+            if (lastRootHash is null)
+            {
+                return NotFound();
+            }
+
             // info.html is a synthetic key that we use to display the store's contents
             // even though index.html returns the same, if the store overrides index.html
             // the user can still get a list of keys at info.html
             if (key == "info.html")
             {
-                var keys = await _gatewayService.GetKeys(storeId, cancellationToken);
+                var keys = await _gatewayService.GetKeys(storeId, lastRootHash, cancellationToken);
                 if (keys is not null)
                 {
                     var htmlContent = IndexRenderer.Render(storeId, keys.Select(HexUtils.FromHex));
@@ -185,20 +197,11 @@ public partial class StoresController(GatewayService gatewayService,
                 }
             }
 
-            // Requesting GetValue only from the last root hash onchain ensures that only
-            // nodes that have the latest state will respond to the request
-            // This helps prevent a mismatch between the state of the store and
-            // the data when pulled across decentralized nodes
-            var lastStoreRootHash = await _gatewayService.GetLastRoot(storeId, cancellationToken);
-
-            if (lastStoreRootHash is not null)
-            {
-                HttpContext.Response.Headers.TryAdd("X-Generation-Hash", lastStoreRootHash);
-            }
+            HttpContext.Response.Headers.TryAdd("X-Generation-Hash", lastRootHash);
 
             var fileExtension = Path.GetExtension(key);
 
-            var rawValue = await _gatewayService.GetValue(storeId, hexKey, lastStoreRootHash, cancellationToken);
+            var rawValue = await _gatewayService.GetValue(storeId, hexKey, lastRootHash, cancellationToken);
             if (rawValue is null)
             {
                 _logger.LogInformation("couldn't find: {key}", key.SanitizeForLog());
@@ -236,7 +239,7 @@ public partial class StoresController(GatewayService gatewayService,
                 if (expando is not null && expando.TryGetValue("type", out var type) && type?.ToString() == "multipart")
                 {
                     var mimeType = GetMimeType(fileExtension) ?? "application/octet-stream";
-                    var bytes = await _gatewayService.GetValuesAsBytes(storeId, json, lastStoreRootHash, cancellationToken);
+                    var bytes = await _gatewayService.GetValuesAsBytes(storeId, json, lastRootHash, cancellationToken);
 
                     return Results.File(bytes, mimeType);
                 }

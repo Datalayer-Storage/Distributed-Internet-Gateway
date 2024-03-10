@@ -79,15 +79,14 @@ public class GatewayService(DataLayerProxy dataLayer,
             _logger.LogError(e, "Failed to get last root for {StoreId}", storeId.SanitizeForLog());
         }
 
-        return null;
+        return null; // no root hash, no store - this will signal 404 upstream
     }
 
-    public async Task<IEnumerable<string>?> GetKeys(string storeId, CancellationToken cancellationToken)
+    public async Task<IEnumerable<string>?> GetKeys(string storeId, string rootHash, CancellationToken cancellationToken)
     {
         try
         {
-            var rootHash = await GetLastRoot(storeId, cancellationToken);
-            var keys = await _fileCacheService.GetOrCreateAsync($"{storeId}-keys",
+            var keys = await _fileCacheService.GetOrCreateAsync(storeId, "keys",
                 async () =>
                 {
                     _logger.LogInformation("Getting keys for {StoreId}", storeId.SanitizeForLog());
@@ -105,15 +104,15 @@ public class GatewayService(DataLayerProxy dataLayer,
         return null;  // 404 in the api
     }
 
-    public async Task<string?> GetProof(string storeId, string hexKey, CancellationToken cancellationToken)
+    public async Task<string?> GetProof(string storeId, string key, CancellationToken cancellationToken)
     {
         try
         {
-            var proof = await _fileCacheService.GetOrCreateAsync($"{storeId}-{hexKey}-proof",
+            var proof = await _fileCacheService.GetOrCreateAsync(storeId, $"{key}-proof",
                 async () =>
                 {
-                    _logger.LogInformation("Getting proof for {StoreId} {Key}", storeId.SanitizeForLog(), hexKey.SanitizeForLog());
-                    var proofResponse = await _dataLayer.GetProof(storeId, [HttpUtility.UrlDecode(hexKey)], cancellationToken);
+                    _logger.LogInformation("Getting proof for {StoreId} {Key}", storeId.SanitizeForLog(), key.SanitizeForLog());
+                    var proofResponse = await _dataLayer.GetProof(storeId, [HttpUtility.UrlDecode(key)], cancellationToken);
                     return proofResponse.ToJson();
                 },
                 cancellationToken);
@@ -128,11 +127,11 @@ public class GatewayService(DataLayerProxy dataLayer,
         return null; // 404 in the api
     }
 
-    public async Task<string?> GetValue(string storeId, string key, string? rootHash, CancellationToken cancellationToken)
+    public async Task<string?> GetValue(string storeId, string key, string rootHash, CancellationToken cancellationToken)
     {
         try
         {
-            var value = await _fileCacheService.GetOrCreateAsync($"{storeId}-{key}",
+            var value = await _fileCacheService.GetOrCreateAsync(storeId, key,
                 async () =>
                 {
                     _logger.LogInformation("Getting value for {StoreId} {Key}", storeId.SanitizeForLog(), key.SanitizeForLog());
@@ -151,10 +150,10 @@ public class GatewayService(DataLayerProxy dataLayer,
         return null; // 404 in the api
     }
 
-    public async Task<string?> GetValueAsHtml(string storeId, string? lastStoreRootHash, CancellationToken cancellationToken)
+    public async Task<string?> GetValueAsHtml(string storeId, string rootHash, CancellationToken cancellationToken)
     {
         var hexKey = HexUtils.ToHex("index.html");
-        var value = await GetValue(storeId, hexKey, lastStoreRootHash, cancellationToken);
+        var value = await GetValue(storeId, hexKey, rootHash, cancellationToken);
         if (value is null)
         {
             return null; // 404 in the api
