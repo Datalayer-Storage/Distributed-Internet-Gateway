@@ -4,41 +4,31 @@ namespace dig;
 
 public class StoreCacheService(DataLayerProxy dataLayer,
                                 FileCacheService fileCache,
-                                ILogger<CacheService> logger)
+                                ILogger<StoreCacheService> logger)
 {
     private readonly DataLayerProxy _dataLayer = dataLayer;
     private readonly FileCacheService _fileCache = fileCache;
-    private readonly ILogger<CacheService> _logger = logger;
+    private readonly ILogger<StoreCacheService> _logger = logger;
 
-    public async Task VerifyStoreCache(string storeId, CancellationToken cancellationToken)
+    public async Task<string> RefreshStoreRootHash(string storeId, CancellationToken cancellationToken)
     {
-        if (!await StoreCacheIsValid(storeId, cancellationToken))
+        var currentRoot = await _dataLayer.GetRoot(storeId, cancellationToken);
+        var cachedRootHash = await _fileCache.GetValueAsync<RootHash>($"{storeId}-last-root", cancellationToken);
+
+        // the current hash doesn't match the persistent cache
+        if (cachedRootHash?.Hash != currentRoot.Hash)
         {
             _logger.LogWarning("Invalidating cache for {StoreId}", storeId.SanitizeForLog());
-            InvalidateStoreCache(storeId);
-        }
-    }
-
-    public async Task<bool> StoreCacheIsValid(string storeId, CancellationToken cancellationToken)
-    {
-        var lastRoot = await _fileCache.GetValueAsync<RootHash>($"{storeId}-last-root", cancellationToken);
-        var currentRoot = await _dataLayer.GetRoot(storeId, cancellationToken);
-
-        if (lastRoot is null)
-        {
+            _fileCache.RemoveStore(storeId);
             await _fileCache.SetValueAsync($"{storeId}-last-root", currentRoot, cancellationToken);
-
-            return false;
         }
 
-        return currentRoot.Hash == lastRoot.Hash;
+        return currentRoot.Hash;
     }
-
-    public void InvalidateStoreCache(string storeId) => _fileCache.RemoveStore(storeId);
 
     public async Task CacheStore(string storeId, CancellationToken cancellationToken)
     {
-        InvalidateStoreCache(storeId);
+        _fileCache.RemoveStore(storeId);
 
         var lastRoot = await _dataLayer.GetRoot(storeId, cancellationToken);
         await _fileCache.SetValueAsync($"{storeId}-last-root", lastRoot, cancellationToken);

@@ -10,7 +10,6 @@
     </PropertyGroup>
     <ItemGroup>
         <Compile Include="$(MSBuildThisFileDirectory)Services\StoreCacheService.cs" />
-        <Compile Include="$(MSBuildThisFileDirectory)Services\CacheService.cs" />
         <Compile Include="$(MSBuildThisFileDirectory)Services\FileCacheService.cs" />
         <Compile Include="$(MSBuildThisFileDirectory)Services\ServerCoinService.cs" />
         <Compile Include="$(MSBuildThisFileDirectory)Services\StoreService.cs" />

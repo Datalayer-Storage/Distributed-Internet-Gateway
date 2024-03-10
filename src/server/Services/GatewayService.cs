@@ -1,6 +1,7 @@
 using System.Reflection;
 using chia.dotnet;
 using System.Web;
+using Microsoft.Extensions.Caching.Memory;
 
 namespace dig.server;
 
@@ -8,7 +9,8 @@ public class GatewayService(DataLayerProxy dataLayer,
                             ChiaService chiaService,
                             ChiaConfig chiaConfig,
                             StoreRegistryService storeRegistryService,
-                            CacheService cacheService,
+                            FileCacheService fileCacheService,
+                            IMemoryCache memoryCache,
                             StoreCacheService storeCacheService,
                             ILogger<GatewayService> logger,
                             IConfiguration configuration)
@@ -17,18 +19,19 @@ public class GatewayService(DataLayerProxy dataLayer,
     private readonly ChiaConfig _chiaConfig = chiaConfig;
     private readonly ChiaService _chiaService = chiaService;
     private readonly StoreRegistryService _storeRegistryService = storeRegistryService;
-    private readonly CacheService _cacheService = cacheService;
+    private readonly FileCacheService _fileCacheService = fileCacheService;
+    private readonly IMemoryCache _memoryCache = memoryCache;
     private readonly StoreCacheService _storeCacheService = storeCacheService;
     private readonly ILogger<GatewayService> _logger = logger;
     private readonly IConfiguration _configuration = configuration;
 
     public async Task<WellKnown> GetWellKnown(string baseUri, CancellationToken stoppingToken)
     {
-        var xch_address = await _cacheService.GetOrCreateAsync("well_known.xch_address",
-            DateTimeOffset.UtcNow + TimeSpan.FromDays(1),
-            async () => await _chiaService.ResolveAddress(_configuration.GetValue("dig:XchAddress", ""), stoppingToken),
-            stoppingToken
-         );
+        var xch_address = await _memoryCache.GetOrCreateAsync("well_known.xch_address", async (entry) =>
+        {
+            entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromDays(1);
+            return await _chiaService.ResolveAddress(_configuration.GetValue("dig:XchAddress", ""), stoppingToken);
+        });
 
         return new WellKnown(xch_address: xch_address ?? "",
                         known_stores_endpoint: $"{baseUri}/.well-known/known_stores",
@@ -44,10 +47,11 @@ public class GatewayService(DataLayerProxy dataLayer,
     {
         using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(_configuration.GetValue("dig:RpcTimeoutSeconds", 30)));
         using var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(cts.Token, cancellationToken);
-        return await _cacheService.GetOrCreateAsync("known-stores.cache",
-            TimeSpan.FromMinutes(15),
-            async () => await _dataLayer.Subscriptions(linkedCts.Token),
-            linkedCts.Token) ?? [];
+        return await _memoryCache.GetOrCreateAsync("known-stores.cache", async (entry) =>
+        {
+            entry.SlidingExpiration = TimeSpan.FromMinutes(15);
+            return await _dataLayer.Subscriptions(linkedCts.Token);
+        }) ?? [];
     }
 
     public async Task<IEnumerable<Store>> GetKnownStoresWithNames(CancellationToken cancellationToken)
@@ -61,14 +65,14 @@ public class GatewayService(DataLayerProxy dataLayer,
     {
         try
         {
-            await _storeCacheService.VerifyStoreCache(storeId, cancellationToken);
-
-            var lastRoot = await _cacheService.GetOrCreateAsync($"{storeId}-last-root",
-                TimeSpan.FromMinutes(15),
-                async () => await _dataLayer.GetRoot(storeId, cancellationToken),
-                cancellationToken);
-
-            return lastRoot?.Hash;
+            // this will cache a stores root hash for 15 seconds in memory
+            // this is to prevent a burst of activity from causing a burst of requests to the data layer
+            // on each refresh the file cache will be checked to see if the root hash is still valid
+            return await _memoryCache.GetOrCreateAsync($"{storeId}-last-root", async (entry) =>
+            {
+                entry.SlidingExpiration = TimeSpan.FromSeconds(15);
+                return await _storeCacheService.RefreshStoreRootHash(storeId, cancellationToken);
+            });
         }
         catch (Exception e)
         {
@@ -82,14 +86,12 @@ public class GatewayService(DataLayerProxy dataLayer,
     {
         try
         {
-            await _storeCacheService.VerifyStoreCache(storeId, cancellationToken);
-
-            var keys = await _cacheService.GetOrCreateAsync($"{storeId}-keys",
-                TimeSpan.FromMinutes(15),
+            var rootHash = await GetLastRoot(storeId, cancellationToken);
+            var keys = await _fileCacheService.GetOrCreateAsync($"{storeId}-keys",
                 async () =>
                 {
                     _logger.LogInformation("Getting keys for {StoreId}", storeId.SanitizeForLog());
-                    return await _dataLayer.GetKeys(storeId, null, cancellationToken);
+                    return await _dataLayer.GetKeys(storeId, rootHash, cancellationToken);
                 },
                 cancellationToken);
 
@@ -107,8 +109,7 @@ public class GatewayService(DataLayerProxy dataLayer,
     {
         try
         {
-            var proof = await _cacheService.GetOrCreateAsync($"{storeId}-{hexKey}-proof",
-                TimeSpan.FromMinutes(15),
+            var proof = await _fileCacheService.GetOrCreateAsync($"{storeId}-{hexKey}-proof",
                 async () =>
                 {
                     _logger.LogInformation("Getting proof for {StoreId} {Key}", storeId.SanitizeForLog(), hexKey.SanitizeForLog());
@@ -131,13 +132,11 @@ public class GatewayService(DataLayerProxy dataLayer,
     {
         try
         {
-            await _storeCacheService.VerifyStoreCache(storeId, cancellationToken);
-            
-            var value = await _cacheService.GetOrCreateAsync($"{storeId}-{key}",
-                TimeSpan.FromMinutes(15),
+            var value = await _fileCacheService.GetOrCreateAsync($"{storeId}-{key}",
                 async () =>
                 {
                     _logger.LogInformation("Getting value for {StoreId} {Key}", storeId.SanitizeForLog(), key.SanitizeForLog());
+
                     return await _dataLayer.GetValue(storeId, HttpUtility.UrlDecode(key), rootHash, cancellationToken);
                 },
                 cancellationToken);
