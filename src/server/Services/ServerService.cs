@@ -3,12 +3,10 @@ using EasyPipes;
 namespace dig.server;
 
 public class ServerService(IHostApplicationLifetime applicationLifetime,
-                                    IServiceProvider serviceProvider,
-                                    ILogger<ServerService> logger) : IHostedService, IServer
+                            IServiceProvider serviceProvider) : IHostedService, IServer
 {
     private readonly IHostApplicationLifetime _applicationLifetime = applicationLifetime;
     private readonly IServiceProvider _serviceProvider = serviceProvider;
-    private readonly ILogger<ServerService> _logger = logger;
 
     public async Task StartAsync(CancellationToken cancellationToken)
     {
