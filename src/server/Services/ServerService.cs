@@ -1,5 +1,4 @@
 using EasyPipes;
-using Microsoft.Extensions.Caching.Memory;
 
 namespace dig.server;
 
@@ -23,13 +22,6 @@ public class ServerService(IHostApplicationLifetime applicationLifetime,
 #pragma warning disable CA2016 // Forward the 'CancellationToken' parameter to methods
         _ = Task.Run(() => registry.Refresh(cancellationToken), cancellationToken); // run this in the background
 #pragma warning restore CA2016 // Forward the 'CancellationToken' parameter to methods
-
-        // start the file cache services
-
-        // If the DIG node is just starting up, we want to clear the cache
-        // Because it could be super stale
-        var fileCacheService = _serviceProvider.GetRequiredService<FileCacheService>();
-        //fileCacheService.Clear();
 
         await Task.CompletedTask;
     }
