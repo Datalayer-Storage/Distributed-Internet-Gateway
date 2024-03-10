@@ -1,54 +1,38 @@
-using Microsoft.Extensions.Caching.Memory;
 using System.Reflection;
 using chia.dotnet;
 using System.Web;
-using System.Text.Json;
+using System.Text;
+using Microsoft.Extensions.Caching.Memory;
 
 namespace dig.server;
 
-public class GatewayService
-{
-    private readonly DataLayerProxy _dataLayer;
-    private readonly ChiaConfig _chiaConfig;
-    private readonly ChiaService _chiaService;
-    private readonly StoreRegistryService _storeRegistryService;
-    private readonly IMemoryCache _memoryCache;
-    private readonly ILogger<GatewayService> _logger;
-    private readonly IConfiguration _configuration;
-    private FileCacheService _fileCache;
-    private readonly StoreUpdateNotifierService _storeUpdateNotifierService;
-
-    public GatewayService(DataLayerProxy dataLayer,
+public class GatewayService(DataLayerProxy dataLayer,
                             ChiaService chiaService,
                             ChiaConfig chiaConfig,
-                            AppStorage appStorage,
                             StoreRegistryService storeRegistryService,
+                            FileCacheService fileCacheService,
                             IMemoryCache memoryCache,
                             ILogger<GatewayService> logger,
                             IConfiguration configuration)
-    {
-        _dataLayer = dataLayer;
-        _chiaService = chiaService;
-        _chiaConfig = chiaConfig;
-        _storeRegistryService = storeRegistryService;
-        _memoryCache = memoryCache;
-        _logger = logger;
-        _configuration = configuration;
-        _fileCache = new FileCacheService(Path.Combine(appStorage.UserSettingsFolder, "store-cache"), _logger);
-
-        _storeUpdateNotifierService = new StoreUpdateNotifierService(dataLayer, memoryCache, logger, _fileCache);
-        _storeUpdateNotifierService.StartWatcher(storeId => InvalidateStore(storeId), TimeSpan.FromMinutes(5), CancellationToken.None);
-    }
+{
+    private readonly DataLayerProxy _dataLayer = dataLayer;
+    private readonly ChiaConfig _chiaConfig = chiaConfig;
+    private readonly ChiaService _chiaService = chiaService;
+    private readonly StoreRegistryService _storeRegistryService = storeRegistryService;
+    private readonly FileCacheService _fileCacheService = fileCacheService;
+    private readonly IMemoryCache _memoryCache = memoryCache;
+    private readonly ILogger<GatewayService> _logger = logger;
+    private readonly IConfiguration _configuration = configuration;
 
     public async Task<WellKnown> GetWellKnown(string baseUri, CancellationToken stoppingToken)
     {
-        var xch_address = await _memoryCache.GetOrCreateAsync("well_known.xch_address", async entry =>
+        var xch_address = await _memoryCache.GetOrCreateAsync("well_known.xch_address", async (entry) =>
         {
-            entry.SlidingExpiration = TimeSpan.FromDays(1);
+            entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromDays(1);
             return await _chiaService.ResolveAddress(_configuration.GetValue("dig:XchAddress", ""), stoppingToken);
-        }) ?? "";
+        });
 
-        return new WellKnown(xch_address: xch_address,
+        return new WellKnown(xch_address: xch_address ?? "",
                         known_stores_endpoint: $"{baseUri}/.well-known/known_stores",
                         donation_address: "xch1ctvns8zcetux57xj4hjsh5hkr40c4ascvc5uaf7gvncc3dydj9eqxenmqt", // intentionally hardcoded
                         server_version: GetAssemblyVersion());
@@ -58,25 +42,13 @@ public class GatewayService
 
     private static string GetAssemblyVersion() => Assembly.GetExecutingAssembly().GetName().Version?.ToString() ?? "0.0.0.0";
 
-    public Task<bool> InvalidateStore(string storeId)
-    {
-        _fileCache.InvalidateStore(storeId, cacheKey =>
-        {
-            _logger.LogInformation("Removing {CacheKey} from memory cache", cacheKey);
-            _memoryCache.Remove(cacheKey);
-            return Task.CompletedTask;
-        });
-        return Task.FromResult(true);
-    }
-
     public async Task<IEnumerable<string>> GetKnownStores(CancellationToken cancellationToken)
     {
-        return await _memoryCache.GetOrCreateAsync("known-stores.cache", async entry =>
+        using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(_configuration.GetValue("dig:RpcTimeoutSeconds", 30)));
+        using var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(cts.Token, cancellationToken);
+        return await _memoryCache.GetOrCreateAsync("known-stores.cache", async (entry) =>
         {
-            using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(_configuration.GetValue("dig:RpcTimeoutSeconds", 30)));
-            using var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(cts.Token, cancellationToken);
             entry.SlidingExpiration = TimeSpan.FromMinutes(15);
-
             return await _dataLayer.Subscriptions(linkedCts.Token);
         }) ?? [];
     }
@@ -88,148 +60,118 @@ public class GatewayService
         return stores.Select(_storeRegistryService.GetStore);
     }
 
+    private async Task<string> RefreshStoreRootHash(string storeId, CancellationToken cancellationToken)
+    {
+        var currentRoot = await _dataLayer.GetRoot(storeId, cancellationToken);
+        var cachedRootHash = await _fileCacheService.GetValueAsync<RootHash>(storeId, "", "last-root", cancellationToken);
+
+        // the current hash doesn't match the persistent cache
+        if (cachedRootHash?.Hash != currentRoot.Hash)
+        {
+            _logger.LogWarning("Invalidating cache for {StoreId}", storeId.SanitizeForLog());
+            _fileCacheService.RemoveStore(storeId);
+            await _fileCacheService.SetValueAsync(storeId, "", "last-root", currentRoot, cancellationToken);
+        }
+
+        return currentRoot.Hash;
+    }
+
     public async Task<string?> GetLastRoot(string storeId, CancellationToken cancellationToken)
     {
         try
         {
-            var cacheKey = $"{storeId}-root-history";
-            var rootHistory = await _memoryCache.GetOrCreateAsync(cacheKey, async entry =>
+            // this will cache a stores root hash for 15 seconds in memory
+            // this is to prevent a burst of activity from causing a burst of requests to the data layer
+            // on each refresh the file cache will be checked to see if the root hash is still valid
+            return await _memoryCache.GetOrCreateAsync($"{storeId}-last-root", async (entry) =>
             {
-                entry.SlidingExpiration = TimeSpan.FromSeconds(30);
-                _logger.LogInformation("Getting root history for {StoreId}", storeId.SanitizeForLog());
-                var datalayerValue = await _dataLayer.GetRootHistory(storeId, cancellationToken);
-                return datalayerValue;
+                entry.SlidingExpiration = TimeSpan.FromSeconds(15);
+                return await RefreshStoreRootHash(storeId, cancellationToken);
             });
-
-            var lastRootHistoryItem = rootHistory?.LastOrDefault();
-            if (lastRootHistoryItem != null)
-            {
-                // Return the rootHash of the last item
-                return lastRootHistoryItem.RootHash;
-            }
-            else
-            {
-                return null;
-            }
         }
-        catch
+        catch (Exception e)
         {
-            return null;
+            _logger.LogError(e, "Failed to get last root for {StoreId}", storeId.SanitizeForLog());
         }
+
+        return null; // no root hash, no store - this will signal 404 upstream
     }
 
-    public async Task<IEnumerable<string>?> GetKeys(string storeId, CancellationToken cancellationToken)
+    public async Task<IEnumerable<string>?> GetKeys(string storeId, string rootHash, CancellationToken cancellationToken)
     {
         try
         {
-            var cacheKey = $"{storeId}-keys";
-            // memory cache is used to cache the keys for 15 minutes
-            var keys = await _memoryCache.GetOrCreateAsync(cacheKey, async entry =>
-            {
-                entry.SlidingExpiration = TimeSpan.FromMinutes(15);
-                _logger.LogInformation("Getting keys for {StoreId}", storeId.SanitizeForLog());
-
-                var fsCacheValue = await _fileCache.GetValueAsync(cacheKey, cancellationToken);
-                if (fsCacheValue is not null)
+            var keys = await _fileCacheService.GetOrCreateAsync(storeId, rootHash, "keys",
+                async () =>
                 {
-                    _logger.LogInformation("Got value for {StoreId} {Key} from file cache", storeId.SanitizeForLog(), storeId.SanitizeForLog());
-                    return JsonSerializer.Deserialize<string[]>(fsCacheValue);
-                }
-
-                var datalayerValue = await _dataLayer.GetKeys(storeId, null, cancellationToken);
-                await _fileCache.SetValueAsync(cacheKey, JsonSerializer.Serialize(datalayerValue ?? []), cancellationToken);
-                _logger.LogInformation("Got value for {StoreId} {Key} from DataLayer", storeId.SanitizeForLog(), storeId.SanitizeForLog());
-                return datalayerValue;
-            });
+                    _logger.LogInformation("Getting keys for {StoreId}", storeId.SanitizeForLog());
+                    return await _dataLayer.GetKeys(storeId, rootHash, cancellationToken);
+                },
+                cancellationToken);
 
             return keys;
         }
-        catch (Exception)
+        catch (Exception e)
         {
-            return null;  // 404 in the api
+            _logger.LogError(e, "Failed to get keys for {StoreId}", storeId.SanitizeForLog());
         }
-        finally
-        {
-            await _storeUpdateNotifierService.RegisterStoreAsync(storeId);
-        }
+
+        return null;  // 404 in the api
     }
 
-    public async Task<string?> GetProof(string storeId, string hexKey, CancellationToken cancellationToken)
+    public async Task<byte[]?> GetProof(string storeId, string rootHash, string key, CancellationToken cancellationToken)
+    {
+        if (!_configuration.GetValue("dig:DisableProofOfInclusion", true))
+        {
+            try
+            {
+                var proof = await _fileCacheService.GetOrCreateAsync(storeId, rootHash, $"{key}-proof",
+                    async () =>
+                    {
+                        _logger.LogInformation("Getting proof for {StoreId} {Key}", storeId.SanitizeForLog(), key.SanitizeForLog());
+                        var proof = await _dataLayer.GetProof(storeId, [HttpUtility.UrlDecode(key)], cancellationToken);
+                        return proof.ToJson();
+                    },
+                    cancellationToken);
+
+                return proof is not null ? Encoding.UTF8.GetBytes(proof) : null;
+            }
+            catch (Exception e)
+            {
+                _logger.LogError(e, "Failed to get proof for {StoreId}", storeId.SanitizeForLog());
+            }
+        }
+
+        return null;
+    }
+
+    public async Task<string?> GetValue(string storeId, string key, string rootHash, CancellationToken cancellationToken)
     {
         try
         {
-            var cacheKey = $"{storeId}-{hexKey}-proof";
-            var proof = await _memoryCache.GetOrCreateAsync(cacheKey, async entry =>
-            {
-                entry.SlidingExpiration = TimeSpan.FromMinutes(15);
-                _logger.LogInformation("Getting proof for {StoreId} {Key}", storeId.SanitizeForLog(), hexKey.SanitizeForLog());
-
-                var fsCacheValue = await _fileCache.GetValueAsync(cacheKey, cancellationToken);
-                if (fsCacheValue is not null)
+            var value = await _fileCacheService.GetOrCreateAsync(storeId, rootHash, key,
+                async () =>
                 {
-                    _logger.LogInformation("Got value for {StoreId} {Key} from file cache", storeId.SanitizeForLog(), hexKey.SanitizeForLog());
-                    return fsCacheValue;
-                }
+                    _logger.LogInformation("Getting value for {StoreId} {Key}", storeId.SanitizeForLog(), key.SanitizeForLog());
 
-                var proofResponse = await _dataLayer.GetProof(storeId, new List<string> { HttpUtility.UrlDecode(hexKey) }, cancellationToken);
-                var proof = proofResponse.ToJson();
-                await _fileCache.SetValueAsync(cacheKey, proof, cancellationToken);
-                _logger.LogInformation("Got proof for {StoreId} {proof} from DataLayer", storeId.SanitizeForLog(), proof.SanitizeForLog());
-                return proof;
-            });
-
-            return proof;
-        }
-        catch
-        {
-            return null; // 404 in the api
-        }
-        finally
-        {
-            await _storeUpdateNotifierService.RegisterStoreAsync(storeId);
-        }
-    }
-
-    public async Task<string?> GetValue(string storeId, string key, string? rootHash, CancellationToken cancellationToken)
-    {
-        try
-        {
-            var cacheKey = $"{storeId}-{key}";
-            var value = await _memoryCache.GetOrCreateAsync(cacheKey, async entry =>
-            {
-                entry.SlidingExpiration = TimeSpan.FromMinutes(15);
-                _logger.LogInformation("Getting value for {StoreId} {Key}", storeId.SanitizeForLog(), key.SanitizeForLog());
-
-                var fsCacheValue = await _fileCache.GetValueAsync(cacheKey, cancellationToken);
-                if (fsCacheValue is not null)
-                {
-                    _logger.LogInformation("Got value for {StoreId} {Key} from file cache", storeId.SanitizeForLog(), key.SanitizeForLog());
-                    return fsCacheValue;
-                }
-
-                var datalayerValue = await _dataLayer.GetValue(storeId, HttpUtility.UrlDecode(key), rootHash, cancellationToken);
-                await _fileCache.SetValueAsync(cacheKey, datalayerValue ?? "", cancellationToken);
-                _logger.LogInformation("Got value for {StoreId} {Key} from DataLayer", storeId.SanitizeForLog(), key.SanitizeForLog());
-                return datalayerValue;
-            });
+                    return await _dataLayer.GetValue(storeId, HttpUtility.UrlDecode(key), rootHash, cancellationToken);
+                },
+                cancellationToken);
 
             return value;
         }
         catch (Exception e)
         {
             _logger.LogError(e, "Failed to get value for {StoreId} {Key}", storeId.SanitizeForLog(), key.SanitizeForLog());
-            return null; // 404 in the api
         }
-        finally
-        {
-            await _storeUpdateNotifierService.RegisterStoreAsync(storeId);
-        }
+
+        return null; // 404 in the api
     }
 
-    public async Task<string?> GetValueAsHtml(string storeId, string? lastStoreRootHash, CancellationToken cancellationToken)
+    public async Task<string?> GetValueAsHtml(string storeId, string rootHash, CancellationToken cancellationToken)
     {
         var hexKey = HexUtils.ToHex("index.html");
-        var value = await GetValue(storeId, hexKey, lastStoreRootHash, cancellationToken);
+        var value = await GetValue(storeId, hexKey, rootHash, cancellationToken);
         if (value is null)
         {
             return null; // 404 in the api

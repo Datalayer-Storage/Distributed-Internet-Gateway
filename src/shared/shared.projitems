@@ -9,6 +9,7 @@
         <Import_RootNamespace>shared</Import_RootNamespace>
     </PropertyGroup>
     <ItemGroup>
+        <Compile Include="$(MSBuildThisFileDirectory)Services\FileCacheService.cs" />
         <Compile Include="$(MSBuildThisFileDirectory)Services\ServerCoinService.cs" />
         <Compile Include="$(MSBuildThisFileDirectory)Services\StoreService.cs" />
         <Compile Include="$(MSBuildThisFileDirectory)Services\MirrorService.cs" />
