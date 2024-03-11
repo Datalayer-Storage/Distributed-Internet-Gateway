@@ -8,11 +8,17 @@ internal sealed class SyncStoresCommand()
     [Option("m", "mirror-reserve", Default = 300000001UL, ArgumentHelpName = "MOJOS", Description = "The amount to reserve with each mirror coin.")]
     public ulong? MirrorReserve { get; init; } = 300000001UL;
 
+    [Option("p", "precache", Description = "Precache the store's data.")]
+    public bool Precache { get; init; }
+
     [Option("r", "server-reserve", Default = 300000001UL, ArgumentHelpName = "MOJOS", Description = "The amount to reserve with each server coin.")]
     public ulong? ServerReserve { get; init; } = 300000001UL;
 
     [CommandTarget]
-    public async Task<int> Execute(NodeSyncService syncService, ChiaService chiaService, IConfiguration configuration)
+    public async Task<int> Execute(NodeSyncService syncService,
+                                    ChiaService chiaService,
+                                    StorePreCacheService storeCacheService,
+                                    IConfiguration configuration)
     {
         ulong mirrorCoinReserve = MirrorReserve ?? configuration.GetValue<ulong>("dig:AddMirrorReserveAmount", 0);
         if (mirrorCoinReserve == 0)
@@ -32,10 +38,20 @@ internal sealed class SyncStoresCommand()
         var fee = await chiaService.ResolveFee(Fee, mirrorCoinReserve, cts.Token);
 
         // pass CancellationToken.None as we want this to run as long as it takes (DL can be slow when busy)
-        await syncService.SyncWithDataLayer(mirrorCoinReserve,
+        var stores = await syncService.SyncWithDataLayer(mirrorCoinReserve,
                                         serverCoinReserve,
                                         fee,
                                         CancellationToken.None);
+
+        if (Precache)
+        {
+            Console.WriteLine($"Caching...");
+
+            foreach (var store in stores)
+            {
+                await storeCacheService.CacheStore(store, CancellationToken.None);
+            }
+        }
 
         Console.WriteLine("Sync complete.");
 

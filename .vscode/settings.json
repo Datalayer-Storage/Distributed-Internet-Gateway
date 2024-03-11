@@ -3,6 +3,8 @@
     "datalayer",
     "healthz",
     "Hsts",
+    "othermime",
+    "precache",
     "referer",
     "unmirror",
     "Unprotect",
