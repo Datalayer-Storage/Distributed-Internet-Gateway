@@ -1,0 +1,83 @@
+@using QRCoder
+@model string
+@{
+    Layout = "_Layout";
+}
+@{
+    // this generates the QR code image and the base64 string
+    var qrCodeData = new QRCodeGenerator().CreateQrCode(Model, QRCodeGenerator.ECCLevel.L);
+    var qrCodeImage = new PngByteQRCode(qrCodeData).GetGraphic(20);
+    var base64Image = Convert.ToBase64String(qrCodeImage);
+    var imageData = Uri.EscapeDataString(Model);
+}
+
+<style>
+    .qr-container {
+        text-align: center;
+        box-sizing: border-box;
+        padding: 10px;
+        border-radius: 15px;
+        background: white;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        margin: 20px;
+    }
+
+    .qr-image {
+        cursor: pointer;
+        max-height: 95vh;
+        object-fit: contain;
+    }
+
+    .embed-container {
+        width: 100%;
+        margin-top: 20px;
+        margin-left: 37px;
+    }
+
+    textarea.embed-code {
+        width: 90%;
+        height: 100px;
+        padding: 10px;
+        border-radius: 10px;
+        border: 1px solid #ccc;
+        background: #f9f9f9;
+        /* Light background */
+        font-family: monospace;
+        font-size: 14px;
+        resize: none;
+        box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.1);
+    }
+
+    @@keyframesspin {
+        to {
+            transform: translate(-50%, -50%) rotate(360deg);
+        }
+    }
+</style>
+<h1>Offer</h1>
+<div class='qr-container'>
+    <p>Tap the QR code to download the content</p>
+    <a href="data:text/plain;charset=utf-8,@imageData" download="offerFile.txt">
+        <img src="data:image/png;base64,@base64Image" class="qr-image img-fluid shadow" alt="QR Code"
+            title="Tap to download offer" />
+    </a>
+</div>
+
+<div class='embed-container'>
+    <p>Embed Code:</p>
+    <textarea class='embed-code' id='embedCode' readonly>@Model</textarea>
+</div>
+
+<script>
+    // Set the embed code in the textarea and enable copying on click
+    document.addEventListener("DOMContentLoaded", function () {
+        const embedCodeElement = document.getElementById("embedCode");
+
+        // Function to select and copy embed code to clipboard when the textarea is clicked
+        embedCodeElement.addEventListener("click", function () {
+            this.select();
+            document.execCommand("copy");
+            alert("Embed code copied to clipboard.");
+        });
+    });
+</script>

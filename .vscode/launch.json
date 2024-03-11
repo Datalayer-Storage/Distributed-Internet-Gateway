@@ -27,7 +27,7 @@
         "stores",
         "add",
         "-s",
-        "26632ad912845e6f77714ca0996b21eb647803162dd444275ab5c09bea9426ea",
+        "8b2275149e581f832d4e3c9962f69787003b72213b02c10187460b61252e97af",
         "--precache"
       ],
       "cwd": "${workspaceFolder}/src/dig",

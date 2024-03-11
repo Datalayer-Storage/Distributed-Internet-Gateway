@@ -4,6 +4,8 @@ using Microsoft.AspNetCore.DataProtection;
 using chia.dotnet;
 using dig;
 using dig.server;
+using Microsoft.AspNetCore.Mvc.ViewEngines;
+using Microsoft.AspNetCore.Mvc.Razor;
 
 var appStorage = new AppStorage(".dig");
 var builder = WebApplication.CreateBuilder(args);
@@ -39,7 +41,10 @@ else if (File.Exists(appStorage.UserSettingsFilePath))
     builder.Configuration.AddJsonFile(appStorage.UserSettingsFilePath, optional: true);
 }
 
-builder.Services.AddControllersWithViews();
+builder.Services.AddControllersWithViews(options =>
+{
+    options.Filters.AddService<FooterDataFilter>();
+});
 builder.Services.AddRazorPages();
 
 // this sets up the gateway service
@@ -56,6 +61,8 @@ builder.Services.AddSingleton<ChiaConfig>()
     .AddSingleton<ServerCoinService>()
     .AddSingleton<ChiaService>()
     .AddSingleton<FileCacheService>()
+    .AddScoped<FooterDataFilter>()
+    .AddScoped<IViewEngine, RazorViewEngine>()
     .AddMemoryCache()
     .RegisterChiaEndPoint<DataLayerProxy>("dig.server")
     .RegisterChiaEndPoint<FullNodeProxy>("dig.server")
