@@ -10,9 +10,6 @@ public class HomeController(GatewayService gatewayService) : Controller
 
     public async Task<IActionResult> IndexAsync(CancellationToken cancellationToken)
     {
-        var request = HttpContext.Request;
-        ViewBag.WellKnown = await _gatewayService.GetWellKnown($"{request.Scheme}://{request.Host}{request.PathBase}", cancellationToken);
-
         if (_gatewayService.HaveDataLayerConfig())
         {
             var stores = await _gatewayService.GetKnownStoresWithNames(cancellationToken);
