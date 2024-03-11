@@ -4,6 +4,8 @@ using Microsoft.AspNetCore.DataProtection;
 using chia.dotnet;
 using dig;
 using dig.server;
+using Microsoft.AspNetCore.Mvc.ViewEngines;
+using Microsoft.AspNetCore.Mvc.Razor;
 
 var appStorage = new AppStorage(".dig");
 var builder = WebApplication.CreateBuilder(args);
@@ -60,6 +62,7 @@ builder.Services.AddSingleton<ChiaConfig>()
     .AddSingleton<ChiaService>()
     .AddSingleton<FileCacheService>()
     .AddScoped<FooterDataFilter>()
+    .AddScoped<IViewEngine, RazorViewEngine>()
     .AddMemoryCache()
     .RegisterChiaEndPoint<DataLayerProxy>("dig.server")
     .RegisterChiaEndPoint<FullNodeProxy>("dig.server")

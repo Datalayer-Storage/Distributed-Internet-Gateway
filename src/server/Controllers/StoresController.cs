@@ -1,16 +1,19 @@
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.ViewEngines;
 using System.Text.RegularExpressions;
 
 namespace dig.server;
 
 public partial class StoresController(GatewayService gatewayService,
                                         MeshNetworkRoutingService meshNetworkRoutingService,
+                                        IViewEngine viewEngine,
                                         ILogger<StoresController> logger,
                                         IConfiguration configuration) : Controller
 {
     private readonly GatewayService _gatewayService = gatewayService;
-    private readonly ILogger<StoresController> _logger = logger;
     private readonly MeshNetworkRoutingService _meshNetworkRoutingService = meshNetworkRoutingService;
+    private readonly IViewEngine _viewEngine = viewEngine;
+    private readonly ILogger<StoresController> _logger = logger;
     private readonly IConfiguration _configuration = configuration;
 
     [HttpHead]
@@ -166,8 +169,6 @@ public partial class StoresController(GatewayService gatewayService,
                 var keys = await _gatewayService.GetKeys(storeId, lastRootHash, cancellationToken);
                 if (keys is not null)
                 {
-                    //var htmlContent = IndexRenderer.Render(storeId, keys.Select(HexUtils.FromHex));
-
                     return View("StoreIndex", keys.Select(HexUtils.FromHex));
                 }
             }
@@ -231,14 +232,13 @@ public partial class StoresController(GatewayService gatewayService,
 
             if (!string.IsNullOrEmpty(fileExtension))
             {
-                var renderContents = RenderFactory.Render(storeId, decodedValue, fileExtension, Request);
-                var mimeType = GetMimeType(fileExtension) ?? "application/octet-stream";
-
-                if (renderContents is not null)
+                var viewName = fileExtension.TrimStart('.');
+                if (ViewExists(viewName))
                 {
-                    return Content(renderContents, "text/html");
+                    return View(viewName, decodedValue);
                 }
 
+                var mimeType = GetMimeType(fileExtension) ?? "application/octet-stream";
                 return File(Convert.FromHexString(rawValue), mimeType);
             }
 
@@ -284,7 +284,11 @@ public partial class StoresController(GatewayService gatewayService,
 
         return null;
     }
-
+    private bool ViewExists(string name)
+    {
+        var result = _viewEngine.GetView("~/", $"~/{name}", isMainPage: false);
+        return result.Success || _viewEngine.FindView(ControllerContext, name, isMainPage: false).Success;
+    }
     private static readonly Dictionary<string, string> otherMimeTypes = new()
     {
         { "offer", "text/html" }
