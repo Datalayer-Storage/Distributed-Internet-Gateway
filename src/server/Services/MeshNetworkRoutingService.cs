@@ -54,9 +54,17 @@ public class MeshNetworkRoutingService(ChiaConfig chiaConfig,
 
     public async Task<string?> GetMeshNetworkLocationAsync(string storeId, string? key) => await FetchMeshNetworkData(storeId, key, true);
 
-    // The first URL is usually the source of the datastore so lets attempt to get the data from there first
-    // This is because will always have the most up to date data while the rest of the network is still propagating.
-    // Then move on to the rest of the network if the first is slow or down.
+    /**
+    * Fetches data from a mesh network of URLs associated with a store ID and an optional key.
+    * The first URL in the list is prioritized since the first url is usually the store owner, 
+    * followed by a randomized order of HTTPS URLs, then domain-named URLs, and finally any 
+    * remaining URLs, also randomized. This hurestic sorts the url list in a best guess order of reliability.
+    * 
+    * @param storeId The store ID for which to fetch the data.
+    * @param key An optional key for the specific data to fetch.
+    * @param returnRedirectUrl A flag indicating whether to return the redirect URL instead of the content.
+    * @return A Task that represents the asynchronous operation, which wraps the fetched data or redirect URL.
+    */
     private async Task<string?> FetchMeshNetworkData(string storeId, string? key, bool returnRedirectUrl)
     {
         var urls = GetRedirectUrls(storeId);
@@ -67,14 +75,15 @@ public class MeshNetworkRoutingService(ChiaConfig chiaConfig,
             return null;
         }
 
-        // Apply cache filter to the first URL
-        var firstUrl = urls.FirstOrDefault(url => !_cache.TryGetValue(url, out _));
+        var firstUrl = urls.FirstOrDefault();
 
-        // Filter and shuffle the remaining URLs, excluding the first URL if it's already selected
-        var remainingUrls = urls.SkipWhile(url => url == firstUrl).Where(url => !_cache.TryGetValue(url, out _)).OrderBy(_ => Guid.NewGuid());
+        // Filter and shuffle the remaining URLs based on their type, excluding the first URL
+        var httpsUrls = urls.Where(url => url.StartsWith("https") && url != firstUrl).OrderBy(_ => Guid.NewGuid());
+        var domainNamedUrls = urls.Where(url => !url.StartsWith("https") && Uri.CheckHostName(url) != UriHostNameType.IPv6 && Uri.CheckHostName(url) != UriHostNameType.IPv4 && url != firstUrl).OrderBy(_ => Guid.NewGuid());
+        var remainingUrls = urls.Except(httpsUrls).Except(domainNamedUrls).Except(new[] { firstUrl }).OrderBy(_ => Guid.NewGuid());
 
-        // Combine the first URL (if not cached) with the filtered remaining URLs
-        var orderedUrls = firstUrl != null ? new[] { firstUrl }.Concat(remainingUrls) : remainingUrls;
+        // Combine all sorted and filtered URLs
+        var orderedUrls = (new[] { firstUrl }).Concat(httpsUrls).Concat(domainNamedUrls).Concat(remainingUrls).Where(url => url != null && !_cache.TryGetValue(url, out _));
 
         foreach (var url in orderedUrls)
         {

@@ -4,7 +4,8 @@ using Microsoft.AspNetCore.DataProtection;
 using chia.dotnet;
 using dig;
 using dig.server;
-using EasyPipes;
+using Microsoft.AspNetCore.Mvc.ViewEngines;
+using Microsoft.AspNetCore.Mvc.Razor;
 
 var appStorage = new AppStorage(".dig");
 var builder = WebApplication.CreateBuilder(args);
@@ -40,7 +41,10 @@ else if (File.Exists(appStorage.UserSettingsFilePath))
     builder.Configuration.AddJsonFile(appStorage.UserSettingsFilePath, optional: true);
 }
 
-builder.Services.AddControllersWithViews();
+builder.Services.AddControllersWithViews(options =>
+{
+    options.Filters.AddService<FooterDataFilter>();
+});
 builder.Services.AddRazorPages();
 
 // this sets up the gateway service
@@ -48,7 +52,7 @@ builder.Services.AddRazorPages();
 builder.Services.AddSingleton<ChiaConfig>()
     .AddHttpClient()
     .AddSingleton((provider) => appStorage)
-    .AddActivatedSingleton<IServer, ServerService>()
+    .AddHostedService<ServerService>()
     .AddSingleton<GatewayService>()
     .AddSingleton<MirrorService>()
     .AddSingleton<DnsService>()
@@ -56,6 +60,9 @@ builder.Services.AddSingleton<ChiaConfig>()
     .AddSingleton<MeshNetworkRoutingService>()
     .AddSingleton<ServerCoinService>()
     .AddSingleton<ChiaService>()
+    .AddSingleton<FileCacheService>()
+    .AddScoped<FooterDataFilter>()
+    .AddScoped<IViewEngine, RazorViewEngine>()
     .AddMemoryCache()
     .RegisterChiaEndPoint<DataLayerProxy>("dig.server")
     .RegisterChiaEndPoint<FullNodeProxy>("dig.server")
@@ -119,16 +126,4 @@ app.UseEndpoints(endpoints =>
 });
 #pragma warning restore ASP0014
 
-
-// this is the IPC server that the command line talks to
-var server = new Server("dig.server.ipc");
-server.RegisterService(app.Services.GetRequiredService<IServer>());
-server.Start();
-
-var registry = app.Services.GetRequiredService<StoreRegistryService>();
-#pragma warning disable CS4014 // Because this call is not awaited, execution of the current method continues before the call is completed
-Task.Run(() => registry.Refresh()); // run this in the background
-#pragma warning restore CS4014 // Because this call is not awaited, execution of the current method continues before the call is completed
-
-app.Run();
-server.Stop();
+app.Run(); // see the ServerService for various tasks that start here

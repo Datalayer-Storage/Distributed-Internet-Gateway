@@ -18,8 +18,8 @@ Latest DIG releases are available on the GitHub releases page: [Download DIG fro
 
 ### Supported Binaries
 
-- Linux (Ubuntu): `dig-linux-arm64-<tag>.deb`, `dig-linux-arm64-<tag>.zip`, `dig-linux-x64-<tag>.deb`, `dig-linux-x64-<tag>.zip`
-- Windows: `dig-win-x64-<tag>.msi`, `dig-win-x64-<tag>.zip`
+- Linux (Ubuntu): `dig.node-linux-arm64-<tag>.deb`, `dig.node-linux-arm64-<tag>.zip`, `dig.node-linux-x64-<tag>.deb`, `dig.node-linux-x64-<tag>.zip`
+- Windows: `dig.node-win-x64-<tag>.msi`, `dig.node-win-x64-<tag>.zip`
 - OSX: Not Available Yet, Maybe one day
 
 ### Installation
@@ -30,22 +30,22 @@ Latest DIG releases are available on the GitHub releases page: [Download DIG fro
 
 #### Linux
 
-- **DEB**: The `.deb` package will install DIG and include a templated `systemctl dig@.service`.
+- **DEB**: The `.deb` package will install DIG and include a templated `systemctl dig.node@.service`.
 
 ### Systemctl Usage for Linux
 
-To enable and start the `dig@<user>.service` for a specific user (replace `<user>` with the actual username):
+To enable and start the `dig.node@<user>.service` for a specific user (replace `<user>` with the actual username):
 Following these steps will keep the node running in the background.
 
 ```bash
 # Enable the service
-sudo systemctl enable dig@<user>.service
+sudo systemctl enable dig.node@<user>.service
 
 # Reload systemctl to recognize the new service
 sudo systemctl daemon-reload
 
 # Start the service
-sudo systemctl start dig@<user>.service
+sudo systemctl start dig.node@<user>.service
 ```
 
 # DIG CLI Commands Guide
@@ -57,7 +57,7 @@ This guide provides a comprehensive overview of the Distributed-Internet-Gateway
 The general syntax for using the DIG CLI commands is as follows:
 
 ```bash
-dig [command] [subcommand] [options] [arguments]
+dig.node [command] [subcommand] [options] [arguments]
 ```
 
 ## Command Overview
@@ -70,15 +70,15 @@ Manage server coins associated with your DIG node.
 
 - **Add**: Adds a new server coin.
   ```bash
-  dig coins add [options]
+  dig.node coins add [options]
   ```
 - **Delete**: Deletes an existing server coin.
   ```bash
-  dig coins delete [options]
+  dig.node coins delete [options]
   ```
 - **List**: Lists all server coins associated with the node.
   ```bash
-  dig coins list [options]
+  dig.node coins list [options]
   ```
 
 ### 2. Host
@@ -89,15 +89,15 @@ Configure and manage host settings for the DIG node.
 
 - **Check**: Verifies the accessibility of a specified mirror host.
   ```bash
-  dig host check [host] [options]
+  dig.node host check [host] [options]
   ```
 - **Check Chia**: Checks the accessibility to Chia network endpoints.
   ```bash
-  dig host check-chia [options]
+  dig.node host check-chia [options]
   ```
 - **Show Config**: Displays the current configuration of the host.
   ```bash
-  dig host show-config [options]
+  dig.node host show-config [options]
   ```
 
 ### 3. Place
@@ -108,19 +108,19 @@ Manage datalayer.place configurations, allowing for seamless integration with th
 
 - **Login**: Logs into datalayer.place.
   ```bash
-  dig place login [options]
+  dig.node place login [options]
   ```
 - **Logout**: Logs out of datalayer.place.
   ```bash
-  dig place logout [options]
+  dig.node place logout [options]
   ```
 - **Show**: Displays details about the current datalayer.place configuration.
   ```bash
-  dig place show [options]
+  dig.node place show [options]
   ```
 - **Update**: Updates the IP address for your datalayer.place proxy.
   ```bash
-  dig place update [options]
+  dig.node place update [options]
   ```
 
 ### 4. Server
@@ -131,19 +131,19 @@ Control the local gateway server's operations, such as starting, stopping, and c
 
 - **Check**: Checks the current status of the DIG server.
   ```bash
-  dig server check [options]
+  dig.node server check [options]
   ```
 - **Start**: Starts the DIG server in a new process.
   ```bash
-  dig server start [options]
+  dig.node server start [options]
   ```
 - **Stop**: Stops the DIG server.
   ```bash
-  dig server stop [options]
+  dig.node server stop [options]
   ```
 - **Restart**: Restarts the DIG server.
   ```bash
-  dig server restart [options]
+  dig.node server restart [options]
   ```
 
 ### 5. Stores
@@ -154,31 +154,31 @@ Manage subscriptions to stores and mirrors, including adding, removing, and list
 
 - **Add**: Subscribes to a store and creates a server coin.
   ```bash
-  dig stores add [options]
+  dig.node stores add [options]
   ```
 - **Remove**: Unsubscribes from a store and deletes its associated coin.
   ```bash
-  dig stores remove [options]
+  dig.node stores remove [options]
   ```
 - **Unsubscribe All**: Unsubscribes from all stores and deletes their coins.
   ```bash
-  dig stores unsubscribe-all [options]
+  dig.node stores unsubscribe-all [options]
   ```
 - **Unmirror All**: Removes all mirrors from subscribed stores.
   ```bash
-  dig stores unmirror-all [options]
+  dig.node stores unmirror-all [options]
   ```
 - **List**: Lists all subscribed stores, their mirrors, and associated coins.
   ```bash
-  dig stores list [options]
+  dig.node stores list [options]
   ```
 - **Sync**: Synchronizes the DIG node with the data layer.
   ```bash
-  dig stores sync [options]
+  dig.node stores sync [options]
   ```
 - **Check Fee**: Checks the fee for adding a new mirror or coin.
   ```bash
-  dig stores check-fee [options]
+  dig.node stores check-fee [options]
   ```
 
 ## Conclusion

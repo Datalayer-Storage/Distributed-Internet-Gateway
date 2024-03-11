@@ -1,11 +1,20 @@
+using System.Text;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 using System.Dynamic;
+using System.Security.Cryptography;
 
 namespace dig;
 
 internal static partial class Utils
 {
+    public static string MD5Hash(this string input)
+    {
+        // Convert the input string to a byte array and compute the hash.
+        var data = MD5.HashData(Encoding.Default.GetBytes(input));
+        return BitConverter.ToString(data).Replace("-", string.Empty);
+    }
+
     public static Exception GetInnermostException(Exception ex)
     {
         if (ex.InnerException == null)

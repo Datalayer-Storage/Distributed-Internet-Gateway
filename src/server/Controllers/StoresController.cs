@@ -1,16 +1,19 @@
-using System.Text;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.ViewEngines;
 using System.Text.RegularExpressions;
 
 namespace dig.server;
 
 public partial class StoresController(GatewayService gatewayService,
                                         MeshNetworkRoutingService meshNetworkRoutingService,
-                                        ILogger<StoresController> logger, IConfiguration configuration) : ControllerBase
+                                        IViewEngine viewEngine,
+                                        ILogger<StoresController> logger,
+                                        IConfiguration configuration) : Controller
 {
     private readonly GatewayService _gatewayService = gatewayService;
-    private readonly ILogger<StoresController> _logger = logger;
     private readonly MeshNetworkRoutingService _meshNetworkRoutingService = meshNetworkRoutingService;
+    private readonly IViewEngine _viewEngine = viewEngine;
+    private readonly ILogger<StoresController> _logger = logger;
     private readonly IConfiguration _configuration = configuration;
 
     [HttpHead]
@@ -43,7 +46,17 @@ public partial class StoresController(GatewayService gatewayService,
                 return Redirect($"{referer}/{storeId}");
             }
 
-            var keys = await _gatewayService.GetKeys(storeId, cancellationToken);
+            // Requesting GetValue only from the last root hash onchain ensures that only
+            // nodes that have the latest state will respond to the request
+            // This helps prevent a mismatch between the state of the store and
+            // the data when pulled across decentralized nodes
+            var rootHash = await _gatewayService.GetLastRoot(storeId, cancellationToken);
+            if (rootHash is null)
+            {
+                return NotFound();
+            }
+
+            var keys = await _gatewayService.GetKeys(storeId, rootHash, cancellationToken);
 
             if (keys is not null)
             {
@@ -52,35 +65,28 @@ public partial class StoresController(GatewayService gatewayService,
                 // the key represents a SPA app, so we want to return the index.html
                 if (decodedKeys != null && decodedKeys.Count > 0 && decodedKeys.Contains("index.html"))
                 {
-                    var lastStoreRootHash = await _gatewayService.GetLastRoot(storeId, cancellationToken);
-
-                    if (lastStoreRootHash is not null)
-                    {
-                        HttpContext.Response.Headers.TryAdd("X-Generation-Hash", lastStoreRootHash);
-                    }
-
-                    var html = await _gatewayService.GetValueAsHtml(storeId, lastStoreRootHash, cancellationToken);
+                    HttpContext.Response.Headers.TryAdd("X-Generation-Hash", rootHash);
+                    var html = await _gatewayService.GetValueAsHtml(storeId, rootHash, cancellationToken);
                     if (html is not null)
                     {
-                        var disableProof = _configuration.GetValue<bool>("dig:DisableProofOfInclusion");
 
-                        if (!disableProof)
+                        var proof = await _gatewayService.GetProof(storeId, rootHash, HexUtils.ToHex("index.html"), cancellationToken);
+                        if (proof is not null)
                         {
-                            var proof = await _gatewayService.GetProof(storeId, HexUtils.ToHex("index.html"), cancellationToken);
-                            if (proof is not null)
-                            {
-                                HttpContext.Response.Headers.TryAdd("X-Proof-of-Inclusion", proof);
-                            }
+                            HttpContext.Response.Headers.TryAdd("X-Proof-of-Inclusion", Convert.ToBase64String(proof));
                         }
 
-
+                        // this is the case where the store is a SPA app
+                        // so it should return the index.html
                         return Content(html, "text/html");
                     }
+
+                    // could not get the root hash nor the html for this store
+                    return NotFound();
                 }
-
-                string htmlContent = IndexRenderer.Render(storeId, decodedKeys ?? [], Request);
-
-                return Content(htmlContent, "text/html");
+                //return Content(IndexRenderer.Render(storeId, decodedKeys ?? []), "text/html");
+                // in this case there is no index.html so we want to return the list of keys
+                return View("StoreIndex", new StoreIndex(_gatewayService.GetStore(storeId), decodedKeys ?? []));
             }
 
             var actAsCdn = _configuration.GetValue<bool>("dig:ActAsCdn");
@@ -88,7 +94,6 @@ public partial class StoresController(GatewayService gatewayService,
             if (actAsCdn)
             {
                 var content = await _meshNetworkRoutingService.GetMeshNetworkContentsAsync(storeId, null);
-
                 if (content is not null)
                 {
                     return Content(content, "text/html");
@@ -97,7 +102,6 @@ public partial class StoresController(GatewayService gatewayService,
             else
             {
                 var redirect = await _meshNetworkRoutingService.GetMeshNetworkLocationAsync(storeId, null);
-
                 if (redirect is not null)
                 {
                     _logger.LogInformation("Redirecting to {redirect}", redirect.SanitizeForLog());
@@ -106,9 +110,7 @@ public partial class StoresController(GatewayService gatewayService,
                 }
             }
 
-
             return NotFound();
-
         }
         catch (Exception ex)
         {
@@ -149,59 +151,41 @@ public partial class StoresController(GatewayService gatewayService,
                 return Redirect($"{referer}/{storeId}/{key}");
             }
 
+            // Requesting GetValue only from the last root hash onchain ensures that only
+            // nodes that have the latest state will respond to the request
+            // This helps prevent a mismatch between the state of the store and
+            // the data when pulled across decentralized nodes
+            var lastRootHash = await _gatewayService.GetLastRoot(storeId, cancellationToken);
+            if (lastRootHash is null)
+            {
+                return NotFound();
+            }
+
             // info.html is a synthetic key that we use to display the store's contents
             // even though index.html returns the same, if the store overrides index.html
             // the user can still get a list of keys at info.html
             if (key == "info.html")
             {
-                var keys = await _gatewayService.GetKeys(storeId, cancellationToken);
+                var keys = await _gatewayService.GetKeys(storeId, lastRootHash, cancellationToken);
                 if (keys is not null)
                 {
-                    var decodedKeys = keys.Select(HexUtils.FromHex).ToList();
-                    string htmlContent = IndexRenderer.Render(storeId, decodedKeys, Request);
-
-                    return Content(htmlContent, "text/html");
+                    return View("StoreIndex", keys.Select(HexUtils.FromHex));
                 }
             }
 
+            // support requesting keys by hex or utf8
             var hexKey = key.StartsWith("0x") ? key : HexUtils.ToHex(key);
-
-            var disableProof = _configuration.GetValue<bool>("dig:DisableProofOfInclusion");
-
-            if (!disableProof)
+            var proof = await _gatewayService.GetProof(storeId, lastRootHash, hexKey, cancellationToken);
+            if (proof is not null)
             {
-                var stopwatch = System.Diagnostics.Stopwatch.StartNew();
-                var proof = await _gatewayService.GetProof(storeId, hexKey, cancellationToken);
-                _logger.LogInformation($"GetProof {proof} ms");
-                stopwatch.Stop();
-                _logger.LogInformation($"GetProof command completed in {stopwatch.ElapsedMilliseconds} ms");
-
-                if (proof is not null)
-                {
-                    byte[] proofBytes = Encoding.UTF8.GetBytes(proof);
-
-                    // Convert the byte array to a Base64 string
-                    string proofBase64 = Convert.ToBase64String(proofBytes);
-                    HttpContext.Response.Headers.TryAdd("X-Proof-of-Inclusion", proofBase64);
-                    HttpContext.Response.Headers.TryAdd("X-Gen-Time", stopwatch.ElapsedMilliseconds.ToString());
-                }
+                HttpContext.Response.Headers.TryAdd("X-Proof-of-Inclusion", Convert.ToBase64String(proof));
             }
 
-
-            // Requesting GetValue only from the last root hash onchain ensures that only
-            // nodes that have the latest state will respond to the request
-            // This helps prevent a mismatch between the state of the store and
-            // the data when pulled across decentralized nodes
-            var lastStoreRootHash = await _gatewayService.GetLastRoot(storeId, cancellationToken);
-
-            if (lastStoreRootHash is not null)
-            {
-                HttpContext.Response.Headers.TryAdd("X-Generation-Hash", lastStoreRootHash);
-            }
+            HttpContext.Response.Headers.TryAdd("X-Generation-Hash", lastRootHash);
 
             var fileExtension = Path.GetExtension(key);
 
-            var rawValue = await _gatewayService.GetValue(storeId, hexKey, lastStoreRootHash, cancellationToken);
+            var rawValue = await _gatewayService.GetValue(storeId, hexKey, lastRootHash, cancellationToken);
             if (rawValue is null)
             {
                 _logger.LogInformation("couldn't find: {key}", key.SanitizeForLog());
@@ -211,21 +195,20 @@ public partial class StoresController(GatewayService gatewayService,
                 if (actAsCdn)
                 {
                     var content = await _meshNetworkRoutingService.GetMeshNetworkContentsAsync(storeId, key);
-
                     if (content is not null)
                     {
-                        string mimeType = GetMimeType(fileExtension) ?? "application/octet-stream";
+                        var mimeType = GetMimeType(fileExtension) ?? "application/octet-stream";
                         return Content(content, mimeType);
                     }
                 }
                 else
                 {
                     var redirect = await _meshNetworkRoutingService.GetMeshNetworkLocationAsync(storeId, key);
-
                     if (redirect is not null)
                     {
                         _logger.LogInformation("Redirecting to {redirect}", redirect.SanitizeForLog());
                         HttpContext.Response.Headers.Location = redirect;
+
                         return Redirect(redirect);
                     }
                 }
@@ -237,11 +220,11 @@ public partial class StoresController(GatewayService gatewayService,
 
             if (Utils.TryParseJson(decodedValue, out var json))
             {
-                IDictionary<string, object>? expando = json as IDictionary<string, object>;
+                var expando = json as IDictionary<string, object>;
                 if (expando is not null && expando.TryGetValue("type", out var type) && type?.ToString() == "multipart")
                 {
-                    string mimeType = GetMimeType(fileExtension) ?? "application/octet-stream";
-                    var bytes = await _gatewayService.GetValuesAsBytes(storeId, json, lastStoreRootHash, cancellationToken);
+                    var mimeType = GetMimeType(fileExtension) ?? "application/octet-stream";
+                    var bytes = await _gatewayService.GetValuesAsBytes(storeId, json, lastRootHash, cancellationToken);
 
                     return Results.File(bytes, mimeType);
                 }
@@ -249,29 +232,30 @@ public partial class StoresController(GatewayService gatewayService,
 
             if (!string.IsNullOrEmpty(fileExtension))
             {
-                string? renderContents = RenderFactory.Render(storeId, decodedValue, fileExtension, Request);
-                string mimeType = GetMimeType(fileExtension) ?? "application/octet-stream";
-
-                if (renderContents is not null)
+                var viewName = fileExtension.TrimStart('.');
+                if (ViewExists(viewName))
                 {
-                    return Content(renderContents, "text/html");
+                    return View(viewName, decodedValue);
                 }
 
+                var mimeType = GetMimeType(fileExtension) ?? "application/octet-stream";
                 return File(Convert.FromHexString(rawValue), mimeType);
             }
-            else if (json is not null)
+
+            if (json is not null)
             {
                 return Results.Ok(json);
             }
-            else if (Utils.IsBase64Image(decodedValue))
+
+            if (Utils.IsBase64Image(decodedValue))
             {
                 // figure out the mime type
                 var regex = MimeTypeRegex();
                 var match = regex.Match(decodedValue);
 
                 // convert the base64 string to a byte array
-                string base64Image = decodedValue.Split(";base64,")[^1];
-                byte[] imageBuffer = Convert.FromBase64String(base64Image);
+                var base64Image = decodedValue.Split(";base64,")[^1];
+                var imageBuffer = Convert.FromBase64String(base64Image);
 
                 return File(imageBuffer, match.Value);
             }
@@ -300,10 +284,14 @@ public partial class StoresController(GatewayService gatewayService,
 
         return null;
     }
-
+    private bool ViewExists(string name)
+    {
+        var result = _viewEngine.GetView("~/", $"~/{name}", isMainPage: false);
+        return result.Success || _viewEngine.FindView(ControllerContext, name, isMainPage: false).Success;
+    }
     private static readonly Dictionary<string, string> otherMimeTypes = new()
     {
-        { "offer", "text/html"}
+        { "offer", "text/html" }
     };
 
     [GeneratedRegex(@"[^:]\w+\/[\w-+\d.]+(?=;|,)")]
