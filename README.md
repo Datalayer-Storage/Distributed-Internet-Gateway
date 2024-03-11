@@ -18,8 +18,8 @@ Latest DIG releases are available on the GitHub releases page: [Download DIG fro
 
 ### Supported Binaries
 
-- Linux (Ubuntu): `dig.node-linux-arm64-<tag>.deb`, `dig.node-linux-arm64-<tag>.zip`, `dig.node-linux-x64-<tag>.deb`, `dig.node-linux-x64-<tag>.zip`
-- Windows: `dig.node-win-x64-<tag>.msi`, `dig.node-win-x64-<tag>.zip`
+- Linux (Ubuntu): `dig-linux-arm64-<tag>.deb`, `dig-linux-arm64-<tag>.zip`, `dig-linux-x64-<tag>.deb`, `dig-linux-x64-<tag>.zip`
+- Windows: `dig-win-x64-<tag>.msi`, `dig-win-x64-<tag>.zip`
 - OSX: Not Available Yet, Maybe one day
 
 ### Installation
@@ -30,22 +30,22 @@ Latest DIG releases are available on the GitHub releases page: [Download DIG fro
 
 #### Linux
 
-- **DEB**: The `.deb` package will install DIG and include a templated `systemctl dig.node@.service`.
+- **DEB**: The `.deb` package will install DIG and include a templated `systemctl dig@.service`.
 
 ### Systemctl Usage for Linux
 
-To enable and start the `dig.node@<user>.service` for a specific user (replace `<user>` with the actual username):
+To enable and start the `dig@<user>.service` for a specific user (replace `<user>` with the actual username):
 Following these steps will keep the node running in the background.
 
 ```bash
 # Enable the service
-sudo systemctl enable dig.node@<user>.service
+sudo systemctl enable dig@<user>.service
 
 # Reload systemctl to recognize the new service
 sudo systemctl daemon-reload
 
 # Start the service
-sudo systemctl start dig.node@<user>.service
+sudo systemctl start dig@<user>.service
 ```
 
 # DIG CLI Commands Guide
