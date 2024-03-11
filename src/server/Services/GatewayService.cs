@@ -60,6 +60,8 @@ public class GatewayService(DataLayerProxy dataLayer,
         return stores.Select(_storeRegistryService.GetStore);
     }
 
+    public Store GetStore(string storeId) => _storeRegistryService.GetStore(storeId);
+
     private async Task<string> RefreshStoreRootHash(string storeId, CancellationToken cancellationToken)
     {
         var currentRoot = await _dataLayer.GetRoot(storeId, cancellationToken);

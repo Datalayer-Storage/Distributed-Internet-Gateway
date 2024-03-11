@@ -5,7 +5,8 @@ namespace dig.server;
 
 public partial class StoresController(GatewayService gatewayService,
                                         MeshNetworkRoutingService meshNetworkRoutingService,
-                                        ILogger<StoresController> logger, IConfiguration configuration) : ControllerBase
+                                        ILogger<StoresController> logger,
+                                        IConfiguration configuration) : Controller
 {
     private readonly GatewayService _gatewayService = gatewayService;
     private readonly ILogger<StoresController> _logger = logger;
@@ -65,20 +66,26 @@ public partial class StoresController(GatewayService gatewayService,
                     var html = await _gatewayService.GetValueAsHtml(storeId, rootHash, cancellationToken);
                     if (html is not null)
                     {
+
                         var proof = await _gatewayService.GetProof(storeId, rootHash, HexUtils.ToHex("index.html"), cancellationToken);
                         if (proof is not null)
                         {
                             HttpContext.Response.Headers.TryAdd("X-Proof-of-Inclusion", Convert.ToBase64String(proof));
                         }
 
+                        // this is the case where the store is a SPA app
+                        // so it should return the index.html
                         return Content(html, "text/html");
                     }
 
-                    //  could not get the root hash nor the html for this store
+                    // could not get the root hash nor the html for this store
                     return NotFound();
                 }
-
-                return Content(IndexRenderer.Render(storeId, decodedKeys ?? []), "text/html");
+                //return Content(IndexRenderer.Render(storeId, decodedKeys ?? []), "text/html");
+                // in this case there is no index.html so we want to return the list of keys
+                var request = HttpContext.Request;
+                ViewBag.WellKnown = await _gatewayService.GetWellKnown($"{request.Scheme}://{request.Host}{request.PathBase}", cancellationToken);
+                return View("StoreIndex", new StoreIndex(_gatewayService.GetStore(storeId), decodedKeys ?? []));
             }
 
             var actAsCdn = _configuration.GetValue<bool>("dig:ActAsCdn");
@@ -161,9 +168,9 @@ public partial class StoresController(GatewayService gatewayService,
                 var keys = await _gatewayService.GetKeys(storeId, lastRootHash, cancellationToken);
                 if (keys is not null)
                 {
-                    var htmlContent = IndexRenderer.Render(storeId, keys.Select(HexUtils.FromHex));
+                    //var htmlContent = IndexRenderer.Render(storeId, keys.Select(HexUtils.FromHex));
 
-                    return Content(htmlContent, "text/html");
+                    return View("StoreIndex", keys.Select(HexUtils.FromHex));
                 }
             }
 
@@ -202,6 +209,7 @@ public partial class StoresController(GatewayService gatewayService,
                     {
                         _logger.LogInformation("Redirecting to {redirect}", redirect.SanitizeForLog());
                         HttpContext.Response.Headers.Location = redirect;
+
                         return Redirect(redirect);
                     }
                 }
