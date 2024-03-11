@@ -61,7 +61,7 @@
             </Component>
             <Component Id="CLI" Bitness="always64">
                 <!-- Copies the dig.server.exe file using the project reference preprocessor variables -->
-                <File Id="dig.exe" Source="$(var.SourcePath)\dig.exe" KeyPath="true" />
+                <File Id="dig.node.exe" Source="$(var.SourcePath)\dig.node.exe" KeyPath="true" />
             </Component>
         </DirectoryRef>
 
