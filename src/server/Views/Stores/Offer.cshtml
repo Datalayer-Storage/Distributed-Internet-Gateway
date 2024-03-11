@@ -4,6 +4,7 @@
     Layout = "_Layout";
 }
 @{
+    // this generates the QR code image and the base64 string
     var qrCodeData = new QRCodeGenerator().CreateQrCode(Model, QRCodeGenerator.ECCLevel.L);
     var qrCodeImage = new PngByteQRCode(qrCodeData).GetGraphic(20);
     var base64Image = Convert.ToBase64String(qrCodeImage);
@@ -21,14 +22,10 @@
         margin: 20px;
     }
 
-    .spinner {
-        display: none;
-    }
-
     .qr-image {
-        height: auto;
         cursor: pointer;
         max-height: 95vh;
+        object-fit: contain;
     }
 
     .embed-container {

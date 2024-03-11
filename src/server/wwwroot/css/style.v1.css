@@ -10,10 +10,6 @@ body {
     -o-transition: all 2s ease;
 }
 
-footer {
-    background-color: #f1f1f1;
-}
-
 pre {
     white-space: -moz-pre-wrap;
     /* Mozilla, since 1999 */
