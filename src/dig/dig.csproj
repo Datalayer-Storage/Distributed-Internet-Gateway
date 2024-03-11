@@ -7,7 +7,7 @@
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
         <RootNamespace>dig</RootNamespace>
-        <AssemblyName>dig</AssemblyName>
+        <AssemblyName>dig.node</AssemblyName>
         <PublishSingleFile Condition="'$(Configuration)' == 'Release'">true</PublishSingleFile>
         <UserSecretsId>3aace9bf-0eee-40e8-a6f2-457858d15586</UserSecretsId>
     </PropertyGroup>
