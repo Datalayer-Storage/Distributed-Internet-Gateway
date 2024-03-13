@@ -86,7 +86,7 @@ jobs:
           name: ${{matrix.artifact-name}}
           path: publish/standalone/${{matrix.runtime}}
 
-  package-dmg:
+  dmg:
     name: Package DMG
     runs-on: macos-latest
     needs: build
