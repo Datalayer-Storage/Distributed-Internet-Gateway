@@ -4,7 +4,7 @@ using Microsoft.Extensions.Primitives;
 namespace dig.caching;
 
 /// <summary>
-/// The cache service that does not caching. Used to disable caching altogether.
+/// This cache service uses the built-in .NET Core memory cache to store objects in memory.
 /// </summary>
 public class MemoryCacheService(IMemoryCache memoryCache,
                                 ILogger<MemoryCacheService> logger,

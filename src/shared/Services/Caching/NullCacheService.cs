@@ -1,7 +1,7 @@
 namespace dig.caching;
 
 /// <summary>
-/// The cache service that does not caching. Used to disable caching altogether.
+/// The cache service that does not actually cache anything. Used to disable caching altogether.
 /// </summary>
 public class NullCacheService : IObjectCache
 {
