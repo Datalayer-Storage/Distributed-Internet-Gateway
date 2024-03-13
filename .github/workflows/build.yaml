@@ -116,7 +116,7 @@ jobs:
         run: brew install create-dmg
 
       - name: list files
-        run: ls -la ${{ github.workspace }}\${{matrix.artifact-name}}
+        run: ls -la ${{ github.workspace }}/${{matrix.artifact-name}}
 
       - name: Package Files into DMG
         run: |
@@ -128,13 +128,13 @@ jobs:
           --icon "Application.app" 200 190 \
           --hide-extension "Application.app" \
           --app-drop-link 600 185 \
-          "${{ github.workspace }}\${{matrix.artifact-name}}.dmg" \
-          "${{ github.workspace }}\${{matrix.artifact-name}}/"
+          "${{ github.workspace }}/${{matrix.artifact-name}}.dmg" \
+          "${{ github.workspace }}/${{matrix.artifact-name}}/"
 
       - name: Find DMG file
         id: find-dmg
         run: |
-          DMG_FILE=$(find ${{ github.workspace }}\${{matrix.artifact-name}} -type f -name '*.dmg')
+          DMG_FILE=$(find ${{ github.workspace }}/${{matrix.artifact-name}} -type f -name '*.dmg')
           echo "DMG_FILE=$DMG_FILE" >> $GITHUB_ENV
           echo "Found DMG file: $DMG_FILE"
 
