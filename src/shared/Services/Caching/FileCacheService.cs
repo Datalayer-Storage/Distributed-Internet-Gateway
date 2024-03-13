@@ -1,8 +1,8 @@
 using chia.dotnet;
 
-namespace dig;
+namespace dig.caching;
 
-public class FileCacheService
+public class FileCacheService : IObjectCache
 {
     private readonly string _cacheDirectory;
     private readonly ILogger<FileCacheService> _logger;
