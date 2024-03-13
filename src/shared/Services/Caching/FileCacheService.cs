@@ -28,7 +28,7 @@ public class FileCacheService : IObjectCache
         }
 
         // it's not cached so create it and add it to the file cache if it's not null
-            _logger.LogWarning("File cache miss for {key}", key.SanitizeForLog());
+        _logger.LogWarning("File cache miss for {key}", key.SanitizeForLog());
         var newValue = await factory();
 
         if (newValue is not null)

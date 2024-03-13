@@ -1,14 +1,10 @@
 using Microsoft.Extensions.Logging.Configuration;
 using Microsoft.Extensions.Logging.EventLog;
 using dig;
+using dig.server;
 
 var appStorage = new AppStorage(".dig");
 var builder = WebApplication.CreateBuilder(args);
-
-if (builder.Environment.IsProduction())
-{
-    builder.Services.AddApplicationInsightsTelemetry();
-}
 
 if (OperatingSystem.IsWindows())
 {
@@ -19,8 +15,8 @@ var path = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "appsettings.json
 if (File.Exists(path))
 {
     Console.WriteLine($"Loading settings from {path}");
+    builder.Configuration.AddJsonFile(path, optional: true);
 }
-builder.Configuration.AddJsonFile(path, optional: true);
 
 // we can take the path to an appsettings.json file as an argument
 // if not provided, the default appsettings.json will be used and settings
@@ -35,6 +31,8 @@ else if (File.Exists(appStorage.UserSettingsFilePath))
     Console.WriteLine($"Loading user settings from {appStorage.UserSettingsFilePath}");
     builder.Configuration.AddJsonFile(appStorage.UserSettingsFilePath, optional: true);
 }
+
+builder.ConfigureServices(appStorage);
 
 var app = builder.Build();
 

@@ -70,8 +70,8 @@ public class MemoryCacheService(IMemoryCache memoryCache,
 
     public void RemoveStore(string storeId)
     {
-        // since the cache key includes the store and the root hash this shouldn't be necessary
-        // for the memory cache, which doesn't support bulk removal
+        // since the cache key includes the store and the root hash this
+        // is ok to be a no-op for the memory cache, which doesn't support bulk removal
         //
         // orphaned keys will be removed by the sliding expiration
         // and the cache reset token

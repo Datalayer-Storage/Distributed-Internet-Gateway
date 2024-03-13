@@ -10,6 +10,11 @@ public static class ServiceConfiguration
 {
     public static WebApplicationBuilder ConfigureServices(this WebApplicationBuilder builder, AppStorage appStorage)
     {
+        if (builder.Environment.IsProduction())
+        {
+            builder.Services.AddApplicationInsightsTelemetry();
+        }
+
         builder.Services.AddControllersWithViews(options =>
         {
             options.Filters.AddService<FooterDataFilter>();
@@ -28,7 +33,7 @@ public static class ServiceConfiguration
             .AddSingleton<ServerCoinService>()
             .AddSingleton<ChiaService>()
             .AddScoped<FooterDataFilter>()
-            .AddScoped<IViewEngine, RazorViewEngine>()
+            .AddScoped<IViewEngine, RazorViewEngine>() // we use this so we can check for the existence of a view by name
             .AddMemoryCache()
             .RegisterChiaEndPoint<DataLayerProxy>("dig.server")
             .RegisterChiaEndPoint<FullNodeProxy>("dig.server")
@@ -43,7 +48,7 @@ public static class ServiceConfiguration
         // this is where configuration based services are added
         //
 
-        switch (builder.Configuration.GetValue("dig:CacheProvider", "FileSystem"))
+        switch (builder.Configuration.GetValue("dig:CacheProvider", "Disabled"))
         {
             case "Memory":
                 builder.Services.AddSingleton<IObjectCache, MemoryCacheService>();
