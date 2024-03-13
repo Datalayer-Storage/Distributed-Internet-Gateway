@@ -105,6 +105,7 @@ jobs:
         uses: actions/download-artifact@v3
         with:
           name: ${{matrix.artifact-name}}
+          path: ${{matrix.artifact-name}}
       
       - name: Import Apple installer signing certificates
         uses: Apple-Actions/import-codesign-certs@v1
