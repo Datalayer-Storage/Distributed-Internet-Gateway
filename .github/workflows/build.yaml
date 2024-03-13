@@ -90,6 +90,13 @@ jobs:
     name: Package DMG
     runs-on: macos-latest
     needs: build
+
+    strategy:
+      matrix:
+        include:
+          - artifact-name: dig-osx-x64
+            runtime: osx-x64
+
     steps:
       - name: Checkout Code
         uses: actions/checkout@v3
@@ -97,7 +104,7 @@ jobs:
       - name: Download OSX Artifacts
         uses: actions/download-artifact@v3
         with:
-          name: dig-osx-x64
+          name: ${{matrix.artifact-name}}
       
       - name: Import Apple installer signing certificates
         uses: Apple-Actions/import-codesign-certs@v1
@@ -107,6 +114,9 @@ jobs:
 
       - name: Install DMG Packaging Tool
         run: brew install create-dmg
+
+      - name: list files
+        run: ls -la ${{matrix.artifact-name}}
 
       - name: Package Files into DMG
         run: |
@@ -118,13 +128,13 @@ jobs:
           --icon "Application.app" 200 190 \
           --hide-extension "Application.app" \
           --app-drop-link 600 185 \
-          "dig-osx-x64.dmg" \
-          "dig-osx-x64/"  # Path to the downloaded OSX artifacts
+          "${{matrix.artifact-name}}.dmg" \
+          "${{matrix.artifact-name}}/"  # Path to the downloaded OSX artifacts
 
       - name: Find DMG file
         id: find-dmg
         run: |
-          DMG_FILE=$(find ${{ github.workspace }}\dig-osx-x64 -type f -name '*.dmg')
+          DMG_FILE=$(find ${{ github.workspace }}\${{matrix.artifact-name}} -type f -name '*.dmg')
           echo "DMG_FILE=$DMG_FILE" >> $GITHUB_ENV
           echo "Found DMG file: $DMG_FILE"
 
@@ -141,8 +151,8 @@ jobs:
       - name: Upload DMG
         uses: actions/upload-artifact@v3
         with:
-          name: dig-osx-x64-dmg
-          path: dig-osx-x64.dmg
+          name: ${{matrix.artifact-name}}-dmg
+          path: ${{matrix.artifact-name}}.dmg
 
   msi:
     name: Build ${{matrix.artifact-name}} deb
