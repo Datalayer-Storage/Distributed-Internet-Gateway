@@ -116,6 +116,11 @@ jobs:
       - name: Install DMG Packaging Tool
         run: brew install create-dmg
 
+      - name: Code Sign Binaries
+        run: |
+          codesign --sign "Developer ID Application: Michael Taylor (${{ secrets.APPLE_TEAM_ID }})" --timestamp --options runtime --verbose ./${{matrix.artifact-name}}/dig.server
+          codesign --sign "Developer ID Application: Michael Taylor (${{ secrets.APPLE_TEAM_ID }})" --timestamp --options runtime --verbose ./${{matrix.artifact-name}}/dig.node
+
       - name: list files
         run: |
           ls -la ./${{matrix.artifact-name}}
@@ -139,6 +144,10 @@ jobs:
           echo "DMG_FILE=$DMG_FILE" >> $GITHUB_ENV
           echo "Found DMG file: $DMG_FILE"
 
+      - name: Code Sign DMG
+        run: |
+          codesign --sign "Developer ID Application: Michael Taylor (${{ secrets.APPLE_TEAM_ID }})" --timestamp --options runtime --verbose ${{ env.DMG_FILE }}
+  
       - name: Notarize with notary-tools action
         uses: GuillaumeFalourd/notary-tools@v1
         with:
