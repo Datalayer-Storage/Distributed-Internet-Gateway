@@ -3,6 +3,7 @@ using chia.dotnet;
 using System.Web;
 using System.Text;
 using Microsoft.Extensions.Caching.Memory;
+using dig.caching;
 
 namespace dig.server;
 
@@ -10,7 +11,7 @@ public class GatewayService(DataLayerProxy dataLayer,
                             ChiaService chiaService,
                             ChiaConfig chiaConfig,
                             StoreRegistryService storeRegistryService,
-                            FileCacheService fileCacheService,
+                            IObjectCache objectCacheService,
                             IMemoryCache memoryCache,
                             ILogger<GatewayService> logger,
                             IConfiguration configuration)
@@ -19,7 +20,7 @@ public class GatewayService(DataLayerProxy dataLayer,
     private readonly ChiaConfig _chiaConfig = chiaConfig;
     private readonly ChiaService _chiaService = chiaService;
     private readonly StoreRegistryService _storeRegistryService = storeRegistryService;
-    private readonly FileCacheService _fileCacheService = fileCacheService;
+    private readonly IObjectCache _objectCacheService = objectCacheService;
     private readonly IMemoryCache _memoryCache = memoryCache;
     private readonly ILogger<GatewayService> _logger = logger;
     private readonly IConfiguration _configuration = configuration;
@@ -65,14 +66,14 @@ public class GatewayService(DataLayerProxy dataLayer,
     private async Task<string> RefreshStoreRootHash(string storeId, CancellationToken cancellationToken)
     {
         var currentRoot = await _dataLayer.GetRoot(storeId, cancellationToken);
-        var cachedRootHash = await _fileCacheService.GetValueAsync<RootHash>(storeId, "", "last-root", cancellationToken);
+        var cachedRootHash = await _objectCacheService.GetValueAsync<RootHash>(storeId, "", "last-root", cancellationToken);
 
         // the current hash doesn't match the persistent cache
         if (cachedRootHash?.Hash != currentRoot.Hash)
         {
             _logger.LogWarning("Invalidating cache for {StoreId}", storeId.SanitizeForLog());
-            _fileCacheService.RemoveStore(storeId);
-            await _fileCacheService.SetValueAsync(storeId, "", "last-root", currentRoot, cancellationToken);
+            _objectCacheService.RemoveStore(storeId);
+            await _objectCacheService.SetValueAsync(storeId, "", "last-root", currentRoot, cancellationToken);
         }
 
         return currentRoot.Hash;
@@ -103,7 +104,7 @@ public class GatewayService(DataLayerProxy dataLayer,
     {
         try
         {
-            var keys = await _fileCacheService.GetOrCreateAsync(storeId, rootHash, "keys",
+            var keys = await _objectCacheService.GetOrCreateAsync(storeId, rootHash, "keys",
                 async () =>
                 {
                     _logger.LogInformation("Getting keys for {StoreId}", storeId.SanitizeForLog());
@@ -127,7 +128,7 @@ public class GatewayService(DataLayerProxy dataLayer,
         {
             try
             {
-                var proof = await _fileCacheService.GetOrCreateAsync(storeId, rootHash, $"{key}-proof",
+                var proof = await _objectCacheService.GetOrCreateAsync(storeId, rootHash, $"{key}-proof",
                     async () =>
                     {
                         _logger.LogInformation("Getting proof for {StoreId} {Key}", storeId.SanitizeForLog(), key.SanitizeForLog());
@@ -151,7 +152,7 @@ public class GatewayService(DataLayerProxy dataLayer,
     {
         try
         {
-            var value = await _fileCacheService.GetOrCreateAsync(storeId, rootHash, key,
+            var value = await _objectCacheService.GetOrCreateAsync(storeId, rootHash, key,
                 async () =>
                 {
                     _logger.LogInformation("Getting value for {StoreId} {Key}", storeId.SanitizeForLog(), key.SanitizeForLog());

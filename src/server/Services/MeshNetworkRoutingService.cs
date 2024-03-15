@@ -56,10 +56,10 @@ public class MeshNetworkRoutingService(ChiaConfig chiaConfig,
 
     /**
     * Fetches data from a mesh network of URLs associated with a store ID and an optional key.
-    * The first URL in the list is prioritized since the first url is usually the store owner, 
-    * followed by a randomized order of HTTPS URLs, then domain-named URLs, and finally any 
-    * remaining URLs, also randomized. This hurestic sorts the url list in a best guess order of reliability.
-    * 
+    * The first URL in the list is prioritized since the first url is usually the store owner,
+    * followed by a randomized order of HTTPS URLs, then domain-named URLs, and finally any
+    * remaining URLs, also randomized. This heuristic sorts the url list in a best guess order of reliability.
+    *
     * @param storeId The store ID for which to fetch the data.
     * @param key An optional key for the specific data to fetch.
     * @param returnRedirectUrl A flag indicating whether to return the redirect URL instead of the content.
@@ -83,7 +83,7 @@ public class MeshNetworkRoutingService(ChiaConfig chiaConfig,
         var remainingUrls = urls.Except(httpsUrls).Except(domainNamedUrls).Except(new[] { firstUrl }).OrderBy(_ => Guid.NewGuid());
 
         // Combine all sorted and filtered URLs
-        var orderedUrls = (new[] { firstUrl }).Concat(httpsUrls).Concat(domainNamedUrls).Concat(remainingUrls).Where(url => url != null && !_cache.TryGetValue(url, out _));
+        var orderedUrls = (new[] { firstUrl }).Concat(httpsUrls).Concat(domainNamedUrls).Concat(remainingUrls).Where(url => url is not null && !_cache.TryGetValue(url, out _));
 
         foreach (var url in orderedUrls)
         {
@@ -122,7 +122,8 @@ public class MeshNetworkRoutingService(ChiaConfig chiaConfig,
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error checking URL {url}", apiUrl.SanitizeForLog());
-                _cache.Set(url, false, TimeSpan.FromHours(1));
+                // nulls are filtered out above, so we can safely cache the failed URL
+                _cache.Set(url!, false, TimeSpan.FromHours(1));
             }
         }
 
