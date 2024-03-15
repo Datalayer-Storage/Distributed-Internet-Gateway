@@ -1,5 +1,5 @@
 param(
-    [string[]]$runTimes = @("win-x64", "linux-x64", "linux-arm64")
+    [string[]]$runTimes = @("win-x64", "linux-x64", "linux-arm64", "osx-x64")
 )
 # other runtimes that might work: https://learn.microsoft.com/en-us/dotnet/core/rid-catalog
 
