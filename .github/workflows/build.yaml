@@ -129,8 +129,8 @@ jobs:
           --icon "Application.app 200 190" \
           --hide-extension "Application.app" \
           --app-drop-link "600 185" \
-          "${{ github.workspace }}/${{matrix.artifact-name}}.dmg" \
-          "${{ github.workspace }}/${{matrix.artifact-name}}/"
+          "${{ github.workspace }}/${{ matrix.artifact-name }}/${{ matrix.artifact-name }}.dmg" \
+          "${{ github.workspace }}/${{ matrix.artifact-name }}/"
 
       - name: Find DMG file
         id: find-dmg
