@@ -288,6 +288,7 @@ jobs:
       - build
       - debs
       - msi
+      - dmg
 
     steps:
       - name: Download OSX DMG artifacts
