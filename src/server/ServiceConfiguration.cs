@@ -55,7 +55,7 @@ public static class ServiceConfiguration
         // this is where configuration based services are added
         //
 
-        switch (builder.Configuration.GetValue("dig:CacheProvider", "Disabled"))
+        switch (builder.Configuration.GetValue("dig:CacheProvider", "FileSystem"))
         {
             case "Memory":
                 builder.Services.AddSingleton<IObjectCache, MemoryCacheService>();
