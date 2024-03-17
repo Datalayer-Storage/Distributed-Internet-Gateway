@@ -13,7 +13,7 @@ $jsonContent = @{
     }
 }
 $jsonString = $jsonContent | ConvertTo-Json -Depth 2
-$filePath = Join-Path -Path $digFolder -ChildPath "appsettings.user.json"
+$filePath = Join-Path -Path $digFolder -ChildPath "appsettings.json"
 $jsonString | Out-File -FilePath $filePath
 
 # Grant NetworkService full control to .dig folder

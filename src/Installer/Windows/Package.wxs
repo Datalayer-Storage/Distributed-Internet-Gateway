@@ -57,7 +57,7 @@
                 <RemoveFile Id="ALLFILES" Name="*.*" On="both" />
 
                 <!-- Tell WiX to install the Service -->
-                <ServiceInstall Id="ServiceInstaller" Type="ownProcess" Name="DistributedInternetGateway" DisplayName="$(Name)" Description="The Distributed Internet Gateway expresses chia as a webite." Start="auto" Account="NT AUTHORITY\NETWORK SERVICE" ErrorControl="normal" Arguments='"[%HOMEDRIVE][%HOMEPATH]\.dig\appsettings.user.json"'/>
+                <ServiceInstall Id="ServiceInstaller" Type="ownProcess" Name="DistributedInternetGateway" DisplayName="$(Name)" Description="The Distributed Internet Gateway expresses chia as a webite." Start="auto" Account="NT AUTHORITY\NETWORK SERVICE" ErrorControl="normal" Arguments='"[%HOMEDRIVE][%HOMEPATH]\.dig\appsettings.json"'/>
 
                 <!-- Tell WiX to start the Service -->
                 <ServiceControl Id="StartService" Start="install" Stop="both" Remove="uninstall" Name="DistributedInternetGateway" Wait="true"/>

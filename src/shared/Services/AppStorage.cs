@@ -38,7 +38,6 @@ public class AppStorage
         }
     }
 
-    public string UserSettingsFilePath => Path.Combine(UserSettingsFolder, "appsettings.user.json");
     public string UserSettingsFolder => _folderPath;
 
     public static bool IsRunningAsService()
