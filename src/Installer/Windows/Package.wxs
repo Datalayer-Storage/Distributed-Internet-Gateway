@@ -3,9 +3,9 @@
 <!--
     This will install dig.server.exe as a Windows Service
     and use the current user name to set the config file path.
-    The service runs as local system but will use that config file
+    The service runs as netwrok service but will use that config file
 
-    sc.exe config "Distributed-Internet-Gateway" binPath="C:\Program Files\<path to>\dig.server.exe <full path to config file>"
+    The GrantPermissions.ps1 file is used to set the permissions on the config file
 -->
 
 <!-- Define the variables in "$(var.*) expressions" -->
@@ -46,6 +46,9 @@
             <Component Id="WebConfig">
                 <File Id="web.config" Source="$(var.SourcePath)\web.config" KeyPath="true" />
             </Component>
+            <Component Id="GrantPermissions">
+                <File Id="GrantPermissions.ps1" Source=".\GrantPermissions.ps1" KeyPath="true" />
+            </Component>
             <Component Id="ServiceExecutable" Bitness="always64">
                 <!-- Copies the dig.server.exe file using the project reference preprocessor variables -->
                 <File Id="dig.server.exe" Source="$(var.SourcePath)\dig.server.exe" KeyPath="true" />
@@ -54,7 +57,7 @@
                 <RemoveFile Id="ALLFILES" Name="*.*" On="both" />
 
                 <!-- Tell WiX to install the Service -->
-                <ServiceInstall Id="ServiceInstaller" Type="ownProcess" Name="DistributedInternetGateway" DisplayName="$(Name)" Description="The Distributed Internet Gateway expresses chia as a webite." Start="auto" Account="LocalSystem" ErrorControl="normal" Arguments='"[%HOMEDRIVE][%HOMEPATH]\.dig\appsettings.user.json"'/>
+                <ServiceInstall Id="ServiceInstaller" Type="ownProcess" Name="DistributedInternetGateway" DisplayName="$(Name)" Description="The Distributed Internet Gateway expresses chia as a webite." Start="auto" Account="NT AUTHORITY\NETWORK SERVICE" ErrorControl="normal" Arguments='"[%HOMEDRIVE][%HOMEPATH]\.dig\appsettings.user.json"'/>
 
                 <!-- Tell WiX to start the Service -->
                 <ServiceControl Id="StartService" Start="install" Stop="both" Remove="uninstall" Name="DistributedInternetGateway" Wait="true"/>
@@ -68,6 +71,7 @@
         <!-- Tell WiX to install the files -->
         <Feature Id="Service" Title="Distributed Internet Gateway Service Setup" Level="1">
             <ComponentRef Id="ServiceExecutable" />
+            <ComponentRef Id="GrantPermissions" />
             <ComponentRef Id="AppSettings" />
             <ComponentRef Id="CLI" />
             <ComponentRef Id="ServerCoinExe" />
@@ -89,6 +93,16 @@
             <ComponentRef Id="Twittersocialiconscirclebluepng" />
             <ComponentRef Id="Twittersocialiconscirclewhitepng" />
         </Feature>
+
+        <Property Id="POWERSHELLCMD">
+            <RegistrySearch Id="FindPowershell" Root="HKLM" Key="SOFTWARE\Microsoft\PowerShell\1\ShellIds\Microsoft.PowerShell" Name="Path" Type="raw" />
+        </Property>
+
+        <CustomAction Id="SetServicePermissions" Property="POWERSHELLCMD" ExeCommand="-WindowStyle Hidden -ExecutionPolicy Bypass -File &quot;[INSTALLFOLDER]GrantPermissions.ps1&quot;" Execute="deferred" Return="check" Impersonate="yes" />
+
+        <InstallExecuteSequence>
+            <Custom Action="SetServicePermissions" After="InstallFiles" Condition="NOT Installed"/>
+        </InstallExecuteSequence>
 
     </Package>
 

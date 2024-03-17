@@ -8,6 +8,8 @@ var builder = Host.CreateApplicationBuilder(args);
 
 // the non-web app builder doesn't bind to settings files automatically
 var path = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "appsettings.json");
+
+// this looks for appsettings.user.json in the user's ~/.dig directory
 builder.Configuration.AddJsonFile(path, optional: true)
     .AddJsonFile(appStorage.UserSettingsFilePath, optional: true);
 

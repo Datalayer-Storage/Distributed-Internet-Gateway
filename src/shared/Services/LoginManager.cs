@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.DataProtection;
 using System.Dynamic;
 using System.Text;
 using System.Net.Http.Json;
+
 namespace dig;
 
 internal class LoginManager(IDataProtectionProvider provider,

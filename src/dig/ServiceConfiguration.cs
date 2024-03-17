@@ -8,6 +8,13 @@ public static class ServiceConfiguration
 {
     public static HostApplicationBuilder ConfigureServices(this HostApplicationBuilder builder, AppStorage appStorage)
     {
+        // Check if the FileCacheDirectory is set in the configuration
+        if (string.IsNullOrEmpty(builder.Configuration.GetValue<string>("dig:FileCacheDirectory")))
+        {
+            // If not set, set it to the user settings folder
+            builder.Configuration.AddInMemoryCollection(new Dictionary<string, string?> { { "dig:FileCacheDirectory", Path.Combine(appStorage.UserSettingsFolder, "store-cache") } });
+        }
+
         builder.Services.AddSingleton<StoreManager>()
             .AddSingleton<DynDnsService>()
             .AddSingleton<HostManager>()
@@ -18,8 +25,8 @@ public static class ServiceConfiguration
             .AddSingleton<NodeSyncService>()
             .AddSingleton<ChiaService>()
             .AddSingleton<StoreService>()
+            .AddSingleton<IObjectCache, FileCacheService>()
             .AddSingleton<StorePreCacheService>()
-            .AddSingleton<FileCacheService>()
             .AddSingleton<ServerCoinService>()
             .AddSingleton((provider) => appStorage)
             .AddHttpClient()
