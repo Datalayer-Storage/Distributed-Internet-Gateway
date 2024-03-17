@@ -54,6 +54,9 @@
             <Component Id="Twittersocialiconscirclewhitepng">
                 <File Id="file_Twittersocialiconscirclewhitepng" Source="$(var.SourcePath)\wwwroot\images\Twitter social icons - circle - white.png" KeyPath="yes" />
             </Component>
+            <Component Id="eekjpg">
+                <File Id="file_eekjpg" Source="$(var.SourcePath)\wwwroot\images\eek.jpg" KeyPath="yes" />
+            </Component>
         </Directory>
 
         <Directory Id="wwwroot.js" Name="js"></Directory>

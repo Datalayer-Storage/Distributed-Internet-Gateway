@@ -92,6 +92,7 @@
             <ComponentRef Id="swarmjpg" />
             <ComponentRef Id="Twittersocialiconscirclebluepng" />
             <ComponentRef Id="Twittersocialiconscirclewhitepng" />
+            <ComponentRef Id="eekjpg" />
         </Feature>
 
         <Property Id="POWERSHELLCMD">
