@@ -16,8 +16,8 @@ $jsonString = $jsonContent | ConvertTo-Json -Depth 2
 $filePath = Join-Path -Path $digFolder -ChildPath "appsettings.user.json"
 $jsonString | Out-File -FilePath $filePath
 
-# Grant NetworkService modification access to .dig folder
-icacls $digFolder /grant "NT AUTHORITY\NetworkService:(M)" /T
+# Grant NetworkService full control to .dig folder
+icacls "$digFolder" /grant:r "NT AUTHORITY\NetworkService:(OI)(CI)(F)" /T
 
 # Check if CHIA_ROOT environment variable exists and points to a folder
 $chiaRoot = $env:CHIA_ROOT
