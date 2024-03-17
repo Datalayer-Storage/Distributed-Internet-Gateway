@@ -35,6 +35,11 @@ jobs:
             runs-on: ubuntu-latest
             artifact-name: dig-linux-arm64
             runtime: linux-arm64
+          - os: OSX
+            architecture: x64
+            runs-on: macos-latest
+            artifact-name: dig-osx-x64
+            runtime: osx-x64
 
     steps:
       - name: Clean workspace
@@ -80,6 +85,84 @@ jobs:
         with:
           name: ${{matrix.artifact-name}}
           path: publish/standalone/${{matrix.runtime}}
+
+  dmg:
+    name: Package DMG
+    runs-on: macos-latest
+    needs: build
+
+    strategy:
+      matrix:
+        include:
+          - artifact-name: dig-osx-x64
+            runtime: osx-x64
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+      
+      - name: Download OSX Artifacts
+        uses: actions/download-artifact@v3
+        with:
+          name: ${{matrix.artifact-name}}
+          path: ${{matrix.artifact-name}}
+      
+      - name: Import Apple installer signing certificates
+        uses: Apple-Actions/import-codesign-certs@v1
+        with:
+          p12-file-base64: ${{ secrets.APPLE_DEV_ID_APP }}
+          p12-password: ${{ secrets.APPLE_DEV_ID_APP_PASS }}
+
+      - name: Install DMG Packaging Tool
+        run: brew install create-dmg
+
+      - name: Code Sign Binaries
+        run: |
+          codesign --sign "Developer ID Application: Michael Taylor (${{ secrets.APPLE_TEAM_ID }})" --timestamp --options runtime --verbose ./${{matrix.artifact-name}}/dig.server
+          codesign --sign "Developer ID Application: Michael Taylor (${{ secrets.APPLE_TEAM_ID }})" --timestamp --options runtime --verbose ./${{matrix.artifact-name}}/dig.node
+
+      - name: list files
+        run: |
+          ls -la ./${{matrix.artifact-name}}
+          create-dmg --help
+
+      - name: Package Files into DMG
+        run: |
+          create-dmg \
+          --volname "Application Installer" \
+          --window-pos 200 120 \
+          --window-size 800 400 \
+          --icon-size 100 \
+          --app-drop-link 600 185 \
+          "${{ github.workspace }}/${{ matrix.artifact-name }}/${{ matrix.artifact-name }}.dmg" \
+          "${{ github.workspace }}/${{ matrix.artifact-name }}/"
+
+      - name: Find DMG file
+        id: find-dmg
+        run: |
+          DMG_FILE=$(find ${{ github.workspace }}/${{matrix.artifact-name}} -type f -name '*.dmg')
+          echo "DMG_FILE=$DMG_FILE" >> $GITHUB_ENV
+          echo "Found DMG file: $DMG_FILE"
+
+      - name: Code Sign DMG
+        run: |
+          codesign --sign "Developer ID Application: Michael Taylor (${{ secrets.APPLE_TEAM_ID }})" --timestamp --options runtime --verbose ${{ env.DMG_FILE }}
+  
+      - name: Notarize with notary-tools action
+        uses: GuillaumeFalourd/notary-tools@v1
+        with:
+          product_path: ${{ env.DMG_FILE }}
+          apple_id: ${{ secrets.APPLE_NOTARIZE_USERNAME }}
+          password: ${{ secrets.APPLE_NOTARIZE_PASSWORD }}
+          team_id: ${{ secrets.APPLE_TEAM_ID }}
+          staple: 'true'
+          keychain_profile: ${{ secrets.APPLE_NOTARIZE_PASSWORD }}
+
+      - name: Upload DMG
+        uses: actions/upload-artifact@v3
+        with:
+          name: ${{matrix.artifact-name}}-dmg
+          path: ${{matrix.artifact-name}}.dmg
 
   msi:
     name: Build ${{matrix.artifact-name}} deb
@@ -205,8 +288,15 @@ jobs:
       - build
       - debs
       - msi
+      - dmg
 
     steps:
+      - name: Download OSX DMG artifacts
+        uses: actions/download-artifact@v3
+        with:
+          name: dig-osx-x64-dmg
+          path: dig-osx-x64-dmg
+
       - name: Download Windows artifacts
         uses: actions/download-artifact@v3
         with:
@@ -219,6 +309,12 @@ jobs:
           name: dig-win-x64
           path: dig-win-x64
 
+      - name: Download OSX artifacts
+        uses: actions/download-artifact@v3
+        with:
+          name: dig-osx-x64
+          path: dig-osx-x64
+  
       - name: Download Linux x64 deb
         uses: actions/download-artifact@v3
         with:
@@ -251,22 +347,26 @@ jobs:
       
       - name: Create zips
         run: |
+          zip -r dig-osx-x64-${{ steps.tag-name.outputs.TAGNAME }}.zip dig-osx-x64
           zip -r dig-win-x64-${{ steps.tag-name.outputs.TAGNAME }}.zip dig-win-x64
           zip -r dig-linux-x64-${{ steps.tag-name.outputs.TAGNAME }}.zip dig-linux-x64
           zip -r dig-linux-arm64-${{ steps.tag-name.outputs.TAGNAME }}.zip dig-linux-arm64
           mv dig-win-x64-msi/Distributed-Internet-Gateway-win-x64.msi dig-win-x64-${{ steps.tag-name.outputs.TAGNAME }}.msi
           mv dig-linux-x64-deb/*.deb dig-linux-x64-${{ steps.tag-name.outputs.TAGNAME }}.deb
           mv dig-linux-arm64-deb/*.deb dig-linux-arm64-${{ steps.tag-name.outputs.TAGNAME }}.deb
+          mv dig-osx-x64-dmg/dig-osx-x64.dmg dig-osx-x64-${{ steps.tag-name.outputs.TAGNAME }}.dmg
         
       - name: Release
         uses: softprops/action-gh-release@v0.1.15
         with:
           files: |
+            dig-osx-x64-${{ steps.tag-name.outputs.TAGNAME }}.zip
             dig-win-x64-${{ steps.tag-name.outputs.TAGNAME }}.zip
             dig-linux-x64-${{ steps.tag-name.outputs.TAGNAME }}.zip
             dig-linux-arm64-${{ steps.tag-name.outputs.TAGNAME }}.zip
             dig-win-x64-${{ steps.tag-name.outputs.TAGNAME }}.msi
             dig-linux-x64-${{ steps.tag-name.outputs.TAGNAME }}.deb
             dig-linux-arm64-${{ steps.tag-name.outputs.TAGNAME }}.deb
+            dig-osx-x64-${{ steps.tag-name.outputs.TAGNAME }}.dmg
         env:
           GITHUB_TOKEN: ${{ secrets.GH_ACCESS_TOKEN }}
