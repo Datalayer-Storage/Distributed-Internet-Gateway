@@ -2,11 +2,11 @@ using System.Net.Http.Json;
 
 namespace dig;
 
-internal class HostManager(DnsService denService,
+internal class HostManager(DnsService dnsService,
                             IHttpClientFactory httpClientFactory,
                             ILogger<HostManager> logger)
 {
-    private readonly DnsService _dnsService = denService;
+    private readonly DnsService _dnsService = dnsService;
     private readonly ILogger<HostManager> _logger = logger;
     private readonly HttpClient _httpClient = httpClientFactory.CreateClient("datalayer.storage");
 

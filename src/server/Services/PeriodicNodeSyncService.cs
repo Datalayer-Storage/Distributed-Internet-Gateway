@@ -2,11 +2,13 @@ namespace dig.server;
 
 internal sealed class PeriodicNodeSyncService(NodeSyncService syncService,
                                                 ChiaService chiaService,
+                                                DnsService dnsService,
                                                 ILogger<PeriodicNodeSyncService> logger,
                                                 IConfiguration configuration) : BackgroundService
 {
     private readonly NodeSyncService _syncService = syncService;
     private readonly ChiaService _chiaService = chiaService;
+    private readonly DnsService _dnsService = dnsService;
     private readonly ILogger<PeriodicNodeSyncService> _logger = logger;
     private readonly IConfiguration _configuration = configuration;
 
@@ -25,10 +27,23 @@ internal sealed class PeriodicNodeSyncService(NodeSyncService syncService,
                 var serverReserveAmount = _configuration.GetValue<ulong>("dig:ServerCoinReserveAmount", 0);
                 var defaultFee = _configuration.GetValue<ulong>("dig:DefaultFee", 500000);
                 var fee = await _chiaService.ResolveFee(defaultFee, Math.Max(mirrorReserveAmount, serverReserveAmount), stoppingToken);
+                var myDigUri = await _dnsService.GetDigServerUri(stoppingToken) ?? throw new Exception("No dig server uri found");
+                var myMirrorUri = await _dnsService.GetMirrorUri(stoppingToken) ?? throw new Exception("No mirror uri found");
+
+                _logger.LogInformation("Using dig server uri: {uri}", myDigUri);
+                _logger.LogInformation("Using mirror uri: {uri}", myMirrorUri);
+
+                if (myDigUri.StartsWith("https", StringComparison.OrdinalIgnoreCase))
+                {
+                    _logger.LogInformation("Server is https. Doubling default reserve amount.");
+                    serverReserveAmount *= 2;
+                }
 
                 try
                 {
-                    await _syncService.SyncWithDataLayer(mirrorReserveAmount,
+                    await _syncService.SyncWithDataLayer(myDigUri,
+                                                            myMirrorUri,
+                                                            mirrorReserveAmount,
                                                             serverReserveAmount,
                                                             fee,
                                                             stoppingToken);
