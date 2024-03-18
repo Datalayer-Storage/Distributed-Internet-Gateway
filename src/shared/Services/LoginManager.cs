@@ -6,17 +6,13 @@ using System.Net.Http.Json;
 namespace dig;
 
 internal class LoginManager(IDataProtectionProvider provider,
-                        AppStorage appStorage,
-                        DnsService dnsService,
-                        IHttpClientFactory httpClientFactory,
-                        ILogger<LoginManager> logger,
-                        IConfiguration configuration)
+                            AppStorage appStorage,
+                            IHttpClientFactory httpClientFactory,
+                            ILogger<LoginManager> logger)
 {
     private readonly IDataProtector _protector = provider.CreateProtector("DataLayer-Storage.datalayer.place.v3");
     private readonly AppStorage _appStorage = appStorage;
-    private readonly DnsService _dnsService = dnsService;
     private readonly ILogger<LoginManager> _logger = logger;
-    private readonly IConfiguration _configuration = configuration;
     private readonly HttpClient _httpClient = httpClientFactory.CreateClient("datalayer.storage");
 
     public async Task<string?> Login(string accessToken, string secretKey, CancellationToken stoppingToken = default)
