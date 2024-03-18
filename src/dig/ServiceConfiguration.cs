@@ -19,7 +19,7 @@ public static class ServiceConfiguration
             .AddSingleton<ChiaService>()
             .AddSingleton<StoreService>()
             .AddSingleton<StorePreCacheService>()
-            .AddSingleton<FileCacheService>()
+            .AddSingleton<IObjectCache, FileCacheService>()
             .AddSingleton<ServerCoinService>()
             .AddSingleton((provider) => appStorage)
             .AddHttpClient()
