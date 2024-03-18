@@ -201,6 +201,18 @@
       "envFile": "${workspaceFolder}/.env"
     },
     {
+      "name": "dig.server - Service",
+      "type": "coreclr",
+      "request": "launch",
+      "preLaunchTask": "build",
+      "program": "${workspaceFolder}/src/server/bin/Debug/net8.0/dig.server.dll",
+      "cwd": "${workspaceFolder}/src/server",
+      "console": "integratedTerminal",
+      "args": ["c:\\Users\\Don\\.dig\\appsettings.user.json"],
+      "stopAtEntry": false,
+      "envFile": "${workspaceFolder}/.env"
+    },
+    {
       "name": ".NET Core Attach",
       "type": "coreclr",
       "request": "attach"
