@@ -1,0 +1,48 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>net8.0</TargetFramework>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+        <AssemblyName>dig.servercoin</AssemblyName>
+        <EnforceCodeStyleInBuild>True</EnforceCodeStyleInBuild>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <None Remove="puzzles\include\condition_codes.clib" />
+        <None Remove="puzzles\include\curry_and_treehash.clib" />
+        <None Remove="puzzles\include\singleton_truths.clib" />
+        <None Remove="puzzles\include\utility_macros.clib" />
+        <None Remove="puzzles\p2_parent.clsp" />
+        <None Remove="puzzles\p2_parent.clsp.hex" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <EmbeddedResource Include="puzzles\include\condition_codes.clib">
+            <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+        </EmbeddedResource>
+        <EmbeddedResource Include="puzzles\include\curry_and_treehash.clib">
+            <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+        </EmbeddedResource>
+        <EmbeddedResource Include="puzzles\include\singleton_truths.clib">
+            <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+        </EmbeddedResource>
+        <EmbeddedResource Include="puzzles\include\utility_macros.clib">
+            <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+        </EmbeddedResource>
+        <EmbeddedResource Include="puzzles\p2_parent.clsp">
+            <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+        </EmbeddedResource>
+        <EmbeddedResource Include="puzzles\p2_parent.clsp.hex">
+            <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+        </EmbeddedResource>
+    </ItemGroup>
+
+    <ItemGroup>
+        <PackageReference Include="chia-dotnet" Version="3.3.5" />
+        <PackageReference Include="chia-dotnet-bls" Version="2.0.8-alpha.1" />
+        <PackageReference Include="chia-dotnet-clvm" Version="0.2.2-alpha.1" />
+        <PackageReference Include="chia-dotnet-wallet" Version="0.2.0-alpha.1" />
+    </ItemGroup>
+
+</Project>
