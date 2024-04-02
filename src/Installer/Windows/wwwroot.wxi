@@ -2,57 +2,60 @@
 <?define SourcePath="..\..\..\publish\standalone\win-x64" ?>
 <Include xmlns="http://wixtoolset.org/schemas/v4/wxs">
     <Directory Id="wwwroot" Name="wwwroot">
-        <Component Id="androidchrome192x192png" Guid="473EF349-1C94-49B6-AE56-CC11E3CE4FAF">
+        <Component Id="androidchrome192x192png">
             <File Id="file_androidchrome192x192png" Source="$(var.SourcePath)\wwwroot\android-chrome-192x192.png" KeyPath="yes" />
         </Component>
-        <Component Id="androidchrome512x512png" Guid="0E8BF100-3A20-4E71-83FC-262C0AFBEA63">
+        <Component Id="androidchrome512x512png">
             <File Id="file_androidchrome512x512png" Source="$(var.SourcePath)\wwwroot\android-chrome-512x512.png" KeyPath="yes" />
         </Component>
-        <Component Id="appletouchiconpng" Guid="894BB48A-C13A-48DF-8759-287C79ADCE71">
+        <Component Id="appletouchiconpng">
             <File Id="file_appletouchiconpng" Source="$(var.SourcePath)\wwwroot\apple-touch-icon.png" KeyPath="yes" />
         </Component>
-        <Component Id="browserconfigxml" Guid="0EAD5A8B-A251-4DE0-8832-4F65D0BCFAF4">
+        <Component Id="browserconfigxml">
             <File Id="file_browserconfigxml" Source="$(var.SourcePath)\wwwroot\browserconfig.xml" KeyPath="yes" />
         </Component>
-        <Component Id="favicon16x16png" Guid="87FD1C3F-D745-4C68-8EDB-0647C5A1C1AD">
+        <Component Id="favicon16x16png">
             <File Id="file_favicon16x16png" Source="$(var.SourcePath)\wwwroot\favicon-16x16.png" KeyPath="yes" />
         </Component>
-        <Component Id="favicon32x32png" Guid="3FF21DB9-0A7E-4416-8443-44E4A3E88B5E">
+        <Component Id="favicon32x32png">
             <File Id="file_favicon32x32png" Source="$(var.SourcePath)\wwwroot\favicon-32x32.png" KeyPath="yes" />
         </Component>
-        <Component Id="faviconico" Guid="62D2F8A2-7AA9-4581-A2FD-46AD0B28AFFC">
+        <Component Id="faviconico">
             <File Id="file_faviconico" Source="$(var.SourcePath)\wwwroot\favicon.ico" KeyPath="yes" />
         </Component>
-        <Component Id="mstile150x150png" Guid="12275E99-D633-43AB-B3E7-94A7BB69FD42">
+        <Component Id="mstile150x150png">
             <File Id="file_mstile150x150png" Source="$(var.SourcePath)\wwwroot\mstile-150x150.png" KeyPath="yes" />
         </Component>
-        <Component Id="safaripinnedtabsvg" Guid="4D0695D9-F8FD-4E49-8D40-6896CFFBD14D">
+        <Component Id="safaripinnedtabsvg">
             <File Id="file_safaripinnedtabsvg" Source="$(var.SourcePath)\wwwroot\safari-pinned-tab.svg" KeyPath="yes" />
         </Component>
-        <Component Id="sitewebmanifest" Guid="096A66DE-F7A9-49C3-8B90-9961372A34F4">
+        <Component Id="sitewebmanifest">
             <File Id="file_sitewebmanifest" Source="$(var.SourcePath)\wwwroot\site.webmanifest" KeyPath="yes" />
         </Component>
         <Directory Id="wwwroot.css" Name="css">
-            <Component Id="stylev1css" Guid="B551A36E-D41D-4962-B93A-D745DF4308BD">
+            <Component Id="stylev1css">
                 <File Id="file_stylev1css" Source="$(var.SourcePath)\wwwroot\css\style.v1.css" KeyPath="yes" />
             </Component>
         </Directory>
 
         <Directory Id="wwwroot.images" Name="images">
-            <Component Id="githubmarkwhitepng" Guid="44CEC257-2A82-426A-9C58-B9046F77B546">
+            <Component Id="githubmarkwhitepng">
                 <File Id="file_githubmarkwhitepng" Source="$(var.SourcePath)\wwwroot\images\github-mark-white.png" KeyPath="yes" />
             </Component>
-            <Component Id="githubmarkpng" Guid="40699580-7BD6-4C2F-857D-6636166019E6">
+            <Component Id="githubmarkpng">
                 <File Id="file_githubmarkpng" Source="$(var.SourcePath)\wwwroot\images\github-mark.png" KeyPath="yes" />
             </Component>
-            <Component Id="swarmjpg" Guid="560A2BF2-77DC-4369-97C3-DDA55EBF49AD">
+            <Component Id="swarmjpg">
                 <File Id="file_swarmjpg" Source="$(var.SourcePath)\wwwroot\images\swarm.jpg" KeyPath="yes" />
             </Component>
-            <Component Id="Twittersocialiconscirclebluepng" Guid="D58797FA-BC30-431C-9149-C4F8310740BA">
+            <Component Id="Twittersocialiconscirclebluepng">
                 <File Id="file_Twittersocialiconscirclebluepng" Source="$(var.SourcePath)\wwwroot\images\Twitter social icons - circle - blue.png" KeyPath="yes" />
             </Component>
-            <Component Id="Twittersocialiconscirclewhitepng" Guid="02E029A9-025A-4713-B900-278E51A61148">
+            <Component Id="Twittersocialiconscirclewhitepng">
                 <File Id="file_Twittersocialiconscirclewhitepng" Source="$(var.SourcePath)\wwwroot\images\Twitter social icons - circle - white.png" KeyPath="yes" />
+            </Component>
+            <Component Id="eekjpg">
+                <File Id="file_eekjpg" Source="$(var.SourcePath)\wwwroot\images\eek.jpg" KeyPath="yes" />
             </Component>
         </Directory>
 

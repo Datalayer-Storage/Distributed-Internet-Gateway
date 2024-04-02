@@ -10,6 +10,13 @@ public static class ServiceConfiguration
 {
     public static WebApplicationBuilder ConfigureServices(this WebApplicationBuilder builder, AppStorage appStorage)
     {
+        // Check if the FileCacheDirectory is set in the configuration
+        if (string.IsNullOrEmpty(builder.Configuration.GetValue<string>("dig:FileCacheDirectory")))
+        {
+            // If not set, set it to the user settings folder
+            builder.Configuration.AddInMemoryCollection(new Dictionary<string, string?> { { "dig:FileCacheDirectory", Path.Combine(appStorage.UserSettingsFolder, "store-cache") } });
+        }
+
         if (builder.Environment.IsProduction())
         {
             builder.Services.AddApplicationInsightsTelemetry();
@@ -48,7 +55,7 @@ public static class ServiceConfiguration
         // this is where configuration based services are added
         //
 
-        switch (builder.Configuration.GetValue("dig:CacheProvider", "Disabled"))
+        switch (builder.Configuration.GetValue("dig:CacheProvider", "FileSystem"))
         {
             case "Memory":
                 builder.Services.AddSingleton<IObjectCache, MemoryCacheService>();
