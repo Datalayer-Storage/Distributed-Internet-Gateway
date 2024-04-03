@@ -29,7 +29,7 @@ internal sealed class StoreService(DataLayerProxy dataLayer,
             {
                 if (coin.Ours && coin.CoinId is not null)
                 {
-                    string coinId = coin.CoinId.ToString();
+                    string coinId = coin.CoinId;
                     _logger.LogInformation("Removing server coin {coinId} for {storeId}", coinId, storeId);
                     await _serverCoinService.DeleteServer(storeId, coinId, fee);
                 }
@@ -57,11 +57,11 @@ internal sealed class StoreService(DataLayerProxy dataLayer,
         // as we might subscribe to a singleton that we don't want to mirror
         // or subscribe to a singleton but not be able to pay for the mirror etc
 
-        // don't subscribe to a store we already have
         var addedStore = false;
         var addedMirror = false;
         var addedServerCoin = false;
 
+        // don't subscribe to a store we already have
         if (!subscriptions.Contains(storeId))
         {
             _logger.LogInformation("Subscribing to {id}", storeId);

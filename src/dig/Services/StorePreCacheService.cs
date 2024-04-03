@@ -16,13 +16,13 @@ public class StorePreCacheService(DataLayerProxy dataLayer,
 
     public async Task CacheStore(string storeId, CancellationToken cancellationToken)
     {
-        _objectCacheService.RemoveStore(storeId);
+        _objectCacheService.RemoveStore("stores", storeId);
 
         var rootHash = await _dataLayer.GetRoot(storeId, cancellationToken);
-        await _objectCacheService.SetValueAsync(storeId, "", "last-root", rootHash, cancellationToken);
+        await _objectCacheService.SetValueAsync("stores", storeId, "", "last-root", rootHash, cancellationToken);
 
         var storeKeys = await _dataLayer.GetKeys(storeId, rootHash.Hash, cancellationToken) ?? [];
-        await _objectCacheService.SetValueAsync(storeId, rootHash.Hash, "keys", storeKeys, cancellationToken);
+        await _objectCacheService.SetValueAsync("stores", storeId, rootHash.Hash, "keys", storeKeys, cancellationToken);
 
         foreach (var key in storeKeys)
         {
@@ -30,14 +30,14 @@ public class StorePreCacheService(DataLayerProxy dataLayer,
             var value = await _dataLayer.GetValue(storeId, key, rootHash.Hash, cancellationToken);
             if (value != null)
             {
-                await _objectCacheService.SetValueAsync(storeId, rootHash.Hash, key, value, cancellationToken);
+                await _objectCacheService.SetValueAsync("stores", storeId, rootHash.Hash, key, value, cancellationToken);
             }
 
             if (!_configuration.GetValue("dig:DisableProofOfInclusion", true))
             {
                 _logger.LogInformation("Pre-caching proof of {key} for storeId {storeId}.", key.SanitizeForLog(), storeId.SanitizeForLog());
                 var proof = await _dataLayer.GetProof(storeId, [HttpUtility.UrlDecode(key)], cancellationToken);
-                await _objectCacheService.SetValueAsync(storeId, rootHash.Hash, key, proof.ToJson(), cancellationToken);
+                await _objectCacheService.SetValueAsync("stores", storeId, rootHash.Hash, key, proof.ToJson(), cancellationToken);
             }
         }
     }

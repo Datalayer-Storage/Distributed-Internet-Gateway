@@ -226,7 +226,7 @@ public partial class StoresController(GatewayService gatewayService,
                     var mimeType = GetMimeType(fileExtension) ?? "application/octet-stream";
                     var bytes = await _gatewayService.GetValuesAsBytes(storeId, json, lastRootHash, cancellationToken);
 
-                    return Results.File(bytes, mimeType);
+                    return (IActionResult)Results.File(bytes, mimeType);
                 }
             }
 

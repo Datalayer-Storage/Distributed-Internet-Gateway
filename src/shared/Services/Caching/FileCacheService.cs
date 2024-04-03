@@ -31,9 +31,9 @@ public class FileCacheService : IObjectCache
         }
     }
 
-    public async Task<TItem?> GetOrCreateAsync<TItem>(string storeId, string rootHash, string key, Func<Task<TItem>> factory, CancellationToken token)
+    public async Task<TItem?> GetOrCreateAsync<TItem>(string topic, string objectId, string rootHash, string key, Func<Task<TItem>> factory, CancellationToken token)
     {
-        var fileValue = await GetValueAsync<TItem>(storeId, rootHash, key, token);
+        var fileValue = await GetValueAsync<TItem>(topic, objectId, rootHash, key, token);
 
         // the value is in the file cache just return it
         if (fileValue is not null)
@@ -47,22 +47,22 @@ public class FileCacheService : IObjectCache
 
         if (newValue is not null)
         {
-            await SetValueAsync(storeId, rootHash, key, newValue, token);
+            await SetValueAsync(topic, objectId, rootHash, key, newValue, token);
         }
 
         return newValue;
     }
 
-    public async Task<TItem?> GetValueAsync<TItem>(string storeId, string rootHash, string key, CancellationToken token)
+    public async Task<TItem?> GetValueAsync<TItem>(string topic, string objectId, string rootHash, string key, CancellationToken token)
     {
-        var filePath = GetFilePath(storeId, rootHash, key).SanitizePath(_cacheDirectory);
+        var filePath = GetFilePath(topic, objectId, rootHash, key).SanitizePath(_cacheDirectory);
         if (File.Exists(filePath))
         {
             var item = await File.ReadAllTextAsync(filePath, token);
 
             if (typeof(TItem) == typeof(string))
             {
-                return (TItem)(object)item; //coerce the string to TItem
+                return (TItem)(object)item; //coerce the string to TItem which is <string>
             }
 
             // otherwise assume it's json and deserialize it
@@ -72,11 +72,11 @@ public class FileCacheService : IObjectCache
         return default;
     }
 
-    public async Task SetValueAsync<TItem>(string storeId, string rootHash, string key, TItem? value, CancellationToken token)
+    public async Task SetValueAsync<TItem>(string topic, string objectId, string rootHash, string key, TItem? value, CancellationToken token)
     {
         if (value is not null)
         {
-            var filePath = GetFilePath(storeId, rootHash, key).SanitizePath(_cacheDirectory);
+            var filePath = GetFilePath(topic, objectId, rootHash, key).SanitizePath(_cacheDirectory);
             if (typeof(TItem) == typeof(string))
             {
                 await File.WriteAllTextAsync(filePath, value.ToString(), token);
@@ -110,10 +110,31 @@ public class FileCacheService : IObjectCache
         }
     }
 
-    public void RemoveStore(string storeId)
+    public void Clear(string topic)
     {
-        _logger.LogWarning("Invalidating store {storeId}", storeId.SanitizeForLog());
-        var storeCacheDirectory = Path.Combine(_cacheDirectory, storeId).SanitizePath(_cacheDirectory);
+        var topicDirectory = Path.Combine(_cacheDirectory, topic).SanitizePath(_cacheDirectory);
+        if (Directory.Exists(topicDirectory))
+        {
+            foreach (var file in Directory.GetFiles(topicDirectory, "*"))
+            {
+                var sanitizedPath = file.SanitizePath(topicDirectory);
+                _logger.LogInformation("Deleting file {File}", sanitizedPath.SanitizeForLog());
+                File.Delete(sanitizedPath);
+            }
+
+            foreach (var dir in Directory.GetDirectories(topicDirectory))
+            {
+                var sanitizedPath = dir.SanitizePath(topicDirectory);
+                _logger.LogInformation("Deleting directory {Directory}", sanitizedPath.SanitizeForLog());
+                Directory.Delete(sanitizedPath, true);
+            }
+        }
+    }
+
+    public void RemoveStore(string topic, string objectId)
+    {
+        _logger.LogWarning("Invalidating store {objectId}", objectId.SanitizeForLog());
+        var storeCacheDirectory = Path.Combine(_cacheDirectory, topic, objectId).SanitizePath(_cacheDirectory);
 
         if (Directory.Exists(storeCacheDirectory))
         {
@@ -121,9 +142,9 @@ public class FileCacheService : IObjectCache
         }
     }
 
-    private string GetFilePath(string storeId, string rootHash, string key)
+    private string GetFilePath(string topic, string objectId, string rootHash, string key)
     {
-        var storeCacheDirectory = Path.Combine(_cacheDirectory, storeId).SanitizePath(_cacheDirectory);
+        var storeCacheDirectory = Path.Combine(_cacheDirectory, topic, objectId).SanitizePath(_cacheDirectory);
         if (!Directory.Exists(storeCacheDirectory))
         {
             Directory.CreateDirectory(storeCacheDirectory);

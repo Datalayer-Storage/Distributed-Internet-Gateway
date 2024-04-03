@@ -66,14 +66,14 @@ public class GatewayService(DataLayerProxy dataLayer,
     private async Task<string> RefreshStoreRootHash(string storeId, CancellationToken cancellationToken)
     {
         var currentRoot = await _dataLayer.GetRoot(storeId, cancellationToken);
-        var cachedRootHash = await _objectCacheService.GetValueAsync<RootHash>(storeId, "", "last-root", cancellationToken);
+        var cachedRootHash = await _objectCacheService.GetValueAsync<RootHash>("stores", storeId, "", "last-root", cancellationToken);
 
         // the current hash doesn't match the persistent cache
         if (cachedRootHash?.Hash != currentRoot.Hash)
         {
             _logger.LogWarning("Invalidating cache for {StoreId}", storeId.SanitizeForLog());
-            _objectCacheService.RemoveStore(storeId);
-            await _objectCacheService.SetValueAsync(storeId, "", "last-root", currentRoot, cancellationToken);
+            _objectCacheService.RemoveStore("stores", storeId);
+            await _objectCacheService.SetValueAsync("stores", storeId, "", "last-root", currentRoot, cancellationToken);
         }
 
         return currentRoot.Hash;
@@ -104,7 +104,7 @@ public class GatewayService(DataLayerProxy dataLayer,
     {
         try
         {
-            var keys = await _objectCacheService.GetOrCreateAsync(storeId, rootHash, "keys",
+            var keys = await _objectCacheService.GetOrCreateAsync("stores", storeId, rootHash, "keys",
                 async () =>
                 {
                     _logger.LogInformation("Getting keys for {StoreId}", storeId.SanitizeForLog());
@@ -128,7 +128,7 @@ public class GatewayService(DataLayerProxy dataLayer,
         {
             try
             {
-                var proof = await _objectCacheService.GetOrCreateAsync(storeId, rootHash, $"{key}-proof",
+                var proof = await _objectCacheService.GetOrCreateAsync("stores", storeId, rootHash, $"{key}-proof",
                     async () =>
                     {
                         _logger.LogInformation("Getting proof for {StoreId} {Key}", storeId.SanitizeForLog(), key.SanitizeForLog());
@@ -152,7 +152,7 @@ public class GatewayService(DataLayerProxy dataLayer,
     {
         try
         {
-            var value = await _objectCacheService.GetOrCreateAsync(storeId, rootHash, key,
+            var value = await _objectCacheService.GetOrCreateAsync("stores", storeId, rootHash, key,
                 async () =>
                 {
                     _logger.LogInformation("Getting value for {StoreId} {Key}", storeId.SanitizeForLog(), key.SanitizeForLog());
