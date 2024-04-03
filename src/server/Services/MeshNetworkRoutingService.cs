@@ -19,13 +19,13 @@ public class MeshNetworkRoutingService(ChiaConfig chiaConfig,
     private readonly IConfiguration _configuration = configuration;
     private readonly IMemoryCache _cache = cache;
 
-    private string[]? GetRedirectUrls(string storeId)
+    private async Task<string[]?> GetRedirectUrls(string storeId)
     {
         string cacheKey = $"RedirectUrls-{storeId}";
         // Check if the URL list is already cached
         if (!_cache.TryGetValue(cacheKey, out string[]? cachedUrls))
         {
-            var coins = _serverCoinService.GetCoins(storeId);
+            var coins = await _serverCoinService.GetCoins(storeId);
             if (coins.Any())
             {
                 var allUrls = coins.Select(coin => coin.Urls).ToArray();
@@ -67,7 +67,7 @@ public class MeshNetworkRoutingService(ChiaConfig chiaConfig,
     */
     private async Task<string?> FetchMeshNetworkData(string storeId, string? key, bool returnRedirectUrl)
     {
-        var urls = GetRedirectUrls(storeId);
+        var urls = await GetRedirectUrls(storeId);
 
         if (urls is null || urls.Length == 0)
         {

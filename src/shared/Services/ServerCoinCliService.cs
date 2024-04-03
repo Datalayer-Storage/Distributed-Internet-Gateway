@@ -13,23 +13,25 @@ public class ServerCoinCliService(ChiaConfig chiaConfig,
     private readonly ILogger<ServerCoinCliService> _logger = logger;
     private readonly IConfiguration _configuration = configuration;
 
-    public bool AddServer(string storeId, string serverUrl, ulong mojoReserveAmount, ulong fee)
+    public async Task <bool> AddServer(string storeId, string serverUrl, ulong mojoReserveAmount, ulong fee)
     {
         List<string> args = ["add_server", "--storeId", storeId, "--url", serverUrl, "--amount", mojoReserveAmount.ToString(), "--fee", fee.ToString()];
 
         var result = RunCommand(args).Trim();
-
+        await Task.CompletedTask;
         return result == "true";
     }
 
-    public string DeleteServer(string storeId, string coinId, ulong fee)
+    public async Task<string> DeleteServer(string storeId, string coinId, ulong fee)
     {
         List<string> args = ["delete_server", "--storeId", storeId, "--coinId", coinId, "--fee", fee.ToString()];
+
+        await Task.CompletedTask;
 
         return RunCommand(args);
     }
 
-    public IEnumerable<ServerCoin> GetCoins(string storeId)
+    public async Task<IEnumerable<ServerCoin>> GetCoins(string storeId)
     {
         List<string> args = ["get_server_coins", "--storeId", storeId];
 
@@ -46,6 +48,8 @@ public class ServerCoinCliService(ChiaConfig chiaConfig,
 
             return response.Servers;
         }
+        
+        await Task.CompletedTask;
 
         return [];
     }

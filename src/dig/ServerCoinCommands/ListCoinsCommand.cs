@@ -21,7 +21,7 @@ internal sealed class ListCoinsCommand()
 
         await Task.CompletedTask;
 
-        var coins = serverCoinService.GetCoins(Store);
+        var coins = await serverCoinService.GetCoins(Store);
         if (coins.Any())
         {
             foreach (dynamic coin in coins)
