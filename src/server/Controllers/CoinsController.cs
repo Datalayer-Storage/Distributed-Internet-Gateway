@@ -4,9 +4,9 @@ namespace dig.server;
 
 [ApiController]
 [Route("api/[controller]")]
-public class CoinsController(ServerCoinService serverCoinService, ILogger<CoinsController> logger) : ControllerBase
+public class CoinsController(IServerCoinService serverCoinService, ILogger<CoinsController> logger) : ControllerBase
 {
-    private readonly ServerCoinService _serverCoinService = serverCoinService;
+    private readonly IServerCoinService _serverCoinService = serverCoinService;
     private readonly ILogger<CoinsController> _logger = logger;
 
     [HttpGet("{storeId}")]

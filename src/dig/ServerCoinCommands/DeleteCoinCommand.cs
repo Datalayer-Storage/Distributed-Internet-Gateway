@@ -14,7 +14,7 @@ internal sealed class DeleteCoinCommand()
     public ulong? Fee { get; init; }
 
     [CommandTarget]
-    public async Task<int> Execute(ServerCoinService serverCoinService, ChiaService chiaService, IConfiguration configuration)
+    public async Task<int> Execute(IServerCoinService serverCoinService, ChiaService chiaService, IConfiguration configuration)
     {
         if (string.IsNullOrEmpty(Store))
         {

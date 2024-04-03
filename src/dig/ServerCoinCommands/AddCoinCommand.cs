@@ -15,7 +15,7 @@ internal sealed class AddCoinCommand()
     public ulong? Fee { get; init; }
 
     [CommandTarget]
-    public async Task<int> Execute(ServerCoinService serverCoinService,
+    public async Task<int> Execute(IServerCoinService serverCoinService,
                                     DnsService dnsService,
                                     ChiaService chiaService,
                                     IConfiguration configuration)

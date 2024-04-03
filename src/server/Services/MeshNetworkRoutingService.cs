@@ -6,14 +6,14 @@ namespace dig.server;
 
 public class MeshNetworkRoutingService(ChiaConfig chiaConfig,
                                         DataLayerProxy dataLayer,
-                                        ServerCoinService serverCoinService,
+                                        IServerCoinService serverCoinService,
                                         ILogger<MeshNetworkRoutingService> logger,
                                         IConfiguration configuration,
                                         IMemoryCache cache)
 {
     private readonly ChiaConfig _chiaConfig = chiaConfig;
     private readonly DataLayerProxy _dataLayer = dataLayer;
-    private readonly ServerCoinService _serverCoinService = serverCoinService;
+    private readonly IServerCoinService _serverCoinService = serverCoinService;
     private readonly ILogger<MeshNetworkRoutingService> _logger = logger;
     private readonly HttpClient _httpClient = new();
     private readonly IConfiguration _configuration = configuration;
@@ -28,7 +28,7 @@ public class MeshNetworkRoutingService(ChiaConfig chiaConfig,
             var coins = _serverCoinService.GetCoins(storeId);
             if (coins.Any())
             {
-                var allUrls = coins.Select(coin => coin.urls).ToArray();
+                var allUrls = coins.Select(coin => coin.Urls).ToArray();
                 var flattenedUrls = allUrls.SelectMany(urls => ((List<object>)urls).Select(url => (string)url)).ToArray();
 
                 _logger.LogInformation("Found {count} URLs for store {storeId}", flattenedUrls.Length, storeId.SanitizeForLog());

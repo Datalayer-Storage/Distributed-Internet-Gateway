@@ -3,11 +3,11 @@ using chia.dotnet;
 namespace dig;
 
 internal sealed class NodeSyncService(DataLayerProxy dataLayer,
-                                        ServerCoinService serverCoinService,
+                                        IServerCoinService serverCoinService,
                                         ILogger<NodeSyncService> logger)
 {
     private readonly DataLayerProxy _dataLayer = dataLayer;
-    private readonly ServerCoinService _serverCoinService = serverCoinService;
+    private readonly IServerCoinService _serverCoinService = serverCoinService;
     private readonly ILogger<NodeSyncService> _logger = logger;
 
     public async Task<IEnumerable<string>> SyncWithDataLayer(string myDigUri,
@@ -40,7 +40,7 @@ internal sealed class NodeSyncService(DataLayerProxy dataLayer,
 
             _logger.LogInformation("Getting server coins for {storeId}", subscription);
             var serverCoins = _serverCoinService.GetCoins(subscription);
-            if (!serverCoins.Any(coin => coin.ours == true))
+            if (!serverCoins.Any(coin => coin.Ours))
             {
                 _logger.LogInformation("Adding server coin for {storeId}", subscription);
                 if (!_serverCoinService.AddServer(subscription, myDigUri, serverReserveAmount, fee))

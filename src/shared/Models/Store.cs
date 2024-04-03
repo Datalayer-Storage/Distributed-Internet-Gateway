@@ -1,5 +1,7 @@
 using chia.dotnet;
 
+namespace dig;
+
 /// <summary>
 /// Represents a store entity.
 /// </summary>

@@ -37,7 +37,7 @@ public static class ServiceConfiguration
             .AddSingleton<DnsService>()
             .AddSingleton<StoreRegistryService>()
             .AddSingleton<MeshNetworkRoutingService>()
-            .AddSingleton<ServerCoinService>()
+            .AddSingleton<IServerCoinService, ServerCoinCliService>()
             .AddSingleton<ChiaService>()
             .AddScoped<FooterDataFilter>()
             .AddScoped<IViewEngine, RazorViewEngine>() // we use this so we can check for the existence of a view by name

@@ -11,7 +11,7 @@ internal sealed class ListCoinsCommand()
     public bool OwnedOnly { get; init; }
 
     [CommandTarget]
-    public async Task<int> Execute(ServerCoinService serverCoinService)
+    public async Task<int> Execute(IServerCoinService serverCoinService)
     {
         if (string.IsNullOrEmpty(Store))
         {

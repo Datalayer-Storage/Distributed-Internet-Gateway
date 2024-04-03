@@ -13,11 +13,13 @@
         <Compile Include="$(MSBuildThisFileDirectory)Services\Caching\NullCacheService.cs" />
         <Compile Include="$(MSBuildThisFileDirectory)Services\Caching\MemoryCacheService.cs" />
         <Compile Include="$(MSBuildThisFileDirectory)Services\Caching\IObjectCache.cs" />
-        <Compile Include="$(MSBuildThisFileDirectory)Services\ServerCoinService.cs" />
+        <Compile Include="$(MSBuildThisFileDirectory)Services\ServerCoinCliService.cs" />
         <Compile Include="$(MSBuildThisFileDirectory)Services\StoreService.cs" />
         <Compile Include="$(MSBuildThisFileDirectory)Services\MirrorService.cs" />
         <Compile Include="$(MSBuildThisFileDirectory)Services\NodeSyncService.cs" />
         <Compile Include="$(MSBuildThisFileDirectory)Services\IServer.cs" />
+        <Compile Include="$(MSBuildThisFileDirectory)Services\IServerCoinService.cs" />
+        <Compile Include="$(MSBuildThisFileDirectory)Models\ServerCoin.cs" />
         <Compile Include="$(MSBuildThisFileDirectory)RpcEndpointConfiguration.cs" />
         <Compile Include="$(MSBuildThisFileDirectory)Services\ChiaConfig.cs" />
         <Compile Include="$(MSBuildThisFileDirectory)Services\ChiaService.cs" />

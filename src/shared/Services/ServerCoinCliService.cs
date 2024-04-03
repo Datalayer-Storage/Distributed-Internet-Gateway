@@ -2,15 +2,15 @@ namespace dig;
 
 using System.Diagnostics;
 using System.Runtime.InteropServices;
-using System.Dynamic;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Serialization;
 
-public class ServerCoinService(ChiaConfig chiaConfig,
-                                        ILogger<ServerCoinService> logger,
-                                        IConfiguration configuration)
+public class ServerCoinCliService(ChiaConfig chiaConfig,
+                                        ILogger<ServerCoinCliService> logger,
+                                        IConfiguration configuration) : IServerCoinService
 {
     private readonly ChiaConfig _chiaConfig = chiaConfig;
-    private readonly ILogger<ServerCoinService> _logger = logger;
+    private readonly ILogger<ServerCoinCliService> _logger = logger;
     private readonly IConfiguration _configuration = configuration;
 
     public bool AddServer(string storeId, string serverUrl, ulong mojoReserveAmount, ulong fee)
@@ -29,16 +29,22 @@ public class ServerCoinService(ChiaConfig chiaConfig,
         return RunCommand(args);
     }
 
-    public IEnumerable<dynamic> GetCoins(string storeId)
+    public IEnumerable<ServerCoin> GetCoins(string storeId)
     {
         List<string> args = ["get_server_coins", "--storeId", storeId];
 
         var json = RunCommand(args);
         if (!string.IsNullOrEmpty(json))
         {
-            dynamic result = JsonConvert.DeserializeObject<ExpandoObject>(json) ?? throw new Exception("Failed to parse server coin result");
+            var responseShape = new { Servers = new List<ServerCoin>() };
+            var serializationSettings = new JsonSerializerSettings
+            {
+                ContractResolver = new DefaultContractResolver { NamingStrategy = new SnakeCaseNamingStrategy() }
+            };
+            var response = JsonConvert.DeserializeAnonymousType(json, responseShape, serializationSettings)
+                ?? throw new Exception("Failed to parse server coin result");
 
-            return result.servers;
+            return response.Servers;
         }
 
         return [];

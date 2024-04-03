@@ -27,7 +27,7 @@ public static class ServiceConfiguration
             .AddSingleton<StoreService>()
             .AddSingleton<IObjectCache, FileCacheService>()
             .AddSingleton<StorePreCacheService>()
-            .AddSingleton<ServerCoinService>()
+            .AddSingleton<IServerCoinService, ServerCoinCliService>()
             .AddSingleton((provider) => appStorage)
             .AddHttpClient()
             .RegisterChiaEndPoint<DataLayerProxy>("dig.node")

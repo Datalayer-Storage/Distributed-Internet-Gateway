@@ -3,12 +3,12 @@ using chia.dotnet;
 namespace dig;
 
 internal sealed class StoreService(DataLayerProxy dataLayer,
-                                    ServerCoinService serverCoinService,
+                                    IServerCoinService serverCoinService,
                                     ILogger<StoreService> logger,
                                     IConfiguration configuration)
 {
     private readonly DataLayerProxy _dataLayer = dataLayer;
-    private readonly ServerCoinService _serverCoinService = serverCoinService;
+    private readonly IServerCoinService _serverCoinService = serverCoinService;
     private readonly ILogger<StoreService> _logger = logger;
     private readonly IConfiguration _configuration = configuration;
 
@@ -27,9 +27,9 @@ internal sealed class StoreService(DataLayerProxy dataLayer,
             var serverCoins = _serverCoinService.GetCoins(storeId);
             foreach (var coin in serverCoins)
             {
-                if (coin.ours == true && coin.coin_id is not null)
+                if (coin.Ours == true && coin.CoinId is not null)
                 {
-                    string coinId = coin.coin_id.ToString();
+                    string coinId = coin.CoinId.ToString();
                     _logger.LogInformation("Removing server coin {coinId} for {storeId}", coinId, storeId);
                     _serverCoinService.DeleteServer(storeId, coinId, fee);
                 }
@@ -109,7 +109,7 @@ internal sealed class StoreService(DataLayerProxy dataLayer,
     {
         var servers = _serverCoinService.GetCoins(storeId);
         // add any mirrors that aren't already ours
-        if (!servers.Any(s => s.ours == true))
+        if (!servers.Any(s => s.Ours))
         {
             _logger.LogInformation("Adding server {id}", storeId);
             var retryCount = 0;
