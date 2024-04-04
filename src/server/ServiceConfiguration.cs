@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc.ViewEngines;
 using Microsoft.AspNetCore.Mvc.Razor;
 using dig.caching;
 using Microsoft.AspNetCore.DataProtection;
+using dig;
 
 namespace dig.server;
 
@@ -14,7 +15,7 @@ public static class ServiceConfiguration
         if (string.IsNullOrEmpty(builder.Configuration.GetValue<string>("dig:FileCacheDirectory")))
         {
             // If not set, set it to the user settings folder
-            builder.Configuration.AddInMemoryCollection(new Dictionary<string, string?> { { "dig:FileCacheDirectory", Path.Combine(appStorage.UserSettingsFolder, "store-cache") } });
+            builder.Configuration.AddInMemoryCollection(new Dictionary<string, string?> { { "dig:FileCacheDirectory", Path.Combine(appStorage.UserSettingsFolder, "cache") } });
         }
 
         if (builder.Environment.IsProduction())
@@ -68,6 +69,15 @@ public static class ServiceConfiguration
                 break;
             default:
                 throw new NotImplementedException($"Cache provider {builder.Configuration.GetValue("dig: CacheProvider", "FileSystem")} not implemented");
+        }
+
+        if (builder.Configuration.GetValue("dig:ServerCoinServiceProvider", "ServerCoinService") == "ServerCoinService")
+        {
+            builder.Services.AddSingleton<IServerCoinService, ServerCoinService>();
+        }
+        else
+        {
+            builder.Services.AddSingleton<IServerCoinService, ServerCoinCliService>();
         }
 
         // this sets up the sync service - note that it shares some dependencies with the gateway service

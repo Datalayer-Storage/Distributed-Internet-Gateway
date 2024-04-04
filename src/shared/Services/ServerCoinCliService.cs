@@ -4,6 +4,7 @@ using System.Diagnostics;
 using System.Runtime.InteropServices;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
+using dig.servercoin;
 
 public class ServerCoinCliService(ChiaConfig chiaConfig,
                                         ILogger<ServerCoinCliService> logger,
@@ -22,13 +23,15 @@ public class ServerCoinCliService(ChiaConfig chiaConfig,
         return result == "true";
     }
 
-    public async Task<string> DeleteServer(string storeId, string coinId, ulong fee)
+    public async Task<bool> DeleteServer(string storeId, string coinId, ulong fee)
     {
         List<string> args = ["delete_server", "--storeId", storeId, "--coinId", coinId, "--fee", fee.ToString()];
 
         await Task.CompletedTask;
 
-        return RunCommand(args);
+        RunCommand(args);
+
+        return true;
     }
 
     public async Task<IEnumerable<ServerCoin>> GetCoins(string storeId)
@@ -48,7 +51,7 @@ public class ServerCoinCliService(ChiaConfig chiaConfig,
 
             return response.Servers;
         }
-        
+
         await Task.CompletedTask;
 
         return [];

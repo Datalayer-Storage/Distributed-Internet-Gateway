@@ -37,6 +37,15 @@ public static class ServiceConfiguration
             .SetApplicationName("distributed-internet-gateway")
             .SetDefaultKeyLifetime(TimeSpan.FromDays(180));
 
+        if (builder.Configuration.GetValue("dig:ServerCoinServiceProvider", "ServerCoinService") == "ServerCoinService")
+        {
+            builder.Services.AddSingleton<IServerCoinService, ServerCoinService>();
+        }
+        else
+        {
+            builder.Services.AddSingleton<IServerCoinService, ServerCoinCliService>();
+        }
+
         builder.Services.AddHttpClient("datalayer.storage", c =>
             {
                 c.BaseAddress = new Uri(builder.Configuration.GetValue("dig:DataLayerStorageUri", "https://api.datalayer.storage")!);

@@ -27,6 +27,9 @@
         <Content Update=".\appsettings.examples.json" CopyToOutputDirectory="Never" />
         <Content Remove=".\appsettings.examples.json" />
     </ItemGroup>
+    <ItemGroup>
+      <ProjectReference Include="..\servercoin\servercoin.csproj" />
+    </ItemGroup>
     <Import Project="..\shared\shared.projitems" Label="Shared" />
 
 </Project>

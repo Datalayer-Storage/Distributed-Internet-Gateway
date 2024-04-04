@@ -1,6 +1,6 @@
-namespace dig;
-
 using System.Numerics;
+
+namespace dig.servercoin;
 
 /// <summary>
 /// Represents a server coin entity.
@@ -32,3 +32,4 @@ public record ServerCoin
     /// </summary>
     public IEnumerable<string> Urls { get; init; } = [];
 }
+
