@@ -24,14 +24,14 @@ internal sealed class StoreService(DataLayerProxy dataLayer,
 
         try
         {
-            var serverCoins = await _serverCoinService.GetCoins(storeId);
+            var serverCoins = await _serverCoinService.GetCoins(storeId, stoppingToken);
             foreach (var coin in serverCoins)
             {
                 if (coin.Ours && coin.CoinId is not null)
                 {
                     string coinId = coin.CoinId;
                     _logger.LogInformation("Removing server coin {coinId} for {storeId}", coinId, storeId);
-                    await _serverCoinService.DeleteServer(storeId, coinId, fee);
+                    await _serverCoinService.DeleteServer(storeId, coinId, fee, stoppingToken);
                 }
             }
         }
@@ -107,7 +107,7 @@ internal sealed class StoreService(DataLayerProxy dataLayer,
 
     private async Task<bool> AddServer(string storeId, ulong reserveAmount, ulong fee, string serverUri, CancellationToken stoppingToken)
     {
-        var servers = await _serverCoinService.GetCoins(storeId);
+        var servers = await _serverCoinService.GetCoins(storeId, stoppingToken);
         // add any mirrors that aren't already ours
         if (!servers.Any(s => s.Ours))
         {
@@ -118,7 +118,7 @@ internal sealed class StoreService(DataLayerProxy dataLayer,
                 try
                 {
                     // try to add the server - this may fail with insufficient funds
-                    await _serverCoinService.AddServer(storeId, serverUri, reserveAmount, fee);
+                    await _serverCoinService.AddServer(storeId, serverUri, reserveAmount, fee, stoppingToken);
                     // if we succeeded, return true
                     return true;
                 }

@@ -72,7 +72,7 @@ public class GatewayService(DataLayerProxy dataLayer,
         if (cachedRootHash?.Hash != currentRoot.Hash)
         {
             _logger.LogWarning("Invalidating cache for {StoreId}", storeId.SanitizeForLog());
-            _objectCacheService.RemoveStore("stores", storeId);
+            _objectCacheService.RemoveValue("stores", storeId);
             await _objectCacheService.SetValueAsync("stores", storeId, "", "last-root", currentRoot, cancellationToken);
         }
 

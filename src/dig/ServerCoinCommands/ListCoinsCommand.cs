@@ -19,9 +19,8 @@ internal sealed class ListCoinsCommand()
             return -1;
         }
 
-        await Task.CompletedTask;
-
-        var coins = await serverCoinService.GetCoins(Store);
+        using CancellationTokenSource cts = new(10000);
+        var coins = await serverCoinService.GetCoins(Store, cts.Token);
         if (coins.Any())
         {
             foreach (dynamic coin in coins)

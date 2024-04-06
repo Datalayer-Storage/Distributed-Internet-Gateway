@@ -93,7 +93,7 @@ public partial class StoresController(GatewayService gatewayService,
 
             if (actAsCdn)
             {
-                var content = await _meshNetworkRoutingService.GetMeshNetworkContentsAsync(storeId, null);
+                var content = await _meshNetworkRoutingService.GetMeshNetworkContentsAsync(storeId, null, cancellationToken);
                 if (content is not null)
                 {
                     return Content(content, "text/html");
@@ -101,7 +101,7 @@ public partial class StoresController(GatewayService gatewayService,
             }
             else
             {
-                var redirect = await _meshNetworkRoutingService.GetMeshNetworkLocationAsync(storeId, null);
+                var redirect = await _meshNetworkRoutingService.GetMeshNetworkLocationAsync(storeId, null, cancellationToken);
                 if (redirect is not null)
                 {
                     _logger.LogInformation("Redirecting to {redirect}", redirect.SanitizeForLog());
@@ -194,7 +194,7 @@ public partial class StoresController(GatewayService gatewayService,
 
                 if (actAsCdn)
                 {
-                    var content = await _meshNetworkRoutingService.GetMeshNetworkContentsAsync(storeId, key);
+                    var content = await _meshNetworkRoutingService.GetMeshNetworkContentsAsync(storeId, key, cancellationToken);
                     if (content is not null)
                     {
                         var mimeType = GetMimeType(fileExtension) ?? "application/octet-stream";
@@ -203,7 +203,7 @@ public partial class StoresController(GatewayService gatewayService,
                 }
                 else
                 {
-                    var redirect = await _meshNetworkRoutingService.GetMeshNetworkLocationAsync(storeId, key);
+                    var redirect = await _meshNetworkRoutingService.GetMeshNetworkLocationAsync(storeId, key, cancellationToken);
                     if (redirect is not null)
                     {
                         _logger.LogInformation("Redirecting to {redirect}", redirect.SanitizeForLog());

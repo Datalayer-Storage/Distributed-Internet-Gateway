@@ -131,10 +131,10 @@ public class FileCacheService : IObjectCache
         }
     }
 
-    public void RemoveStore(string topic, string objectId)
+    public void RemoveValue(string topic, string objectKey)
     {
-        _logger.LogWarning("Invalidating store {objectId}", objectId.SanitizeForLog());
-        var storeCacheDirectory = Path.Combine(_cacheDirectory, topic, objectId).SanitizePath(_cacheDirectory);
+        _logger.LogWarning("Invalidating store {objectKey}", objectKey.SanitizeForLog());
+        var storeCacheDirectory = Path.Combine(_cacheDirectory, topic, objectKey).SanitizePath(_cacheDirectory);
 
         if (Directory.Exists(storeCacheDirectory))
         {

@@ -96,7 +96,7 @@ public class ApiTests
             fee,
             cts.Token);
 
-        Assert.True(result);
+        Assert.True(result is not null);
     }
 
     private static async Task<ulong> GetFee(FullNodeProxy node)

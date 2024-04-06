@@ -4,28 +4,24 @@ using chia.dotnet;
 
 namespace dig.server;
 
-public class MeshNetworkRoutingService(ChiaConfig chiaConfig,
-                                        DataLayerProxy dataLayer,
+public class MeshNetworkRoutingService(DataLayerProxy dataLayer,
                                         IServerCoinService serverCoinService,
                                         ILogger<MeshNetworkRoutingService> logger,
-                                        IConfiguration configuration,
                                         IMemoryCache cache)
 {
-    private readonly ChiaConfig _chiaConfig = chiaConfig;
     private readonly DataLayerProxy _dataLayer = dataLayer;
     private readonly IServerCoinService _serverCoinService = serverCoinService;
     private readonly ILogger<MeshNetworkRoutingService> _logger = logger;
     private readonly HttpClient _httpClient = new();
-    private readonly IConfiguration _configuration = configuration;
     private readonly IMemoryCache _cache = cache;
 
-    private async Task<string[]?> GetRedirectUrls(string storeId)
+    private async Task<string[]?> GetRedirectUrls(string storeId, CancellationToken cancellationToken)
     {
         string cacheKey = $"RedirectUrls-{storeId}";
         // Check if the URL list is already cached
         if (!_cache.TryGetValue(cacheKey, out string[]? cachedUrls))
         {
-            var coins = await _serverCoinService.GetCoins(storeId);
+            var coins = await _serverCoinService.GetCoins(storeId, cancellationToken);
             if (coins.Any())
             {
                 var allUrls = coins.Select(coin => coin.Urls).ToArray();
@@ -50,9 +46,11 @@ public class MeshNetworkRoutingService(ChiaConfig chiaConfig,
         return cachedUrls;
     }
 
-    public async Task<string?> GetMeshNetworkContentsAsync(string storeId, string? key) => await FetchMeshNetworkData(storeId, key, false);
+    public async Task<string?> GetMeshNetworkContentsAsync(string storeId, string? key, CancellationToken cancellationToken)
+        => await FetchMeshNetworkData(storeId, key, false, cancellationToken);
 
-    public async Task<string?> GetMeshNetworkLocationAsync(string storeId, string? key) => await FetchMeshNetworkData(storeId, key, true);
+    public async Task<string?> GetMeshNetworkLocationAsync(string storeId, string? key, CancellationToken cancellationToken)
+        => await FetchMeshNetworkData(storeId, key, true, cancellationToken);
 
     /**
     * Fetches data from a mesh network of URLs associated with a store ID and an optional key.
@@ -65,9 +63,9 @@ public class MeshNetworkRoutingService(ChiaConfig chiaConfig,
     * @param returnRedirectUrl A flag indicating whether to return the redirect URL instead of the content.
     * @return A Task that represents the asynchronous operation, which wraps the fetched data or redirect URL.
     */
-    private async Task<string?> FetchMeshNetworkData(string storeId, string? key, bool returnRedirectUrl)
+    private async Task<string?> FetchMeshNetworkData(string storeId, string? key, bool returnRedirectUrl, CancellationToken cancellationToken)
     {
-        var urls = await GetRedirectUrls(storeId);
+        var urls = await GetRedirectUrls(storeId, cancellationToken);
 
         if (urls is null || urls.Length == 0)
         {

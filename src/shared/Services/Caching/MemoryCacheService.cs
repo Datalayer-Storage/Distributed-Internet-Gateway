@@ -81,7 +81,7 @@ public class MemoryCacheService(IMemoryCache memoryCache,
         }
     }
 
-    public void RemoveStore(string topic, string objectId)
+    public void RemoveValue(string topic, string objectKey)
     {
         // since the cache key includes the store and the root hash this
         // is ok to be a no-op for the memory cache, which doesn't support bulk removal

@@ -39,11 +39,11 @@ internal sealed class NodeSyncService(DataLayerProxy dataLayer,
             }
 
             _logger.LogInformation("Getting server coins for {storeId}", subscription);
-            var serverCoins = await _serverCoinService.GetCoins(subscription);
+            var serverCoins = await _serverCoinService.GetCoins(subscription, stoppingToken);
             if (!serverCoins.Any(coin => coin.Ours))
             {
                 _logger.LogInformation("Adding server coin for {storeId}", subscription);
-                if (!await _serverCoinService.AddServer(subscription, myDigUri, serverReserveAmount, fee))
+                if (!await _serverCoinService.AddServer(subscription, myDigUri, serverReserveAmount, fee, stoppingToken))
                 {
                     _logger.LogError("Failed to add server coin for {storeId}", subscription);
                 }

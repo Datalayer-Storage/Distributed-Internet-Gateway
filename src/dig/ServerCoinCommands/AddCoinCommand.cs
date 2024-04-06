@@ -44,7 +44,7 @@ internal sealed class AddCoinCommand()
             serverReserve *= 2;
         }
 
-        if (await serverCoinService.AddServer(Store, url, serverReserve, fee))
+        if (await serverCoinService.AddServer(Store, url, serverReserve, fee, cts.Token))
         {
             Console.WriteLine("Server coin create transaction submitted.");
         }

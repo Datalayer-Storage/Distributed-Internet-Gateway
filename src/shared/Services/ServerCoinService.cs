@@ -1,15 +1,19 @@
 using chia.dotnet;
+using chia.dotnet.bls;
 using chia.dotnet.wallet;
+using dig.caching;
 using dig.servercoin;
 
 namespace dig;
 
 public class ServerCoinService(FullNodeProxy fullNode,
                                 WalletProxy walletProxy,
+                                IObjectCache objectCache,
                                 ILogger<ServerCoinService> logger) : IServerCoinService, IDisposable
 {
     private readonly FullNodeProxy _fullNode = fullNode;
     private readonly WalletProxy _walletProxy = walletProxy;
+    private readonly IObjectCache _objectCache = objectCache;
     private StandardWallet? _wallet;
     private readonly ILogger<ServerCoinService> _logger = logger;
     private readonly SemaphoreSlim _walletLock = new(1, 1);
@@ -34,23 +38,29 @@ public class ServerCoinService(FullNodeProxy fullNode,
         }
     }
 
-    public async Task<bool> AddServer(string storeId, string serverUrl, ulong mojoReserveAmount, ulong fee)
+    public async Task<bool> AddServer(string storeId, string serverUrl, ulong mojoReserveAmount, ulong fee, CancellationToken cancellationToken)
     {
         var factory = await GetFactory();
-        return await factory.CreateServerCoin(storeId, new[] { new Uri(serverUrl) }, storeId, mojoReserveAmount, fee);
+        var spendBundle = await factory.CreateServerCoin(storeId, new[] { new Uri(serverUrl) }, storeId, mojoReserveAmount, fee, cancellationToken);
+        await _objectCache.SetValueAsync("coins",
+            spendBundle.CoinSpends.First().Coin.CoinId.ToHex(),
+            "",
+            "",
+            spendBundle.CoinSpends.First().Coin,
+            cancellationToken);
+        return spendBundle is not null;
+    }
+    public async Task<bool> DeleteServer(string storeId, string coinId, ulong fee, CancellationToken cancellationToken)
+    {
+        var factory = await GetFactory();
+        _objectCache.RemoveValue("coins", coinId);
+        return await factory.DeleteServerCoin(storeId, coinId, fee, cancellationToken);
     }
 
-    public async Task<bool> DeleteServer(string storeId, string coinId, ulong fee)
+    public async Task<IEnumerable<ServerCoin>> GetCoins(string storeId, CancellationToken cancellationToken)
     {
         var factory = await GetFactory();
-
-        return await factory.DeleteServerCoin(storeId, coinId, fee);
-    }
-
-    public async Task<IEnumerable<ServerCoin>> GetCoins(string storeId)
-    {
-        var factory = await GetFactory();
-        return await factory.GetServerCoins(storeId);
+        return await factory.GetServerCoins(storeId, cancellationToken);
     }
 
     protected virtual void Dispose(bool disposing)
