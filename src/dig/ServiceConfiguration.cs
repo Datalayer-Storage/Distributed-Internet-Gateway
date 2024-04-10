@@ -12,7 +12,12 @@ public static class ServiceConfiguration
         if (string.IsNullOrEmpty(builder.Configuration.GetValue<string>("dig:FileCacheDirectory")))
         {
             // If not set, set it to the user settings folder
-            builder.Configuration.AddInMemoryCollection(new Dictionary<string, string?> { { "dig:FileCacheDirectory", Path.Combine(appStorage.UserSettingsFolder, "store-cache") } });
+            builder.Configuration.AddInMemoryCollection(new Dictionary<string, string?> { { "dig:FileCacheDirectory", Path.Combine(appStorage.UserSettingsFolder, "cache") } });
+        }
+        if (string.IsNullOrEmpty(builder.Configuration.GetValue<string>("dig:ObjectStoreDirectory")))
+        {
+            // If not set, set it to the user settings folder
+            builder.Configuration.AddInMemoryCollection(new Dictionary<string, string?> { { "dig:ObjectStoreDirectory", Path.Combine(appStorage.UserSettingsFolder, "objects") } });
         }
 
         builder.Services.AddSingleton<StoreManager>()
@@ -26,6 +31,7 @@ public static class ServiceConfiguration
             .AddSingleton<ChiaService>()
             .AddSingleton<StoreService>()
             .AddSingleton<IObjectCache, FileCacheService>()
+            .AddSingleton<IObjectStore, FileObjectStore>()
             .AddSingleton<StorePreCacheService>()
             .AddSingleton<IServerCoinService, ServerCoinCliService>()
             .AddSingleton((provider) => appStorage)

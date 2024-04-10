@@ -36,7 +36,43 @@
       "envFile": "${workspaceFolder}/.env"
     },
     {
-      "name": "dig cli list coins",
+      "name": "dig cli coins add ",
+      "type": "coreclr",
+      "request": "launch",
+      "preLaunchTask": "build",
+      "program": "${workspaceFolder}/src/dig/bin/Debug/net8.0/dig.node.dll",
+      "args": [
+        "coins",
+        "add",
+        "-s",
+        "1c540993becbd9ade831631e908eef720f4ba0c8262f4ed4f5e0e6bd0a57cb8a"
+      ],
+      "cwd": "${workspaceFolder}/src/dig",
+      "console": "integratedTerminal",
+      "stopAtEntry": false,
+      "envFile": "${workspaceFolder}/.env"
+    },
+    {
+      "name": "dig cli coins delete ",
+      "type": "coreclr",
+      "request": "launch",
+      "preLaunchTask": "build",
+      "program": "${workspaceFolder}/src/dig/bin/Debug/net8.0/dig.node.dll",
+      "args": [
+        "coins",
+        "delete",
+        "-s",
+        "1c540993becbd9ade831631e908eef720f4ba0c8262f4ed4f5e0e6bd0a57cb8a",
+        "-c",
+        "4cdf23a0b3acfdd97a95634b3618cebd85094454bcd4fdd0c4682d98bff010da"
+      ],
+      "cwd": "${workspaceFolder}/src/dig",
+      "console": "integratedTerminal",
+      "stopAtEntry": false,
+      "envFile": "${workspaceFolder}/.env"
+    },
+    {
+      "name": "dig cli coins list ",
       "type": "coreclr",
       "request": "launch",
       "preLaunchTask": "build",
@@ -45,7 +81,7 @@
         "coins",
         "list",
         "-s",
-        "1baa3e432ed02887120e6027c1dacaefd4bda619f3a9f859ad8adefc9dee2b90"
+        "26632ad912845e6f77714ca0996b21eb647803162dd444275ab5c09bea9426ea"
       ],
       "cwd": "${workspaceFolder}/src/dig",
       "console": "integratedTerminal",

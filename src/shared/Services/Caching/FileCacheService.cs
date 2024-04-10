@@ -2,7 +2,7 @@ using chia.dotnet;
 
 namespace dig.caching;
 
-public class FileCacheService : IObjectCache
+public sealed class FileCacheService : IObjectCache
 {
     private readonly string _cacheDirectory;
     private readonly ILogger<FileCacheService> _logger;
@@ -23,11 +23,6 @@ public class FileCacheService : IObjectCache
         if (!Path.IsPathFullyQualified(_cacheDirectory))
         {
             throw new InvalidOperationException($"Cache directory path is not fully qualified: {_cacheDirectory}");
-        }
-
-        if (!Directory.Exists(_cacheDirectory))
-        {
-            Directory.CreateDirectory(_cacheDirectory);
         }
     }
 
@@ -58,15 +53,22 @@ public class FileCacheService : IObjectCache
         var filePath = GetFilePath(topic, objectId, rootHash, key).SanitizePath(_cacheDirectory);
         if (File.Exists(filePath))
         {
-            var item = await File.ReadAllTextAsync(filePath, token);
-
-            if (typeof(TItem) == typeof(string))
+            try
             {
-                return (TItem)(object)item; //coerce the string to TItem which is <string>
-            }
+                var item = await File.ReadAllTextAsync(filePath, token);
 
-            // otherwise assume it's json and deserialize it
-            return item.ToObject<TItem>();
+                if (typeof(TItem) == typeof(string))
+                {
+                    return (TItem)(object)item; //coerce the string to TItem which is <string>
+                }
+
+                // otherwise assume it's json and deserialize it
+                return item.ToObject<TItem>();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Failed to get {Key} of type {Type}", key.SanitizeForLog(), typeof(TItem).Name);
+            }
         }
 
         return default;
@@ -76,23 +78,30 @@ public class FileCacheService : IObjectCache
     {
         if (value is not null)
         {
-            var filePath = GetFilePath(topic, objectId, rootHash, key).SanitizePath(_cacheDirectory);
-            if (typeof(TItem) == typeof(string))
+            try
             {
-                await File.WriteAllTextAsync(filePath, value.ToString(), token);
-            }
-            else
-            {
-                await File.WriteAllTextAsync(filePath, value.ToJson(), token);
-            }
+                var filePath = GetFilePath(topic, objectId, rootHash, key).SanitizePath(_cacheDirectory);
+                if (typeof(TItem) == typeof(string))
+                {
+                    await File.WriteAllTextAsync(filePath, value.ToString(), token);
+                }
+                else
+                {
+                    await File.WriteAllTextAsync(filePath, value.ToJson(), token);
+                }
 
-            _logger.LogInformation("Cached {Key} of type {Type}", key.SanitizeForLog(), typeof(TItem).Name);
+                _logger.LogInformation("Cached {Key} of type {Type}", key.SanitizeForLog(), typeof(TItem).Name);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Failed to cache {Key} of type {Type}", key.SanitizeForLog(), typeof(TItem).Name);
+            }
         }
     }
 
     public void Clear()
     {
-        if (Directory.Exists(_cacheDirectory))
+        try
         {
             foreach (var file in Directory.GetFiles(_cacheDirectory, "*"))
             {
@@ -108,12 +117,16 @@ public class FileCacheService : IObjectCache
                 Directory.Delete(sanitizedPath, true);
             }
         }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Failed to clear cache");
+        }
     }
 
     public void Clear(string topic)
     {
         var topicDirectory = Path.Combine(_cacheDirectory, topic).SanitizePath(_cacheDirectory);
-        if (Directory.Exists(topicDirectory))
+        try
         {
             foreach (var file in Directory.GetFiles(topicDirectory, "*"))
             {
@@ -129,16 +142,26 @@ public class FileCacheService : IObjectCache
                 Directory.Delete(sanitizedPath, true);
             }
         }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Failed to clear cache for {topic}", topic.SanitizeForLog());
+        }
     }
 
-    public void RemoveValue(string topic, string objectKey)
+    public void RemoveObject(string topic, string objectId)
     {
-        _logger.LogWarning("Invalidating store {objectKey}", objectKey.SanitizeForLog());
-        var storeCacheDirectory = Path.Combine(_cacheDirectory, topic, objectKey).SanitizePath(_cacheDirectory);
-
+        _logger.LogWarning("Invalidating store {objectKey}", objectId.SanitizeForLog());
+        var storeCacheDirectory = Path.Combine(_cacheDirectory, topic, objectId).SanitizePath(_cacheDirectory);
         if (Directory.Exists(storeCacheDirectory))
         {
-            Directory.Delete(storeCacheDirectory, true);
+            try
+            {
+                Directory.Delete(storeCacheDirectory, true);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Failed to remove store {objectKey}", objectId.SanitizeForLog());
+            }
         }
     }
 

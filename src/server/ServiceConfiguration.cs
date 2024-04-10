@@ -17,7 +17,12 @@ public static class ServiceConfiguration
             // If not set, set it to the user settings folder
             builder.Configuration.AddInMemoryCollection(new Dictionary<string, string?> { { "dig:FileCacheDirectory", Path.Combine(appStorage.UserSettingsFolder, "cache") } });
         }
-
+        if (string.IsNullOrEmpty(builder.Configuration.GetValue<string>("dig:ObjectStoreDirectory")))
+        {
+            // If not set, set it to the user settings folder
+            builder.Configuration.AddInMemoryCollection(new Dictionary<string, string?> { { "dig:ObjectStoreDirectory", Path.Combine(appStorage.UserSettingsFolder, "objects") } });
+        }
+        
         if (builder.Environment.IsProduction())
         {
             builder.Services.AddApplicationInsightsTelemetry();

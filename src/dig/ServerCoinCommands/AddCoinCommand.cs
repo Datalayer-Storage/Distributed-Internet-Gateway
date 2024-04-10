@@ -33,7 +33,7 @@ internal sealed class AddCoinCommand()
             return -1;
         }
 
-        using CancellationTokenSource cts = new(10000);
+        using CancellationTokenSource cts = new(100000);
         var url = await dnsService.ResolveHostUrl(41410, Url, cts.Token);
         var fee = await chiaService.ResolveFee(Fee, serverReserve, cts.Token);
 
@@ -44,9 +44,10 @@ internal sealed class AddCoinCommand()
             serverReserve *= 2;
         }
 
-        if (await serverCoinService.AddServer(Store, url, serverReserve, fee, cts.Token))
+        var coin = await serverCoinService.CreateCoin(Store, url, serverReserve, fee, cts.Token);
+        if (coin is not null)
         {
-            Console.WriteLine("Server coin create transaction submitted.");
+            Console.WriteLine($"Server coin with an id of {coin.CoinId} transaction submitted.");
         }
         else
         {

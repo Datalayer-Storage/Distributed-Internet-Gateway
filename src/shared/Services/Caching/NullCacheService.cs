@@ -14,12 +14,12 @@ public class NullCacheService : IObjectCache
     public void Clear()
     {
     }
-    
+
     public void Clear(string topic)
     {
     }
 
-    public void RemoveValue(string topic, string objectKey)
+    public void RemoveObject(string topic, string objectId)
     {
     }
 }

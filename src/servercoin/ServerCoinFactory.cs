@@ -27,18 +27,13 @@ public class ServerCoinFactory
         var launcher = Program.FromHex(storeId);
         var hint = launcher.ToHint();
 
-        var coinRecords = _wallet.SelectCoinRecords(amount + fee, CoinSelection.Smallest);
+        var coinRecords = await _wallet.SelectCoinRecords(amount + fee, CoinSelection.Smallest, cancellationToken: token);
         if (coinRecords.Count == 0)
         {
             throw new Exception("Insufficient balance");
         }
 
-        var totalValue = BigInteger.Zero;
-        foreach (var record in coinRecords)
-        {
-            totalValue += record.Coin.Amount;
-        }
-
+        var totalValue = coinRecords.Aggregate(BigInteger.Zero, (acc, record) => acc + record.Coin.Amount);
         var changeAmount = totalValue - fee - amount;
         var urlPrograms = urls.Select(url => Program.FromText(url.ToString()));
         var coinSpends = coinRecords.Select((coinRecord, index) =>
@@ -74,6 +69,7 @@ public class ServerCoinFactory
 
     public async Task<bool> DeleteServerCoin(string coinId, string genesisChallenge, ulong fee, CancellationToken token = default)
     {
+        fee = 200;
         var coinRecordResponse = await _fullNode.GetCoinRecordByName(coinId, token);
         var puzzleSolution = await _fullNode.GetPuzzleAndSolution(coinRecordResponse.Coin.ParentCoinInfo, coinRecordResponse.ConfirmedBlockIndex, token);
         var revealProgram = Program.DeserializeHex(puzzleSolution.PuzzleReveal.Remove0x());
@@ -84,18 +80,13 @@ public class ServerCoinFactory
             Program.Nil,
         ]);
 
-        var coinRecords = _wallet.SelectCoinRecords(1 + fee, CoinSelection.Smallest);
+        var coinRecords = await _wallet.SelectCoinRecords(1 + fee, CoinSelection.Smallest, cancellationToken: token);
         if (coinRecords.Count == 0)
         {
             throw new Exception("Insufficient balance");
         }
 
-        var totalValue = BigInteger.Zero;
-        foreach (var record in coinRecords)
-        {
-            totalValue += record.Coin.Amount;
-        }
-
+        var totalValue = coinRecords.Aggregate(BigInteger.Zero, (acc, record) => acc + record.Coin.Amount);
         var changeAmount = totalValue - fee;
         var coinSpends = coinRecords.Select((coinRecord, index) =>
         {
@@ -131,12 +122,13 @@ public class ServerCoinFactory
 
         coinSpends.Add(deleteCoinSpend);
 
-        var signedSpendBundle = _wallet.SignSpend(new SpendBundle
+        var spendBundle = new SpendBundle
         {
             CoinSpends = coinSpends,
             AggregatedSignature = G2Element.GetInfinity().ToHex(),
-        },
-        genesisChallenge.ToHexBytes());
+        };
+        var aggSigMeExtraData = genesisChallenge.ToHexBytes();
+        var signedSpendBundle = _wallet.SignSpend(spendBundle, genesisChallenge.ToHexBytes());
 
         return await _fullNode.PushTx(signedSpendBundle, token);
     }

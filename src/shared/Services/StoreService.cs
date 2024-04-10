@@ -31,7 +31,7 @@ internal sealed class StoreService(DataLayerProxy dataLayer,
                 {
                     string coinId = coin.CoinId;
                     _logger.LogInformation("Removing server coin {coinId} for {storeId}", coinId, storeId);
-                    await _serverCoinService.DeleteServer(storeId, coinId, fee, stoppingToken);
+                    await _serverCoinService.SpendCoin(storeId, coinId, fee, stoppingToken);
                 }
             }
         }
@@ -118,7 +118,7 @@ internal sealed class StoreService(DataLayerProxy dataLayer,
                 try
                 {
                     // try to add the server - this may fail with insufficient funds
-                    await _serverCoinService.AddServer(storeId, serverUri, reserveAmount, fee, stoppingToken);
+                    await _serverCoinService.CreateCoin(storeId, serverUri, reserveAmount, fee, stoppingToken);
                     // if we succeeded, return true
                     return true;
                 }

@@ -8,17 +8,17 @@ namespace dig.servercoin;
 public record ServerCoin
 {
     /// <summary>
-    /// Gets or sets the mojo reserve amount of the server coin.
+    /// Gets the mojo reserve amount of the server coin.
     /// </summary>
     public BigInteger Amount { get; init; }
 
     /// <summary>
-    /// Gets or sets the coin ID of the server coin.
+    /// Gets the coin ID of the server coin.
     /// </summary>
     public string CoinId { get; init; } = string.Empty;
 
     /// <summary>
-    /// Gets or sets the fee of the server coin.
+    /// Gets the fee of the server coin.
     /// </summary>
     public string LauncherId { get; init; } = string.Empty;
 
@@ -32,4 +32,3 @@ public record ServerCoin
     /// </summary>
     public IEnumerable<string> Urls { get; init; } = [];
 }
-

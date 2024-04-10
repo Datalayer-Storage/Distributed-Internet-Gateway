@@ -14,31 +14,36 @@ public class ServerCoinCliService(ChiaConfig chiaConfig,
     private readonly ILogger<ServerCoinCliService> _logger = logger;
     private readonly IConfiguration _configuration = configuration;
 
-    public async Task <bool> AddServer(string storeId, string serverUrl, ulong mojoReserveAmount, ulong fee, CancellationToken token = default)
+    public async Task<bool> AddServer(string storeId, string serverUrl, ulong mojoReserveAmount, ulong fee, CancellationToken token = default)
     {
         List<string> args = ["add_server", "--storeId", storeId, "--url", serverUrl, "--amount", mojoReserveAmount.ToString(), "--fee", fee.ToString()];
 
-        var result = RunCommand(args).Trim();
-        await Task.CompletedTask;
-        return result == "true";
+        var result = await RunCommand(args);
+        return result.Trim() == "true";
     }
 
-    public async Task<bool> DeleteServer(string storeId, string coinId, ulong fee, CancellationToken token = default)
+    public async Task<ServerCoin> CreateCoin(string storeId, string serverUrl, ulong mojoReserveAmount, ulong fee, CancellationToken token = default)
+    {
+        await Task.CompletedTask;
+        throw new NotImplementedException();
+    }
+
+    public async Task<bool> SpendCoin(string storeId, string coinId, ulong fee, CancellationToken token = default)
     {
         List<string> args = ["delete_server", "--storeId", storeId, "--coinId", coinId, "--fee", fee.ToString()];
 
-        await Task.CompletedTask;
-
-        RunCommand(args);
+        await RunCommand(args);
 
         return true;
     }
+
+    public async Task<IEnumerable<ServerCoin>> SyncCoins(string storeId, CancellationToken token = default) => await GetCoins(storeId, token);
 
     public async Task<IEnumerable<ServerCoin>> GetCoins(string storeId, CancellationToken token = default)
     {
         List<string> args = ["get_server_coins", "--storeId", storeId];
 
-        var json = RunCommand(args);
+        var json = await RunCommand(args);
         if (!string.IsNullOrEmpty(json))
         {
             var responseShape = new { Servers = new List<ServerCoin>() };
@@ -52,12 +57,10 @@ public class ServerCoinCliService(ChiaConfig chiaConfig,
             return response.Servers;
         }
 
-        await Task.CompletedTask;
-
         return [];
     }
 
-    private string RunCommand(IList<string> args)
+    private async Task<string> RunCommand(IList<string> args)
     {
         var programPath = _configuration.GetValue("dig:ServerCoinExePath", "");
 
@@ -107,7 +110,7 @@ public class ServerCoinCliService(ChiaConfig chiaConfig,
         args.Add("--certificateFolderPath");
         args.Add(certificateFolderPath!);
 
-        var a = string.Join(" ", args);
+        var tcs = new TaskCompletionSource<int>();
 
         var p = new Process()
         {
@@ -119,16 +122,24 @@ public class ServerCoinCliService(ChiaConfig chiaConfig,
                 CreateNoWindow = true,
             }
         };
+        p.Exited += (sender, args) =>
+        {
+            tcs.SetResult(p.ExitCode);
+            p.Dispose();
+        };
 
         p.Start();
 
-        var error = p.StandardError.ReadToEnd();
+        var error = await p.StandardError.ReadToEndAsync();
         if (!string.IsNullOrEmpty(error))
         {
             _logger.LogError("server coin error {error}", p.StandardError.ReadToEnd());
             throw new Exception(error);
         }
 
-        return p.StandardOutput.ReadToEnd();
+        var result = p.StandardOutput.ReadToEnd();
+        await tcs.Task;
+
+        return result;
     }
 }

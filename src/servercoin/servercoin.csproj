@@ -42,7 +42,7 @@
         <PackageReference Include="chia-dotnet" Version="3.3.5" />
         <PackageReference Include="chia-dotnet-bls" Version="2.0.8-alpha.3" />
         <PackageReference Include="chia-dotnet-clvm" Version="0.2.2-alpha.1" />
-        <PackageReference Include="chia-dotnet-wallet" Version="0.2.0-alpha.1" />
+        <PackageReference Include="chia-dotnet-wallet" Version="0.2.0-alpha.2" />
     </ItemGroup>
 
 </Project>

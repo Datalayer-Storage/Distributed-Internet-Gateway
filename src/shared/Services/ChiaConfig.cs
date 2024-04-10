@@ -18,6 +18,8 @@ public sealed class ChiaConfig
         _config = GetConfig();
     }
 
+    public string GenesisChallenge => _config?.GetGenesisChallenge() ?? "";
+
     public EndpointInfo? GetEndpoint(string name)
     {
         //

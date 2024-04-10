@@ -6,7 +6,7 @@ namespace dig.caching;
 /// <summary>
 /// This cache service uses the built-in .NET Core memory cache to store objects in memory.
 /// </summary>
-public class MemoryCacheService(IMemoryCache memoryCache,
+public sealed class MemoryCacheService(IMemoryCache memoryCache,
                                 ILogger<MemoryCacheService> logger,
                                 IConfiguration configuration) : IObjectCache, IDisposable
 {
@@ -81,7 +81,7 @@ public class MemoryCacheService(IMemoryCache memoryCache,
         }
     }
 
-    public void RemoveValue(string topic, string objectKey)
+    public void RemoveObject(string topic, string objectId)
     {
         // since the cache key includes the store and the root hash this
         // is ok to be a no-op for the memory cache, which doesn't support bulk removal
@@ -90,7 +90,7 @@ public class MemoryCacheService(IMemoryCache memoryCache,
         // and the cache reset token
     }
 
-    protected virtual void Dispose(bool disposing)
+    private void Dispose(bool disposing)
     {
         if (!disposedValue)
         {

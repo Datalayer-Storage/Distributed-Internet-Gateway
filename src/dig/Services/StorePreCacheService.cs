@@ -16,7 +16,7 @@ public class StorePreCacheService(DataLayerProxy dataLayer,
 
     public async Task CacheStore(string storeId, CancellationToken cancellationToken)
     {
-        _objectCacheService.RemoveValue("stores", storeId);
+        _objectCacheService.RemoveObject("stores", storeId);
 
         var rootHash = await _dataLayer.GetRoot(storeId, cancellationToken);
         await _objectCacheService.SetValueAsync("stores", storeId, "", "last-root", rootHash, cancellationToken);

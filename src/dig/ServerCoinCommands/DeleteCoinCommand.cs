@@ -28,10 +28,10 @@ internal sealed class DeleteCoinCommand()
             return -1;
         }
 
-        using CancellationTokenSource cts = new(10000);
+        using CancellationTokenSource cts = new(100000);
         var fee = await chiaService.ResolveFee(Fee, configuration.GetValue<ulong>("dig:ServerCoinReserveAmount", 300000), cts.Token);
 
-        Console.WriteLine(await serverCoinService.DeleteServer(Store, Coin, fee, cts.Token));
+        Console.WriteLine(await serverCoinService.SpendCoin(Store, Coin, fee, cts.Token));
 
         return 0;
     }

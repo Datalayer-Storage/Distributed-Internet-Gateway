@@ -17,6 +17,8 @@
         <Compile Include="$(MSBuildThisFileDirectory)Services\MirrorService.cs" />
         <Compile Include="$(MSBuildThisFileDirectory)Services\NodeSyncService.cs" />
         <Compile Include="$(MSBuildThisFileDirectory)Services\IServer.cs" />
+        <Compile Include="$(MSBuildThisFileDirectory)Services\FileObjectStore.cs" />
+        <Compile Include="$(MSBuildThisFileDirectory)Services\IObjectStore.cs" />
         <Compile Include="$(MSBuildThisFileDirectory)Services\ServerCoinCliService.cs" />
         <Compile Include="$(MSBuildThisFileDirectory)Services\ServerCoinService.cs" />
         <Compile Include="$(MSBuildThisFileDirectory)Services\IServerCoinService.cs" />
