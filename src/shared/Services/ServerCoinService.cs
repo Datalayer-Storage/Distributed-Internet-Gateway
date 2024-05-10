@@ -55,7 +55,6 @@ public class ServerCoinService(FullNodeProxy fullNode,
     {
         var factory = await GetFactory(sync: true);
         var spendBundle = await factory.CreateServerCoin(storeId, new[] { new Uri(serverUrl) }, _chiaConfig.GenesisChallenge, mojoReserveAmount, fee, cancellationToken);
-        var json = spendBundle.ToJson();
         var coin = spendBundle.CoinSpends.First().Coin;
         var serverCoin = new ServerCoin
         {
@@ -65,7 +64,6 @@ public class ServerCoinService(FullNodeProxy fullNode,
             Ours = true,
             Urls = [serverUrl]
         };
-        var json2 = serverCoin.ToJson();
         await _objectStore.StoreItem(storeId, serverCoin.CoinId, serverCoin, cancellationToken);
 
         return serverCoin;

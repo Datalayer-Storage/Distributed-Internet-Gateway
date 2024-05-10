@@ -8,13 +8,10 @@ internal static class Puzzles
     public static Program LoadPuzzle(string name)
     {
         var assembly = Assembly.GetExecutingAssembly();
-        var resourcePath = "servercoin.puzzles";
+        var resourcePath = Path.Combine($"servercoin.puzzles.{name}.clsp.hex");
 
-        resourcePath = Path.Combine(resourcePath, $"{name}.clsp.hex");
-        resourcePath = resourcePath.Replace(Path.DirectorySeparatorChar, '.');
-
-        using Stream stream = assembly.GetManifestResourceStream(resourcePath) ?? throw new InvalidOperationException($"Could not find resource: {resourcePath}");
-        using StreamReader reader = new(stream);
+        using var stream = assembly.GetManifestResourceStream(resourcePath) ?? throw new InvalidOperationException($"Could not find resource: {resourcePath}");
+        using var reader = new StreamReader(stream);
         var fileContent = reader.ReadToEnd().Trim();
 
         return Program.DeserializeHex(fileContent);
