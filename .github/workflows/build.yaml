@@ -14,8 +14,32 @@ concurrency:
 
 jobs:
   build:
-    name: Build Binaries on Windows
+    name: Build Binaries
     runs-on: windows-2019
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: Windows
+            architecture: x64
+            runs-on: windows-2019
+            artifact-name: dig-win-x64
+            runtime: win-x64
+          - os: Linux
+            architecture: x64
+            runs-on: ubuntu-latest
+            artifact-name: dig-linux-x64
+            runtime: linux-x64
+          - os: Linux-ARM
+            architecture: ARM64
+            runs-on: ubuntu-latest
+            artifact-name: dig-linux-arm64
+            runtime: linux-arm64
+          - os: OSX
+            architecture: x64
+            runs-on: macos-latest
+            artifact-name: dig-osx-x64
+            runtime: osx-x64
 
     steps:
       - name: Clean workspace
@@ -29,208 +53,250 @@ jobs:
         with:
           dotnet-version: '8.0.x'
 
-      - name: Create publish folder
-        run: |
-          $publishPath = Join-Path -Path $env:GITHUB_WORKSPACE -ChildPath "publish"
-
-          # Check if the publish folder already exists
-          if (-not (Test-Path $publishPath)) {
-            # Create the publish folder
-            New-Item -ItemType Directory -Path $publishPath | Out-Null
-            Write-Host "publish folder created at $publishPath"
-          } else {
-            Write-Host "publish folder already exists at $publishPath"
-          }
-        shell: pwsh
-
       - name: Build Projects
-        run: ${{ github.workspace }}\publish.ps1
+        run: ${{ github.workspace }}\publish.ps1 ${{ matrix.runtime }}
         shell: pwsh
 
-      - name: Setup Certificate (Windows)
-        run: |
-          echo "${{ secrets.SM_CLIENT_CERT_FILE_B64 }}" | base64 --decode > /d/Certificate_pkcs12.p12
-        shell: bash
-
-      - name: Set variables (Windows)
-        id: variables
-        run: |
-          echo "::set-output name=version::${GITHUB_REF#refs/tags/v}"
-          echo "::set-output name=KEYPAIR_NAME::Key_454819080"
-          echo "SM_HOST=${{ secrets.SM_HOST }}" >> "$GITHUB_ENV"
-          echo "SM_API_KEY=${{ secrets.SM_API_KEY }}" >> "$GITHUB_ENV"
-          echo "SM_CLIENT_CERT_FILE=D:\\Certificate_pkcs12.p12" >> "$GITHUB_ENV"
-          echo "SM_CLIENT_CERT_PASSWORD=${{ secrets.SM_CLIENT_CERT_PASSWORD }}" >> "$GITHUB_ENV"
-          echo "C:\Program Files (x86)\Windows Kits\10\App Certification Kit" >> $GITHUB_PATH
-          echo "C:\Program Files (x86)\Microsoft SDKs\Windows\v10.0A\bin\NETFX 4.8 Tools" >> $GITHUB_PATH
-          echo "C:\Program Files\DigiCert\DigiCert One Signing Manager Tools" >> $GITHUB_PATH
-          echo "C:\Program Files\DigiCert\DigiCert Keylocker Tools" >> $GITHUB_PATH
-        shell: bash
-
-      - name: Setting up the client tools (Windows)
-        run: |
-          curl -X GET  https://one.digicert.com/signingmanager/api-ui/v1/releases/Keylockertools-windows-x64.msi/download?account_id=e94ff86e-6519-4598-a066-6b6b252245f0 -H "x-api-key:%SM_API_KEY%" -o smtools-windows-x64.msi
-          msiexec /i smtools-windows-x64.msi /qn
-        shell: cmd
-
-    
-      - name: Setup SSM KSP on windows latest (Windows)
-        run: |
-          curl -X GET  https://stage.one.digicert.com/signingmanager/api-ui/v1/releases/smtools-windows-x64.msi/download -H "x-api-key:%SM_API_KEY%" -o smtools-windows-x64.msi
-          msiexec /i smtools-windows-x64.msi /quiet /qn
-          smksp_registrar.exe list
-          smctl.exe keypair ls
-          C:\Windows\System32\certutil.exe -csp "DigiCert Signing Manager KSP" -key -user
-          smksp_cert_sync.exe
-        shell: cmd
-
-      - name: Signing using Signtool (Windows)
-        run: |
-          signtool.exe sign /sha1 ${{ secrets.SM_CODE_SIGNING_CERT_SHA1_HASH }} /tr http://timestamp.digicert.com /td SHA256 /fd SHA256 ${{ github.workspace }}\publish\standalone\win-x64\dig.exe
-          signtool.exe sign /sha1 ${{ secrets.SM_CODE_SIGNING_CERT_SHA1_HASH }} /tr http://timestamp.digicert.com /td SHA256 /fd SHA256 ${{ github.workspace }}\publish\standalone\win-x64\dig.server.exe
-
-      - name: Signtool verify (Windows)
-        run: |
-          signtool verify /v /pa ${{ github.workspace }}\publish\standalone\win-x64\dig.exe
-          signtool verify /v /pa ${{ github.workspace }}\publish\standalone\win-x64\dig.server.exe
-        shell: cmd
-      
-      - name: Download server_coin assets from the latest release and rename
-        run: |
-          # Fetch the latest release data from GitHub API
-          $headers = @{
-            "Authorization" = "token $env:GH_PAT"
-          }
-          $latestRelease = Invoke-RestMethod -Uri "https://api.github.com/repos/Datalayer-Storage/chia-server-coin-cli/releases/latest" -Headers $headers
-          $tagName = $latestRelease.tag_name
-
-          # Define asset filenames based on the tag name
-          $fileNames = @("server_coin-win-x64-$tagName.zip", "server_coin-linux-x64-$tagName.zip", "server_coin-linux-arm64-$tagName.zip")
-
-          # Loop through each filename to download and rename
-          foreach ($fileName in $fileNames) {
-            # Find the asset download URL
-            $asset = $latestRelease.assets | Where-Object {$_.name -eq $fileName}
-            if ($null -eq $asset) {
-              Write-Warning "Asset URL for $fileName not found"
-              continue
-            }
-
-            # Download the asset
-            $downloadPath = Join-Path -Path $env:GITHUB_WORKSPACE -ChildPath $asset.name
-            Invoke-WebRequest -Uri $asset.browser_download_url -Headers $headers -OutFile $downloadPath
-
-            # Rename the file to strip out the tag name
-            $newName = $asset.name.Replace("-$tagName", "")
-            $newPath = Join-Path -Path $env:GITHUB_WORKSPACE -ChildPath $newName
-            Rename-Item -Path $downloadPath -NewName $newPath
-          }
-        shell: pwsh
-        env:
-          GH_PAT: ${{ secrets.GH_ACCESS_TOKEN }}
-
-      - name: Unzip downloaded assets
-        run: |
-          # Define the paths for the zip files and their destination directories
-          $zipFiles = @{
-            "server_coin-win-x64.zip" = "publish/standalone/win-x64";
-            "server_coin-linux-x64.zip" = "publish/standalone/linux-x64";
-            "server_coin-linux-arm64.zip" = "publish/standalone/linux-arm64"
-          }
-      
-          # Iterate through each zip file and extract it to the specified destination
-          foreach ($zipFile in $zipFiles.GetEnumerator()) {
-            $zipPath = Join-Path -Path $env:GITHUB_WORKSPACE -ChildPath $zipFile.Name
-            $destPath = Join-Path -Path $env:GITHUB_WORKSPACE -ChildPath $zipFile.Value
-      
-            # Check if the zip file exists before attempting to extract
-            if (Test-Path $zipPath) {
-              # Create the destination directory if it doesn't exist
-              if (-not (Test-Path $destPath)) {
-                New-Item -ItemType Directory -Path $destPath | Out-Null
-              }
-      
-              # Extract the zip file to a temporary location
-              $tempPath = Join-Path -Path $env:TEMP -ChildPath ([System.IO.Path]::GetRandomFileName())
-              Expand-Archive -Path $zipPath -DestinationPath $tempPath -Force
-      
-              # Move the contents from the temporary location to the final destination
-              Get-ChildItem -Path $tempPath | Move-Item -Destination $destPath
-              Remove-Item -Path $tempPath -Recurse -Force
-            }
-            else {
-              Write-Warning "Zip file $zipFile.Name does not exist and cannot be unzipped."
-            }
-          }
-        shell: pwsh
+      - name: Signing dig.exe
+        if: matrix.os == 'Windows'
+        uses: ./.github/actions/signing-steps
+        with:
+          ARTIFACT_PATHS: ${{ github.workspace }}\publish\standalone\win-x64\dig.exe,${{ github.workspace }}\publish\standalone\win-x64\dig.server.exe
+          SM_CLIENT_CERT_FILE_B64: ${{ secrets.SM_CLIENT_CERT_FILE_B64 }}
+          SM_HOST: ${{ secrets.SM_HOST }}
+          SM_API_KEY: ${{ secrets.SM_API_KEY }}
+          SM_CLIENT_CERT_PASSWORD: ${{ secrets.SM_CLIENT_CERT_PASSWORD }}
+          SM_CODE_SIGNING_CERT_SHA1_HASH: ${{ secrets.SM_CODE_SIGNING_CERT_SHA1_HASH }}
+                
+      - name: Download and Bundle Server Coin Binary
+        uses: ./.github/actions/download-server-coin
+        with:
+          runtime: ${{matrix.runtime}}
+          path: publish/standalone/${{matrix.runtime}}
+          GH_ACCESS_TOKEN: ${{ secrets.GH_ACCESS_TOKEN }}
       
       - name: Copy License
         run: |
-          Copy-Item -Path "${env:GITHUB_WORKSPACE}\COPYING" -Destination "${env:GITHUB_WORKSPACE}\publish\standalone\win-x64"
-          Copy-Item -Path "${env:GITHUB_WORKSPACE}\COPYING" -Destination "${env:GITHUB_WORKSPACE}\publish\standalone\linux-x64"
-          Copy-Item -Path "${env:GITHUB_WORKSPACE}\COPYING" -Destination "${env:GITHUB_WORKSPACE}\publish\standalone\linux-arm64"
+          Copy-Item -Path "${env:GITHUB_WORKSPACE}\COPYING" -Destination "${env:GITHUB_WORKSPACE}\publish\standalone\${{matrix.runtime}}"
         shell: pwsh
+
+      - name: Upload Windows Artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: ${{matrix.artifact-name}}
+          path: publish/standalone/${{matrix.runtime}}
+
+  dmg:
+    name: Package DMG
+    runs-on: macos-latest
+    needs: build
+
+    strategy:
+      matrix:
+        include:
+          - artifact-name: dig-osx-x64
+            runtime: osx-x64
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
       
+      - name: Download OSX Artifacts
+        uses: actions/download-artifact@v3
+        with:
+          name: ${{matrix.artifact-name}}
+          path: ${{matrix.artifact-name}}
+      
+      - name: Import Apple installer signing certificates
+        uses: Apple-Actions/import-codesign-certs@v1
+        with:
+          p12-file-base64: ${{ secrets.APPLE_DEV_ID_APP }}
+          p12-password: ${{ secrets.APPLE_DEV_ID_APP_PASS }}
 
-      - name: Create thirdparty folder
+      - name: Install DMG Packaging Tool
+        run: brew install create-dmg
+
+      - name: Code Sign Binaries
         run: |
-          $thirdpartyPath = Join-Path -Path $env:GITHUB_WORKSPACE -ChildPath "thirdparty"
+          codesign --sign "Developer ID Application: Michael Taylor (${{ secrets.APPLE_TEAM_ID }})" --timestamp --options runtime --verbose ./${{matrix.artifact-name}}/dig.server
+          codesign --sign "Developer ID Application: Michael Taylor (${{ secrets.APPLE_TEAM_ID }})" --timestamp --options runtime --verbose ./${{matrix.artifact-name}}/dig.node
 
-          # Check if the thirdparty folder already exists
-          if (-not (Test-Path $thirdpartyPath)) {
-            # Create the thirdparty folder
-            New-Item -ItemType Directory -Path $thirdpartyPath | Out-Null
-            Write-Host "thirdparty folder created at $thirdpartyPath"
-          } else {
-            Write-Host "thirdparty folder already exists at $thirdpartyPath"
+      - name: list files
+        run: |
+          ls -la ./${{matrix.artifact-name}}
+          create-dmg --help
+
+      - name: Package Files into DMG
+        run: |
+          create-dmg \
+          --volname "Application Installer" \
+          --window-pos 200 120 \
+          --window-size 800 400 \
+          --icon-size 100 \
+          --app-drop-link 600 185 \
+          "${{ github.workspace }}/${{ matrix.artifact-name }}/${{ matrix.artifact-name }}.dmg" \
+          "${{ github.workspace }}/${{ matrix.artifact-name }}/"
+
+      - name: Find DMG file
+        id: find-dmg
+        run: |
+          DMG_FILE=$(find ${{ github.workspace }}/${{matrix.artifact-name}} -type f -name '*.dmg')
+          echo "DMG_FILE=$DMG_FILE" >> $GITHUB_ENV
+          echo "Found DMG file: $DMG_FILE"
+
+      - name: Code Sign DMG
+        run: |
+          codesign --sign "Developer ID Application: Michael Taylor (${{ secrets.APPLE_TEAM_ID }})" --timestamp --options runtime --verbose ${{ env.DMG_FILE }}
+  
+      - name: Notarize with notary-tools action
+        uses: GuillaumeFalourd/notary-tools@v1
+        with:
+          product_path: ${{ env.DMG_FILE }}
+          apple_id: ${{ secrets.APPLE_NOTARIZE_USERNAME }}
+          password: ${{ secrets.APPLE_NOTARIZE_PASSWORD }}
+          team_id: ${{ secrets.APPLE_TEAM_ID }}
+          staple: 'true'
+          keychain_profile: ${{ secrets.APPLE_NOTARIZE_PASSWORD }}
+
+      - name: Upload DMG
+        uses: actions/upload-artifact@v3
+        with:
+          name: ${{matrix.artifact-name}}-dmg
+          path: ${{matrix.artifact-name}}.dmg
+
+  msi:
+    name: Build ${{matrix.artifact-name}} deb
+    runs-on: windows-2019
+    needs:
+      - build
+    
+    strategy:
+      matrix:
+        include:
+          - artifact-name: dig-win-x64
+            runtime: win-x64
+    steps:
+      - name: Clean workspace
+        uses: Chia-Network/actions/clean-workspace@main
+
+      - name: Checkout Code
+        uses: actions/checkout@v3
+
+      - name: Download Windows artifacts
+        uses: actions/download-artifact@v3
+        with:
+          name: ${{matrix.artifact-name}}
+          path: publish/standalone/${{matrix.runtime}}
+
+      - name: Copy server_coin.exe
+        run: |
+          $sourcePath = "publish/standalone/${{matrix.runtime}}/server_coin.exe"
+          $destinationPath = "thirdparty"
+          # Ensure the destination directory exists
+          if (-not (Test-Path -Path $destinationPath -PathType Container)) {
+              New-Item -ItemType Directory -Path $destinationPath
           }
-
-          cp ${{ github.workspace }}/publish/standalone/win-x64/server_coin.exe ${{ github.workspace }}/thirdparty/server_coin.exe
+          # Copy the file
+          Copy-Item -Path $sourcePath -Destination $destinationPath
         shell: pwsh
 
       - name: Build MSI
         run: ${{ github.workspace }}\build-msi.ps1
         shell: pwsh
 
-      - name: Signing MSI using Signtool (Windows)
-        run: |
-          signtool.exe sign /sha1 ${{ secrets.SM_CODE_SIGNING_CERT_SHA1_HASH }} /tr http://timestamp.digicert.com /td SHA256 /fd SHA256 ${{ github.workspace }}\publish\Distributed-Internet-Gateway-win-x64.msi
+      - name: Signing MSI
+        uses: ./.github/actions/signing-steps
+        with:
+          ARTIFACT_PATHS: ${{ github.workspace }}/publish/Distributed-Internet-Gateway-${{matrix.runtime}}.msi
+          SM_CLIENT_CERT_FILE_B64: ${{ secrets.SM_CLIENT_CERT_FILE_B64 }}
+          SM_HOST: ${{ secrets.SM_HOST }}
+          SM_API_KEY: ${{ secrets.SM_API_KEY }}
+          SM_CLIENT_CERT_PASSWORD: ${{ secrets.SM_CLIENT_CERT_PASSWORD }}
+          SM_CODE_SIGNING_CERT_SHA1_HASH: ${{ secrets.SM_CODE_SIGNING_CERT_SHA1_HASH }}
 
-      - name: Signtool verify MSI (Windows)
-        run: |
-          signtool verify /v /pa ${{ github.workspace }}\publish\Distributed-Internet-Gateway-win-x64.msi
-        shell: cmd
-      
       - name: Upload Windows MSI Artifacts
         uses: actions/upload-artifact@v3
         with:
-          name: dig-win-x64-msi
-          path: publish/Distributed-Internet-Gateway-win-x64.msi
-      
-      - name: Upload Windows Artifacts
-        uses: actions/upload-artifact@v3
-        with:
-          name: dig-win-x64
-          path: publish/standalone/win-x64
+          name: ${{matrix.artifact-name}}-msi
+          path: publish/Distributed-Internet-Gateway-${{matrix.runtime}}.msi
+        
+  debs:
+    name: Build ${{matrix.artifact-name}} deb
+    runs-on: ubuntu-latest
+    needs:
+      - build
 
-      - name: Upload Linux x64 Artifacts
-        uses: actions/upload-artifact@v3
-        with:
-          name: dig-linux-x64
-          path: publish/standalone/linux-x64
+    strategy:
+      matrix:
+        include:
+          - artifact-name: dig-linux-x64
+            runtime: linux-x64
+            platform: amd64
+            pkg-name: distributed-internet-gateway
+            binary-name: dig
+          - artifact-name: dig-linux-arm64
+            runtime: linux-arm64
+            platform: arm64
+            pkg-name: distributed-internet-gateway
+            binary-name: dig
 
-      - name: Upload Linux ARM64 Artifacts
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+
+      - name: Download Linux artifacts
+        uses: actions/download-artifact@v3
+        with:
+          name: ${{matrix.artifact-name}}
+          path: ${{matrix.artifact-name}}
+
+      - name: Get tag name
+        id: tag-name
+        run: |
+          echo "TAGNAME=$(echo $GITHUB_REF | cut -d / -f 3)" >> $GITHUB_OUTPUT
+
+      - name: Build .deb
+        env:
+          VERSION: ${{ steps.tag-name.outputs.TAGNAME }}
+          PLATFORM: ${{ matrix.platform }}
+        run: |
+          pip install j2cli
+          CLI_DEB_BASE="${{matrix.pkg-name}}_${{ steps.tag-name.outputs.TAGNAME }}-1_${PLATFORM}"
+          mkdir -p "deb/$CLI_DEB_BASE/opt/${{matrix.pkg-name}}"
+          mkdir -p "deb/$CLI_DEB_BASE/usr/bin"
+          mkdir -p "deb/$CLI_DEB_BASE/etc/systemd/system"
+          mkdir -p "deb/$CLI_DEB_BASE/DEBIAN"
+          j2 -o "deb/$CLI_DEB_BASE/DEBIAN/control" build-scripts/deb/control.j2
+          cp -r ${{matrix.artifact-name}}/* "deb/$CLI_DEB_BASE/opt/${{matrix.pkg-name}}/"
+          cp build-scripts/deb/dig@.service deb/$CLI_DEB_BASE/etc/systemd/system/dig@.service
+          ls -la deb/$CLI_DEB_BASE/opt/${{matrix.pkg-name}}
+          chmod +x deb/$CLI_DEB_BASE/opt/${{matrix.pkg-name}}/dig.node
+          chmod +x deb/$CLI_DEB_BASE/opt/${{matrix.pkg-name}}/dig.server
+          ln -s ../../opt/${{matrix.pkg-name}}/dig.node "deb/$CLI_DEB_BASE/usr/bin/dig.node"
+          dpkg-deb --build --root-owner-group "deb/$CLI_DEB_BASE"
+
+      - name: Upload deb
         uses: actions/upload-artifact@v3
         with:
-          name: dig-linux-arm64
-          path: publish/standalone/linux-arm64
+          name: ${{ matrix.artifact-name }}-deb
+          path: ${{ github.workspace }}/deb/*.deb
 
   release:
     runs-on: ubuntu-latest
     if: startsWith(github.ref, 'refs/tags/')
     needs:
       - build
+      - debs
+      - msi
+      - dmg
+
     steps:
+      - name: Download OSX DMG artifacts
+        uses: actions/download-artifact@v3
+        with:
+          name: dig-osx-x64-dmg
+          path: dig-osx-x64-dmg
+
       - name: Download Windows artifacts
         uses: actions/download-artifact@v3
         with:
@@ -243,17 +309,36 @@ jobs:
           name: dig-win-x64
           path: dig-win-x64
 
+      - name: Download OSX artifacts
+        uses: actions/download-artifact@v3
+        with:
+          name: dig-osx-x64
+          path: dig-osx-x64
+  
       - name: Download Linux x64 deb
         uses: actions/download-artifact@v3
         with:
           name: dig-linux-x64
           path: dig-linux-x64
-
+        
       - name: Download Linux arm64 deb
         uses: actions/download-artifact@v3
         with:
           name: dig-linux-arm64
           path: dig-linux-arm64
+
+
+      - name: Download Linux x64 Deb artifacts
+        uses: actions/download-artifact@v3
+        with:
+          name: dig-linux-x64-deb
+          path: dig-linux-x64-deb
+
+      - name: Download Linux arm deb
+        uses: actions/download-artifact@v3
+        with:
+          name: dig-linux-arm64-deb
+          path: dig-linux-arm64-deb
 
       - name: Get tag name
         id: tag-name
@@ -262,18 +347,26 @@ jobs:
       
       - name: Create zips
         run: |
+          zip -r dig-osx-x64-${{ steps.tag-name.outputs.TAGNAME }}.zip dig-osx-x64
           zip -r dig-win-x64-${{ steps.tag-name.outputs.TAGNAME }}.zip dig-win-x64
           zip -r dig-linux-x64-${{ steps.tag-name.outputs.TAGNAME }}.zip dig-linux-x64
           zip -r dig-linux-arm64-${{ steps.tag-name.outputs.TAGNAME }}.zip dig-linux-arm64
           mv dig-win-x64-msi/Distributed-Internet-Gateway-win-x64.msi dig-win-x64-${{ steps.tag-name.outputs.TAGNAME }}.msi
+          mv dig-linux-x64-deb/*.deb dig-linux-x64-${{ steps.tag-name.outputs.TAGNAME }}.deb
+          mv dig-linux-arm64-deb/*.deb dig-linux-arm64-${{ steps.tag-name.outputs.TAGNAME }}.deb
+          mv dig-osx-x64-dmg/dig-osx-x64.dmg dig-osx-x64-${{ steps.tag-name.outputs.TAGNAME }}.dmg
         
       - name: Release
         uses: softprops/action-gh-release@v0.1.15
         with:
           files: |
+            dig-osx-x64-${{ steps.tag-name.outputs.TAGNAME }}.zip
             dig-win-x64-${{ steps.tag-name.outputs.TAGNAME }}.zip
             dig-linux-x64-${{ steps.tag-name.outputs.TAGNAME }}.zip
             dig-linux-arm64-${{ steps.tag-name.outputs.TAGNAME }}.zip
             dig-win-x64-${{ steps.tag-name.outputs.TAGNAME }}.msi
+            dig-linux-x64-${{ steps.tag-name.outputs.TAGNAME }}.deb
+            dig-linux-arm64-${{ steps.tag-name.outputs.TAGNAME }}.deb
+            dig-osx-x64-${{ steps.tag-name.outputs.TAGNAME }}.dmg
         env:
           GITHUB_TOKEN: ${{ secrets.GH_ACCESS_TOKEN }}

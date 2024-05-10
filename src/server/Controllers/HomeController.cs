@@ -8,14 +8,11 @@ public class HomeController(GatewayService gatewayService) : Controller
 {
     private readonly GatewayService _gatewayService = gatewayService;
 
-    public async Task<IActionResult> Index()
+    public async Task<IActionResult> IndexAsync(CancellationToken cancellationToken)
     {
-        var request = HttpContext.Request;
-        ViewBag.WellKnown = _gatewayService.GetWellKnown($"{request.Scheme}://{request.Host}{request.PathBase}");
-
         if (_gatewayService.HaveDataLayerConfig())
         {
-            var stores = await _gatewayService.GetKnownStoresWithNames();
+            var stores = await _gatewayService.GetKnownStoresWithNames(cancellationToken);
             return View(stores.OrderByDescending(s => s.is_verified).ThenBy(s => s.verified_name));
         }
 

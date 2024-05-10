@@ -2,13 +2,34 @@ using chia.dotnet;
 
 namespace dig;
 
-internal sealed class ChiaService(FullNodeProxy fullNode,
+public sealed class ChiaService(FullNodeProxy fullNode,
+                                    WalletProxy wallet,
                                     ILogger<ChiaService> logger,
                                     IConfiguration configuration)
 {
     private readonly FullNodeProxy _fullNode = fullNode;
+    private readonly WalletProxy _wallet = wallet;
     private readonly ILogger<ChiaService> _logger = logger;
     private readonly IConfiguration _configuration = configuration;
+
+    public async Task<string> ResolveAddress(string? address, CancellationToken stoppingToken)
+    {
+        try
+        {
+            if (string.IsNullOrEmpty(address))
+            {
+                var xchWallet = new Wallet(1, _wallet);
+
+                return await xchWallet.GetNextAddress(false, stoppingToken);
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Could not connect to the wallet {Message}", ex.InnerException?.Message ?? ex.Message);
+        }
+
+        return address ?? "";
+    }
 
     public async Task<ulong> ResolveFee(ulong? fee, ulong cost, CancellationToken stoppingToken)
     {

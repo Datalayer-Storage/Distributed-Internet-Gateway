@@ -7,20 +7,20 @@ public class WellKnownController(GatewayService gatewayService) : ControllerBase
     private readonly GatewayService _gatewayService = gatewayService;
 
     [HttpGet(".well-known")]
-    public ActionResult<WellKnown> Get()
+    public async Task<ActionResult<WellKnown>> GetAsync(CancellationToken cancellationToken)
     {
         var request = HttpContext.Request;
-        var wellKnown = _gatewayService.GetWellKnown($"{request.Scheme}://{request.Host}{request.PathBase}");
+        var wellKnown = await _gatewayService.GetWellKnown($"{request.Scheme}://{request.Host}{request.PathBase}", cancellationToken);
 
         return Ok(wellKnown);
     }
 
     [HttpGet(".well-known/known_stores")]
-    public async Task<ActionResult<IEnumerable<string>>> GetMirrors()
+    public async Task<ActionResult<IEnumerable<string>>> GetMirrorsAsync(CancellationToken cancellationToken)
     {
         try
         {
-            var stores = await _gatewayService.GetKnownStores();
+            var stores = await _gatewayService.GetKnownStores(cancellationToken);
             return Ok(stores);
         }
         catch (TaskCanceledException)

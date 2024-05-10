@@ -44,12 +44,11 @@ internal sealed class StoreService(DataLayerProxy dataLayer,
         await _dataLayer.Unsubscribe(storeId, false, stoppingToken);
     }
 
-    public async Task<(bool haveFunds, bool addedStore)> AddStore(string storeId,
+    public async Task<(bool addedStore, bool addedMirror, bool addedServerCoin)> AddStore(string storeId,
                                                                     IEnumerable<string> subscriptions,
                                                                     ulong mirrorReserveAmount,
                                                                     ulong serverReserveAmount,
                                                                     ulong fee,
-                                                                    bool haveFunds,
                                                                     bool addMirrors,
                                                                     string? url,
                                                                     CancellationToken stoppingToken)
@@ -60,6 +59,9 @@ internal sealed class StoreService(DataLayerProxy dataLayer,
 
         // don't subscribe to a store we already have
         var addedStore = false;
+        var addedMirror = false;
+        var addedServerCoin = false;
+
         if (!subscriptions.Contains(storeId))
         {
             _logger.LogInformation("Subscribing to {id}", storeId);
@@ -67,7 +69,7 @@ internal sealed class StoreService(DataLayerProxy dataLayer,
             addedStore = true;
         }
 
-        if (url is not null && haveFunds)
+        if (url is not null)
         {
             // add mirror if we are a mirror server, have a mirror host uri, and have enough funding
             if (addMirrors)
@@ -81,31 +83,26 @@ internal sealed class StoreService(DataLayerProxy dataLayer,
                 {
                     _logger.LogWarning("Insufficient funds to add mirror.");
                     // if we are out of funds to add mirrors, stop trying but continue subscribing
-                    haveFunds = false;
                 }
             }
 
             var serverUriBuilder = new UriBuilder(url)
             {
-                Port = 41410 //TODO config setting to override
+                Port = _configuration.GetValue("dig:DigPort", 41410)
             };
+
             if (!await AddServer(storeId, serverReserveAmount, fee, serverUriBuilder.ToString(), CancellationToken.None))
             {
-                _logger.LogWarning("Insufficient funds to add server.");
+                _logger.LogWarning("Insufficient funds to add server coin.");
                 // if we are out of funds to add servers, stop trying but continue subscribing
-                haveFunds = false;
             }
         }
         else if (url is null)
         {
             _logger.LogWarning("No url provided for {id}. Not mirroring or adding server.", storeId);
         }
-        else if (!haveFunds)
-        {
-            _logger.LogWarning("Insufficient funds to add mirror and server for {id}.", storeId);
-        }
 
-        return (haveFunds, addedStore);
+        return (addedStore, addedMirror, addedServerCoin);
     }
 
     private async Task<bool> AddServer(string storeId, ulong reserveAmount, ulong fee, string serverUri, CancellationToken stoppingToken)

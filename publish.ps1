@@ -1,9 +1,9 @@
 param(
-    [string[]]$runTimes = @("win-x64", "linux-x64", "linux-arm64")
+    [string[]]$runTimes = @("win-x64", "linux-x64", "linux-arm64", "osx-x64")
 )
 # other runtimes that might work: https://learn.microsoft.com/en-us/dotnet/core/rid-catalog
 
-$version = "0.2.17"
+$version = "0.2.24"
 $fullName = "dig"
 $names = @("dig", "server")
 $src = "src"
