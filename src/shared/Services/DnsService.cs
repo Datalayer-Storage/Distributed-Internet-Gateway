@@ -24,7 +24,7 @@ public sealed class DnsService(IHttpClientFactory httpClientFactory,
     public async Task<string?> GetMirrorUri(CancellationToken stoppingToken)
     {
         var port = _configuration.GetValue("dig:DataLayerMirrorPort", 8575);
-        
+
         return await GetHostUri(port, stoppingToken);
     }
 
@@ -49,7 +49,8 @@ public sealed class DnsService(IHttpClientFactory httpClientFactory,
             return null;
         }
 
-        return $"http://{host}:{port}";
+        var scheme = _configuration.GetValue("dig:HostScheme", "http");
+        return $"{scheme}://{host}:{port}";
     }
 
     public async Task<string?> GetPublicIPAdress(CancellationToken stoppingToken)
