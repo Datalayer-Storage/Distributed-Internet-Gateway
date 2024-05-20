@@ -11,14 +11,14 @@ internal sealed class AddStoreCommand()
     [Option("f", "fee", ArgumentHelpName = "MOJOS", Description = "Fee override.")]
     public ulong? Fee { get; init; }
 
-    [Option("m", "mirror-reserve", Default = 300000001UL, ArgumentHelpName = "MOJOS", Description = "The amount to reserve with the mirror coin.")]
-    public ulong? MirrorReserve { get; init; } = 300000001UL;
+    [Option("m", "mirror-reserve", ArgumentHelpName = "MOJOS", Description = "The amount to reserve with the mirror coin.")]
+    public ulong? MirrorReserve { get; init; }
 
     [Option("p", "precache", Description = "Precache the store's data.")]
     public bool Precache { get; init; }
 
-    [Option("r", "server-reserve", Default = 300000001UL, ArgumentHelpName = "MOJOS", Description = "The amount to reserve with the server coin.")]
-    public ulong? ServerReserve { get; init; } = 300000001UL;
+    [Option("r", "server-reserve", ArgumentHelpName = "MOJOS", Description = "The amount to reserve with the server coin.")]
+    public ulong? ServerReserve { get; init; }
 
     [Option("u", "url", ArgumentHelpName = "URL", Description = "Server url override. If not provided, the server will use the configured url.")]
     public string? Url { get; init; }
