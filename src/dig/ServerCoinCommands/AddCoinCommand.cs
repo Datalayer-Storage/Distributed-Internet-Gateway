@@ -37,6 +37,13 @@ internal sealed class AddCoinCommand()
         var url = await dnsService.ResolveHostUrl(41410, Url, cts.Token);
         var fee = await chiaService.ResolveFee(Fee, serverReserve, cts.Token);
 
+        // if the user didn't supply a reserve amount AND the server is https, double the default reserve amount
+        if (ServerReserve is null && url.StartsWith("https", StringComparison.OrdinalIgnoreCase))
+        {
+            Console.WriteLine("Server is https. Doubling default reserve amount.");
+            serverReserve *= 2;
+        }
+
         if (serverCoinService.AddServer(Store, url, serverReserve, fee))
         {
             Console.WriteLine("Server coin create transaction submitted.");

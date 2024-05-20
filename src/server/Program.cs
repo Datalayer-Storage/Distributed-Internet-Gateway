@@ -6,33 +6,28 @@ using dig.server;
 var appStorage = new AppStorage(".dig");
 var builder = WebApplication.CreateBuilder(args);
 
-if (OperatingSystem.IsWindows())
-{
-    LoggerProviderOptions.RegisterProviderOptions<EventLogSettings, EventLogLoggerProvider>(builder.Services);
-}
-
-var path = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "appsettings.json");
-if (File.Exists(path))
-{
-    Console.WriteLine($"Loading settings from {path}");
-    builder.Configuration.AddJsonFile(path, optional: true);
-}
+// this block looks for three settings files in order of precedence:
+// 1. appsettings.json in the app's base directory
+// 2. appsettings.json in the user's settings directory
+// 3. appsettings.user.json in the user's settings directory
+builder.Configuration
+    .AddJsonFile(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "appsettings.json"), optional: true)
+    .AddJsonFile(Path.Combine(appStorage.UserSettingsFolder, "appsettings.json"), optional: true)
+    .AddJsonFile(Path.Combine(appStorage.UserSettingsFolder, "appsettings.user.json"), optional: true);
 
 // we can take the path to an appsettings.json file as an argument
-// if not provided, the default appsettings.json will be used and settings
-// will come from there or from environment variables
+// which take precedence over the user settings
 if (!string.IsNullOrEmpty(args.FirstOrDefault()) && File.Exists(args.First()))
 {
     Console.WriteLine($"Loading settings from command line file {args.First()}");
     builder.Configuration.AddJsonFile(args.First(), optional: true);
 }
-else if (File.Exists(appStorage.UserSettingsFilePath))
-{
-    Console.WriteLine($"Loading user settings from {appStorage.UserSettingsFilePath}");
-    builder.Configuration.AddJsonFile(appStorage.UserSettingsFilePath, optional: true);
-}
 
 builder.ConfigureServices(appStorage);
+if (OperatingSystem.IsWindows())
+{
+    LoggerProviderOptions.RegisterProviderOptions<EventLogSettings, EventLogLoggerProvider>(builder.Services);
+}
 
 var app = builder.Build();
 
