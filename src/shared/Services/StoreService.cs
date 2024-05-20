@@ -88,7 +88,7 @@ internal sealed class StoreService(DataLayerProxy dataLayer,
 
             var serverUriBuilder = new UriBuilder(url)
             {
-                Port = _configuration.GetValue("dig:DigPort", 41410)
+                Port = _configuration.GetValue("dig:DigServerPort", 41410)
             };
 
             if (!await AddServer(storeId, serverReserveAmount, fee, serverUriBuilder.ToString(), CancellationToken.None))

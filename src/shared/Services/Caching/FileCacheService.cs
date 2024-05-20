@@ -6,11 +6,25 @@ public class FileCacheService : IObjectCache
 {
     private readonly string _cacheDirectory;
     private readonly ILogger<FileCacheService> _logger;
+    private readonly IConfiguration _configuration;
 
-    public FileCacheService(AppStorage appStorage, ILogger<FileCacheService> logger)
+    public FileCacheService(IConfiguration configuration, ILogger<FileCacheService> logger)
     {
         _logger = logger;
-        _cacheDirectory = Path.Combine(appStorage.UserSettingsFolder, "store-cache");
+        _configuration = configuration;
+
+        _cacheDirectory = _configuration.GetValue("dig:FileCacheDirectory", "") ?? throw new InvalidOperationException("Cache directory not found in configuration");
+        if (string.IsNullOrEmpty(_cacheDirectory))
+        {
+            throw new InvalidOperationException("Cache directory not found in configuration");
+        }
+
+        _cacheDirectory = Environment.ExpandEnvironmentVariables(_cacheDirectory);
+        if (!Path.IsPathFullyQualified(_cacheDirectory))
+        {
+            throw new InvalidOperationException($"Cache directory path is not fully qualified: {_cacheDirectory}");
+        }
+
         if (!Directory.Exists(_cacheDirectory))
         {
             Directory.CreateDirectory(_cacheDirectory);
@@ -72,7 +86,7 @@ public class FileCacheService : IObjectCache
                 await File.WriteAllTextAsync(filePath, value.ToJson(), token);
             }
 
-            _logger.LogInformation("Cached {Key} of type {Type}", key, typeof(TItem).Name);
+            _logger.LogInformation("Cached {Key} of type {Type}", key.SanitizeForLog(), typeof(TItem).Name);
         }
     }
 
@@ -83,14 +97,14 @@ public class FileCacheService : IObjectCache
             foreach (var file in Directory.GetFiles(_cacheDirectory, "*"))
             {
                 var sanitizedPath = file.SanitizePath(_cacheDirectory);
-                _logger.LogInformation("Deleting file {File}", sanitizedPath);
+                _logger.LogInformation("Deleting file {File}", sanitizedPath.SanitizeForLog());
                 File.Delete(sanitizedPath);
             }
 
             foreach (var dir in Directory.GetDirectories(_cacheDirectory))
             {
                 var sanitizedPath = dir.SanitizePath(_cacheDirectory);
-                _logger.LogInformation("Deleting directory {Directory}", sanitizedPath);
+                _logger.LogInformation("Deleting directory {Directory}", sanitizedPath.SanitizeForLog());
                 Directory.Delete(sanitizedPath, true);
             }
         }
@@ -98,7 +112,7 @@ public class FileCacheService : IObjectCache
 
     public void RemoveStore(string storeId)
     {
-        _logger.LogWarning("Invalidating store {storeId}", storeId);
+        _logger.LogWarning("Invalidating store {storeId}", storeId.SanitizeForLog());
         var storeCacheDirectory = Path.Combine(_cacheDirectory, storeId).SanitizePath(_cacheDirectory);
 
         if (Directory.Exists(storeCacheDirectory))
