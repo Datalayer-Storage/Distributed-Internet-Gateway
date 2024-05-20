@@ -3,7 +3,7 @@ using chia.dotnet;
 namespace dig;
 
 internal class StoreManager(DataLayerProxy dataLayer,
-                        ILogger<StoreManager> logger)
+                            ILogger<StoreManager> logger)
 {
     private readonly DataLayerProxy _dataLayer = dataLayer;
     private readonly ILogger<StoreManager> _logger = logger;

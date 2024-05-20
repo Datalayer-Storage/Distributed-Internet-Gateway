@@ -4,17 +4,15 @@ namespace dig;
 
 internal sealed class NodeSyncService(DataLayerProxy dataLayer,
                                         ServerCoinService serverCoinService,
-                                        DnsService dnsService,
-                                        ILogger<NodeSyncService> logger,
-                                        IConfiguration configuration)
+                                        ILogger<NodeSyncService> logger)
 {
     private readonly DataLayerProxy _dataLayer = dataLayer;
     private readonly ServerCoinService _serverCoinService = serverCoinService;
-    private readonly DnsService _dnsService = dnsService;
     private readonly ILogger<NodeSyncService> _logger = logger;
-    private readonly IConfiguration _configuration = configuration;
 
-    public async Task<IEnumerable<string>> SyncWithDataLayer(ulong mirrorReserveAmount,
+    public async Task<IEnumerable<string>> SyncWithDataLayer(string myDigUri,
+                                            string myMirrorUri,
+                                            ulong mirrorReserveAmount,
                                             ulong serverReserveAmount,
                                             ulong fee,
                                             CancellationToken stoppingToken)
@@ -24,12 +22,6 @@ internal sealed class NodeSyncService(DataLayerProxy dataLayer,
 
         _logger.LogInformation("Getting owned stores");
         var ownedStores = await _dataLayer.GetOwnedStores(stoppingToken);
-
-        var myMirrorUri = await _dnsService.GetMirrorUri(stoppingToken) ?? throw new Exception("No mirror uri found");
-        _logger.LogInformation("Using mirror uri: {uri}", myMirrorUri);
-
-        var myDigUri = await _dnsService.GetDigServerUri(stoppingToken) ?? throw new Exception("No dig server uri found");
-        _logger.LogInformation("Using dig server uri: {uri}", myDigUri);
 
         // DataLayer is the source of truth for subscriptions, so we need to make sure
         // we have a mirror for each subscription and a server coin for each subscription
