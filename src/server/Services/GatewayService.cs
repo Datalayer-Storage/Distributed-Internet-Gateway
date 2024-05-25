@@ -8,6 +8,7 @@ using dig.caching;
 namespace dig.server;
 
 public class GatewayService(DataLayerProxy dataLayer,
+                            IDataLayerData dataLayerData,
                             ChiaService chiaService,
                             ChiaConfig chiaConfig,
                             StoreRegistryService storeRegistryService,
@@ -17,6 +18,7 @@ public class GatewayService(DataLayerProxy dataLayer,
                             IConfiguration configuration)
 {
     private readonly DataLayerProxy _dataLayer = dataLayer;
+    private readonly IDataLayerData _dataLayerData = dataLayerData;
     private readonly ChiaConfig _chiaConfig = chiaConfig;
     private readonly ChiaService _chiaService = chiaService;
     private readonly StoreRegistryService _storeRegistryService = storeRegistryService;
@@ -108,7 +110,7 @@ public class GatewayService(DataLayerProxy dataLayer,
                 async () =>
                 {
                     _logger.LogInformation("Getting keys for {StoreId}", storeId.SanitizeForLog());
-                    return await _dataLayer.GetKeys(storeId, rootHash, cancellationToken);
+                    return await _dataLayerData.GetKeys(storeId, rootHash, cancellationToken);
                 },
                 cancellationToken);
 
@@ -157,7 +159,7 @@ public class GatewayService(DataLayerProxy dataLayer,
                 {
                     _logger.LogInformation("Getting value for {StoreId} {Key}", storeId.SanitizeForLog(), key.SanitizeForLog());
 
-                    return await _dataLayer.GetValue(storeId, HttpUtility.UrlDecode(key), rootHash, cancellationToken);
+                    return await _dataLayerData.GetValue(storeId, HttpUtility.UrlDecode(key), rootHash, cancellationToken);
                 },
                 cancellationToken);
 

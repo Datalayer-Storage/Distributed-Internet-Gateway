@@ -18,7 +18,8 @@
         <Compile Include="$(MSBuildThisFileDirectory)Services\MirrorService.cs" />
         <Compile Include="$(MSBuildThisFileDirectory)Services\NodeSyncService.cs" />
         <Compile Include="$(MSBuildThisFileDirectory)Services\IServer.cs" />
-        <Compile Include="$(MSBuildThisFileDirectory)RpcEndpointConfiguration.cs" />
+        <Compile Include="$(MSBuildThisFileDirectory)Services\IDataLayerData.cs" />
+        <Compile Include="$(MSBuildThisFileDirectory)Services\RpcDataLayerService.cs" />
         <Compile Include="$(MSBuildThisFileDirectory)Services\ChiaConfig.cs" />
         <Compile Include="$(MSBuildThisFileDirectory)Services\ChiaService.cs" />
         <Compile Include="$(MSBuildThisFileDirectory)Services\DnsService.cs" />
@@ -27,6 +28,7 @@
         <Compile Include="$(MSBuildThisFileDirectory)Services\LoginManager.cs" />
         <Compile Include="$(MSBuildThisFileDirectory)Models\PageRecord.cs" />
         <Compile Include="$(MSBuildThisFileDirectory)Models\Store.cs" />
+        <Compile Include="$(MSBuildThisFileDirectory)RpcEndpointConfiguration.cs" />
         <Compile Include="$(MSBuildThisFileDirectory)Utils.cs" />
         <Content Include="$(MSBuildThisFileDirectory)appsettings.examples.json">
             <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>

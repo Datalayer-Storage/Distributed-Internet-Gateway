@@ -4,8 +4,8 @@ namespace dig.server;
 
 public class UploadRequest
 {
-    public string StoreId { get; set; }
-    public string FullTreeFilename { get; set; }
+    public string StoreId { get; set; } = string.Empty;
+    public string FullTreeFilename { get; set; } = string.Empty;
 }
 
 [ApiController]

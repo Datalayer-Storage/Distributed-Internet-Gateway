@@ -28,10 +28,7 @@ public class StorePreCacheService(DataLayerProxy dataLayer,
         {
             _logger.LogInformation("Pre-caching key {key} for storeId {storeId}.", key.SanitizeForLog(), storeId.SanitizeForLog());
             var value = await _dataLayer.GetValue(storeId, key, rootHash.Hash, cancellationToken);
-            if (value != null)
-            {
-                await _objectCacheService.SetValueAsync(storeId, rootHash.Hash, key, value, cancellationToken);
-            }
+            await _objectCacheService.SetValueAsync(storeId, rootHash.Hash, key, value, cancellationToken);
 
             if (!_configuration.GetValue("dig:DisableProofOfInclusion", true))
             {

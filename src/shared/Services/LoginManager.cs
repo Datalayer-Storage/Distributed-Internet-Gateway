@@ -5,11 +5,11 @@ using System.Net.Http.Json;
 namespace dig;
 
 internal class LoginManager(IDataProtectionProvider provider,
-                        AppStorage appStorage,
-                        DnsService dnsService,
-                        IHttpClientFactory httpClientFactory,
-                        ILogger<LoginManager> logger,
-                        IConfiguration configuration)
+                            AppStorage appStorage,
+                            DnsService dnsService,
+                            IHttpClientFactory httpClientFactory,
+                            ILogger<LoginManager> logger,
+                            IConfiguration configuration)
 {
     private readonly IDataProtector _protector = provider.CreateProtector("DataLayer-Storage.datalayer.place.v3");
     private readonly AppStorage _appStorage = appStorage;

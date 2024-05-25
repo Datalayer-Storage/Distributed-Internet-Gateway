@@ -35,6 +35,21 @@ public static class ServiceConfiguration
                 c.BaseAddress = new Uri(builder.Configuration.GetValue("dig:DataLayerStorageUri", "https://api.datalayer.storage")!);
             });
 
+        switch (builder.Configuration.GetValue("dig:CacheProvider", "Disabled"))
+        {
+            case "Memory":
+                builder.Services.AddSingleton<IObjectCache, MemoryCacheService>();
+                break;
+            case "FileSystem":
+                builder.Services.AddSingleton<IObjectCache, FileCacheService>();
+                break;
+            case "Disabled":
+                builder.Services.AddSingleton<IObjectCache, NullCacheService>();
+                break;
+            default:
+                throw new NotImplementedException($"Cache provider {builder.Configuration.GetValue("dig: CacheProvider", "FileSystem")} not implemented");
+        }
+
         return builder;
     }
 }

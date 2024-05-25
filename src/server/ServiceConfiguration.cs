@@ -25,6 +25,7 @@ public static class ServiceConfiguration
             .AddHttpClient()
             .AddSingleton((provider) => appStorage)
             .AddHostedService<ServerService>()
+            .AddSingleton<IDataLayerData, RpcDataLayerService>()
             .AddSingleton<GatewayService>()
             .AddSingleton<MirrorService>()
             .AddSingleton<DnsService>()
