@@ -1,7 +1,8 @@
 version: '3.8'
 services:
   chia-nodes:
-    image: harbor.galactechs.com/library/evg_chia_node:build_1718236131
+    image: ghcr.io/chia-network/chia:latest
+#    image: harbor.galactechs.com/library/evg_chia_node:build_1718236131 #Will Download the Torrent DB on first Start for faster sync
     ports:
       - "8444:8444"
       - "8555:8555"
@@ -9,6 +10,7 @@ services:
       - "8575:8575"
       - "9256:9256"
     environment:
+      CHIA_ROOT: /chia-data
       service: data
       #service: data node
     volumes:
