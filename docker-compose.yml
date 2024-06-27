@@ -1,0 +1,42 @@
+version: '3.8'
+services:
+  chia-nodes:
+    image: harbor.galactechs.com/library/evg_chia_node:build_1718236131
+    ports:
+      - "8444:8444"
+      - "8555:8555"
+      - "8562:8562"
+      - "8575:8575"
+      - "9256:9256"
+    environment:
+      service: data
+      #service: data node
+    volumes:
+      - /PATH/TO/LOCAL/chia-data:/chia-data
+  dig-server:
+    image: dig:latest
+    depends_on:
+      - chia-nodes
+    ports:
+      - "8080:8080"
+      - "41410:41410"
+    volumes:
+      - /PATH/TO/LOCAL/chia-data:/chia-data
+      - ~/.dig/store-cache:/root/.dig/store-cache
+    environment:
+      - dig__FullNodeHost=chia-proxy.evergreenminer-prod.com
+      #- dig__FullNodeHost=chia-nodes
+      - dig__FullNodePort=443
+      #- dig__FullNodePort=8555
+      - dig__WalletHost=chia-nodes
+      - dig__WalletPort=9256
+      - dig__DataLayerHost=chia-nodes
+      - dig__DataLayerPort=8562
+      - dig__DataLayerMirrorPort=8575
+      - dig__DigPort=41410
+      - dig__XchAddress=YOUR_XCH_ADDRESS
+      - dig__ChiaCertDirectory=/chia-data/config/ssl/
+      - CHIA_ROOT=/chia-data
+networks:
+  default:
+    name: dig_network
