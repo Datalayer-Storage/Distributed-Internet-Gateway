@@ -404,3 +404,5 @@ FodyWeavers.xsd
 # JetBrains Rider
 *.sln.iml
 .mono/registry/CurrentUser/software/microsoft/csdevkit/v1/pids/52951_133551895400070624/values.xml
+.idea
+
