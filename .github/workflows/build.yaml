@@ -88,7 +88,7 @@ jobs:
 
   dmg:
     name: Package DMG
-    runs-on: macos-latest
+    runs-on: macos-14
     needs: build
 
     strategy:
@@ -157,6 +157,7 @@ jobs:
           team_id: ${{ secrets.APPLE_TEAM_ID }}
           staple: 'true'
           keychain_profile: ${{ secrets.APPLE_NOTARIZE_PASSWORD }}
+          xcode_path: '/Applications/Xcode_15.3.app'
 
       - name: Upload DMG
         uses: actions/upload-artifact@v3
