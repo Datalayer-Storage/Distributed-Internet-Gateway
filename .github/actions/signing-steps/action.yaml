@@ -45,9 +45,32 @@ runs:
 
     - name: Setting up the client tools (Windows)
       run: |
-        curl -X GET  https://one.digicert.com/signingmanager/api-ui/v1/releases/Keylockertools-windows-x64.msi/download?account_id=e94ff86e-6519-4598-a066-6b6b252245f0 -H "x-api-key:%SM_API_KEY%" -o smtools-windows-x64.msi
-        msiexec /i smtools-windows-x64.msi /qn
-      shell: cmd
+        # Define the URL and headers
+        $url = "https://one.digicert.com/signingmanager/api-ui/v1/releases/Keylockertools-windows-x64.msi/download?account_id=e94ff86e-6519-4598-a066-6b6b252245f0"
+        $headers = @{
+            "x-api-key" = "${{ inputs.SM_API_KEY }}"
+        }
+
+        # Download the MSI file
+        Invoke-RestMethod -Uri $url -Headers $headers -OutFile "smtools-windows-x64.msi"
+        
+        # Check if the file was downloaded successfully
+        if (!(Test-Path -Path "smtools-windows-x64.msi")) {
+            Write-Error "The MSI file was not downloaded."
+            exit 1
+        }
+
+        # Verify the file size (adjust the size check as needed)
+        $fileInfo = Get-Item -Path "smtools-windows-x64.msi"
+        if ($fileInfo.Length -lt 100000) {
+            Write-Error "The MSI file seems to be corrupted or incomplete."
+            exit 1
+        }
+
+        # Install the MSI package
+        Start-Process -FilePath "msiexec.exe" -ArgumentList "/i smtools-windows-x64.msi /qn" -Wait -NoNewWindow
+      shell: pwsh
+
 
     - name: Setup SSM KSP on windows latest (Windows)
       run: |
