@@ -390,3 +390,33 @@ jobs:
           docker tag ${{ secrets.DOCKER_NAMESPACE }}/dig-server:latest ${{ secrets.DOCKER_NAMESPACE }}/dig-server:${{ steps.tag-name.outputs.TAGNAME }}
           docker push ${{ secrets.DOCKER_NAMESPACE }}/dig-server:latest
           docker push ${{ secrets.DOCKER_NAMESPACE }}/dig-server:${{ steps.tag-name.outputs.TAGNAME }}
+
+
+  push-container:
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/')
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+        
+      - name: Get tag name
+        id: tag-name
+        run: |
+          echo "TAGNAME=$(echo $GITHUB_REF | cut -d / -f 3)" >>$GITHUB_OUTPUT
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Build and Push Docker Image
+        run: |
+          docker build -t ${{ secrets.DOCKER_NAMESPACE }}/dig-server:latest .
+          docker tag ${{ secrets.DOCKER_NAMESPACE }}/dig-server:latest ${{ secrets.DOCKER_NAMESPACE }}/dig-server:${{ steps.tag-name.outputs.TAGNAME }}
+          docker push ${{ secrets.DOCKER_NAMESPACE }}/dig-server:latest
+          docker push ${{ secrets.DOCKER_NAMESPACE }}/dig-server:${{ steps.tag-name.outputs.TAGNAME }}
