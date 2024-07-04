@@ -163,7 +163,7 @@ jobs:
         uses: actions/upload-artifact@v3
         with:
           name: ${{matrix.artifact-name}}-dmg
-          path: ${{matrix.artifact-name}}.dmg
+          path: ${{ env.DMG_FILE }}
 
   msi:
     name: Build ${{matrix.artifact-name}} deb
