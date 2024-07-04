@@ -15,7 +15,8 @@ services:
       # comment out above and uncomment below to run your own full node for your dig server
       #service: data data_layer_httpnode
     volumes:
-      - ~\.dig\container:/chia-data
+      - ~/.dig/chia-data:/chia-data
+      - ~/.dig/chia_keys:/root/.chia_keys
   dig-server:
     image: michaeltaylor3d/dig-server:latest
     depends_on:
@@ -24,8 +25,8 @@ services:
       - "8080:8080"
       - "41410:41410"
     volumes:
-      - ~\.dig\container:/chia-data
-      - ~\.dig\store-cache:/root/.dig/store-cache
+      - ~/.dig/chia-data:/chia-data
+      - ~/.dig/store-cache:/root/.dig/store-cache
     environment:
       - dig__FullNodeHost=chia-proxy.evergreenminer-prod.com
       # comment out above and uncomment below to run your own full node for your dig server
