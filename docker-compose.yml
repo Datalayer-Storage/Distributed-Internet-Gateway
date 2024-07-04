@@ -11,24 +11,27 @@ services:
       - "9256:9256"
     environment:
       CHIA_ROOT: /chia-data
-      service: data
-      #service: data node
+      service: data data_layer_http
+      # comment out above and uncomment below to run your own full node for your dig server
+      #service: data data_layer_httpnode
     volumes:
-      - /PATH/TO/LOCAL/chia-data:/chia-data
+      - ~\.dig\container:/chia-data
   dig-server:
-    image: dig:latest
+    image: michaeltaylor3d/dig-server:latest
     depends_on:
       - chia-nodes
     ports:
       - "8080:8080"
       - "41410:41410"
     volumes:
-      - /PATH/TO/LOCAL/chia-data:/chia-data
-      - ~/.dig/store-cache:/root/.dig/store-cache
+      - ~\.dig\container:/chia-data
+      - ~\.dig\store-cache:/root/.dig/store-cache
     environment:
       - dig__FullNodeHost=chia-proxy.evergreenminer-prod.com
+      # comment out above and uncomment below to run your own full node for your dig server
       #- dig__FullNodeHost=chia-nodes
       - dig__FullNodePort=443
+      # comment out above and uncomment below to run your own full node for your dig server
       #- dig__FullNodePort=8555
       - dig__WalletHost=chia-nodes
       - dig__WalletPort=9256
