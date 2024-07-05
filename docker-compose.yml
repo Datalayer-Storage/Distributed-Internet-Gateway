@@ -2,7 +2,7 @@ version: '3.8'
 services:
   chia-nodes:
     image: ghcr.io/chia-network/chia:latest
-#    image: harbor.galactechs.com/library/evg_chia_node:build_1718236131 #Will Download the Torrent DB on first Start for faster sync
+    #image: harbor.galactechs.com/library/evg_chia_node:build_1718236131 #Will Download the Torrent DB on first Start for faster sync
     ports:
       - "8444:8444"
       - "8555:8555"
@@ -12,6 +12,7 @@ services:
     environment:
       CHIA_ROOT: /chia-data
       service: data data_layer_http
+      self_hostname: 0.0.0.0
       # comment out above and uncomment below to run your own full node for your dig server
       #service: data data_layer_httpnode
     volumes:
