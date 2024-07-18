@@ -56,6 +56,8 @@ public partial class StoresController(GatewayService gatewayService,
                 return NotFound();
             }
 
+            HttpContext.Response.Headers.TryAdd("X-Generation-Hash", rootHash);
+
             var keys = await _gatewayService.GetKeys(storeId, rootHash, cancellationToken);
 
             if (keys is not null)
@@ -84,7 +86,7 @@ public partial class StoresController(GatewayService gatewayService,
                     // could not get the root hash nor the html for this store
                     return NotFound();
                 }
-                //return Content(IndexRenderer.Render(storeId, decodedKeys ?? []), "text/html");
+                // return Content(IndexRenderer.Render(storeId, decodedKeys ?? []), "text/html");
                 // in this case there is no index.html so we want to return the list of keys
                 return View("StoreIndex", new StoreIndex(_gatewayService.GetStore(storeId), decodedKeys ?? []));
             }
