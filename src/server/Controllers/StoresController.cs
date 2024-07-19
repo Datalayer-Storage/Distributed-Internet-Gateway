@@ -90,6 +90,7 @@ public partial class StoresController(GatewayService gatewayService,
                 }
                 // return Content(IndexRenderer.Render(storeId, decodedKeys ?? []), "text/html");
                 // in this case there is no index.html so we want to return the list of keys
+                HttpContext.Response.Headers.TryAdd("X-Synced", "true");
                 return View("StoreIndex", new StoreIndex(_gatewayService.GetStore(storeId), decodedKeys ?? []));
             }
 
