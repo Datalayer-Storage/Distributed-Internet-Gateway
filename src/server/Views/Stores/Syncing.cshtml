@@ -1,0 +1,40 @@
+@using System.Globalization
+@using chia.dotnet
+@model SyncStatus
+@{
+    Layout = "_Layout";
+}
+
+<style>
+    .spinner-container {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 200px;
+    }
+
+    .spinner-border-custom {
+    using chia.dotnet;
+        width: 5rem;
+        height: 5rem;
+        border-width: 0.5rem;
+        animation: spin 1.5s linear infinite;
+    }
+
+    @@keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+    }
+    
+    .syncing-text {
+        margin-left: 1rem;
+        font-size: 1.5rem;
+        color: #555;
+    }
+</style>
+
+<div class="spinner-container">
+    <div class="spinner-border spinner-border-custom" role="status" aria-hidden="true"></div>
+    <span class="syncing-text">Syncing...</span>
+    <span>Generation @Model.DataLayerSyncStatus.Generation of @Model.DataLayerSyncStatus.TargetGeneration</span>
+</div>

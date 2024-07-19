@@ -85,6 +85,8 @@ public partial class StoresController(GatewayService gatewayService,
 
                     // could not get the root hash nor the html for this store
                     return NotFound();
+
+
                 }
                 // return Content(IndexRenderer.Render(storeId, decodedKeys ?? []), "text/html");
                 // in this case there is no index.html so we want to return the list of keys
@@ -112,7 +114,17 @@ public partial class StoresController(GatewayService gatewayService,
                 }
             }
 
-            return NotFound();
+            try
+            {
+                var syncStatus = await _gatewayService.GetSyncStatus(storeId, cancellationToken);
+                HttpContext.Response.Headers.TryAdd("X-Synced", "false");
+                return View("Syncing", new SyncStatus(syncStatus));
+            }
+            catch
+            {
+                // could not get the root hash nor the html for this store
+                return NotFound();
+            }
         }
         catch (Exception ex)
         {
