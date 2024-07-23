@@ -2,7 +2,6 @@ version: '3.8'
 services:
   chia-nodes:
     image: ghcr.io/chia-network/chia:latest
-    #image: harbor.galactechs.com/library/evg_chia_node:build_1718236131 #Will Download the Torrent DB on first Start for faster sync
     ports:
       - "8444:8444"
       - "8555:8555"
@@ -41,8 +40,8 @@ services:
       - dig__DataLayerPort=8562
       - dig__DataLayerMirrorPort=8575
       - dig__DigPort=41410
-      - dig__XchAddress=YOUR_XCH_ADDRESS
       - dig__ChiaCertDirectory=/chia-data/config/ssl/
+      - dig__ActAsCdn=false
       - CHIA_ROOT=/chia-data
 networks:
   default:

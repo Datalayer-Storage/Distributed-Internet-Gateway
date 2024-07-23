@@ -1,3 +1,4 @@
+using System.Numerics;
 using chia.dotnet;
 
 namespace dig;
@@ -11,6 +12,23 @@ public sealed class ChiaService(FullNodeProxy fullNode,
     private readonly WalletProxy _wallet = wallet;
     private readonly ILogger<ChiaService> _logger = logger;
     private readonly IConfiguration _configuration = configuration;
+
+    public async Task<BigInteger> GetNodeWalletBalance(CancellationToken stoppingToken)
+    {
+        try
+        {
+
+            var xchWallet = new Wallet(1, _wallet);
+            var balance = await xchWallet.GetBalance(stoppingToken);
+            return balance.SpendableBalance;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Could not connect to the wallet {Message}", ex.InnerException?.Message ?? ex.Message);
+        }
+
+        return 0;
+    }
 
     public async Task<string> ResolveAddress(string? address, CancellationToken stoppingToken)
     {

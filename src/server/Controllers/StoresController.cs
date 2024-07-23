@@ -37,6 +37,9 @@ public partial class StoresController(GatewayService gatewayService,
         {
             storeId = storeId.TrimEnd('/');
 
+            // default to false, if we can't get the root hash, we can't be sure if the store is synced
+            HttpContext.Response.Headers.TryAdd("X-Synced", "false");
+
             // A referrer indicates that the user is trying to access the store from a website
             // we want to redirect them so that the URL includes the storeId in the path
             var referer = HttpContext.Request.Headers.Referer.ToString();
@@ -80,10 +83,12 @@ public partial class StoresController(GatewayService gatewayService,
 
                         // this is the case where the store is a SPA app
                         // so it should return the index.html
+                        HttpContext.Response.Headers.TryAdd("X-Synced", "true");
                         return Content(html, "text/html");
                     }
 
                     // could not get the root hash nor the html for this store
+                    
                     return NotFound();
 
 
@@ -118,7 +123,6 @@ public partial class StoresController(GatewayService gatewayService,
             try
             {
                 var syncStatus = await _gatewayService.GetSyncStatus(storeId, cancellationToken);
-                HttpContext.Response.Headers.TryAdd("X-Synced", "false");
                 return View("Syncing", new SyncStatus(syncStatus));
             }
             catch

@@ -11,7 +11,11 @@
         "/property:GenerateFullPaths=true",
         "/consoleloggerparameters:NoSummary;ForceNoAlign"
       ],
-      "problemMatcher": "$msCompile"
+      "problemMatcher": "$msCompile",
+      "group": {
+        "kind": "build",
+        "isDefault": true
+      }
     },
     {
       "label": "publish",
@@ -29,7 +33,12 @@
       "label": "watch",
       "command": "dotnet",
       "type": "process",
-      "args": ["watch", "run", "--project", "${workspaceFolder}/src/dig.sln"],
+      "args": [
+        "watch",
+        "run",
+        "--project",
+        "${workspaceFolder}/src/dig.sln"
+      ],
       "problemMatcher": "$msCompile"
     }
   ]
