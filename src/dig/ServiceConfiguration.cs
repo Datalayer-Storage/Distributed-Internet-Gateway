@@ -27,7 +27,6 @@ public static class ServiceConfiguration
             .AddSingleton<StoreService>()
             .AddSingleton<IObjectCache, FileCacheService>()
             .AddSingleton<StorePreCacheService>()
-            .AddSingleton<IObjectCache, FileCacheService>()
             .AddSingleton<ServerCoinService>()
             .AddSingleton((provider) => appStorage)
             .AddHttpClient()
