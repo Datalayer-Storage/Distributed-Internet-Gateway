@@ -12,6 +12,22 @@ public sealed class ChiaService(FullNodeProxy fullNode,
     private readonly ILogger<ChiaService> _logger = logger;
     private readonly IConfiguration _configuration = configuration;
 
+    public async Task<string?> GetNodeWalletBalance(CancellationToken stoppingToken)
+    {
+        try
+        {
+
+            var xchWallet = new Wallet(1, _wallet);
+            return (await xchWallet.GetBalance(stoppingToken)).ToString();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Could not connect to the wallet {Message}", ex.InnerException?.Message ?? ex.Message);
+        }
+
+        return "0";
+    }
+
     public async Task<string> ResolveAddress(string? address, CancellationToken stoppingToken)
     {
         try
