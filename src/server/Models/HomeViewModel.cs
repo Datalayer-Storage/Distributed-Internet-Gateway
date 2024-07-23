@@ -1,6 +1,8 @@
+using System.Numerics;
+
 public class HomeViewModel
 {
-    public IEnumerable<Store> Stores { get; set; }
-    public decimal WalletBalance { get; set; }
-    public string NodeAddress { get; set; }
+    public IEnumerable<Store> Stores { get; init; } = [];
+    public BigInteger WalletBalance { get; init; }
+    public string NodeAddress { get; init; } = string.Empty;
 }
