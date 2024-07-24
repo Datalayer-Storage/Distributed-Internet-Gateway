@@ -169,7 +169,7 @@ public partial class StoresController(GatewayService gatewayService,
             // A referrer indicates that the user is trying to access the store from a website
             // we want to redirect them so that the URL includes the storeId in the path
             var referer = HttpContext.Request.Headers["Referer"].ToString();
-            if (!string.IsNullOrEmpty(referer) && !referer.Contains(storeId))
+            if (!string.IsNullOrEmpty(referer) && referer.Contains(storeId))
             {
                 key = key.TrimStart('/');
                 var uri = new Uri(referer);
