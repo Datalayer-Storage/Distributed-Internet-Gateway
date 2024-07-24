@@ -42,11 +42,18 @@ public partial class StoresController(GatewayService gatewayService,
 
             // A referrer indicates that the user is trying to access the store from a website
             // we want to redirect them so that the URL includes the storeId in the path
-            var referer = HttpContext.Request.Headers.Referer.ToString();
+            var referer = HttpContext.Request.Headers["Referer"].ToString();
             if (!string.IsNullOrEmpty(referer) && referer.Contains(storeId))
             {
-                HttpContext.Response.Headers.Location = $"{referer}/{storeId}";
-                return Redirect($"/{referer}/{storeId}");
+                var uri = new Uri(referer);
+                var host = $"{uri.Scheme}://{uri.Host}";
+                if (!uri.IsDefaultPort)
+                {
+                    host += $":{uri.Port}";
+                }
+                var redirectUrl = $"{host}/{storeId}";
+                HttpContext.Response.Headers["Location"] = redirectUrl;
+                return Redirect(redirectUrl);
             }
 
             // Requesting GetValue only from the last root hash onchain ensures that only
@@ -88,7 +95,7 @@ public partial class StoresController(GatewayService gatewayService,
                     }
 
                     // could not get the root hash nor the html for this store
-                    
+
                     return NotFound();
 
 
@@ -161,13 +168,19 @@ public partial class StoresController(GatewayService gatewayService,
 
             // A referrer indicates that the user is trying to access the store from a website
             // we want to redirect them so that the URL includes the storeId in the path
-            var referer = HttpContext.Request.Headers.Referer.ToString();
+            var referer = HttpContext.Request.Headers["Referer"].ToString();
             if (!string.IsNullOrEmpty(referer) && !referer.Contains(storeId))
             {
                 key = key.TrimStart('/');
-                HttpContext.Response.Headers.Location = $"{referer}/{storeId}/{key}";
-
-                return Redirect($"/{referer}/{storeId}/{key}");
+                var uri = new Uri(referer);
+                var host = $"{uri.Scheme}://{uri.Host}";
+                if (!uri.IsDefaultPort)
+                {
+                    host += $":{uri.Port}";
+                }
+                var redirectUrl = $"{host}/{storeId}/{key}";
+                HttpContext.Response.Headers["Location"] = redirectUrl;
+                return Redirect(redirectUrl);
             }
 
             // Requesting GetValue only from the last root hash onchain ensures that only
