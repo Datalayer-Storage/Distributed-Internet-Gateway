@@ -37,6 +37,28 @@ public partial class StoresController(GatewayService gatewayService,
         {
             storeId = storeId.TrimEnd('/');
 
+            // A referrer indicates that the user is trying to access the store from a website
+            // we want to redirect them so that the URL includes the storeId in the path
+            if (HttpContext.Request.Headers.TryGetValue("Referer", out var refererValues))
+            {
+                var referer = refererValues.ToString();
+                var uri = new Uri(referer);
+                var pathSegments = uri.AbsolutePath.Split('/', StringSplitOptions.RemoveEmptyEntries);
+                if (pathSegments.Length > 0 && pathSegments[0].Length == 64 && !referer.Contains(storeId))
+                {
+                    var requestUrl = $"{HttpContext.Request.Scheme}://{HttpContext.Request.Host}{HttpContext.Request.Path}{HttpContext.Request.QueryString}";
+                    var requestUri = new Uri(requestUrl);
+                    var requestPath = requestUri.AbsolutePath;
+                    var host = $"{uri.Scheme}://{uri.Host}";
+                    if (!uri.IsDefaultPort)
+                    {
+                        host += $":{uri.Port}";
+                    }
+                    var redirectUrl = $"{host}/{pathSegments[0]}{requestPath}";
+                    return Redirect(redirectUrl); // 302 Temporary Redirect
+                }
+            }
+
             // default to false, if we can't get the root hash, we can't be sure if the store is synced
             HttpContext.Response.Headers.TryAdd("X-Synced", "false");
 
@@ -79,7 +101,7 @@ public partial class StoresController(GatewayService gatewayService,
                     }
 
                     // could not get the root hash nor the html for this store
-                    
+
                     return NotFound();
 
 
