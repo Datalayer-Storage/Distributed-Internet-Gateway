@@ -40,22 +40,6 @@ public partial class StoresController(GatewayService gatewayService,
             // default to false, if we can't get the root hash, we can't be sure if the store is synced
             HttpContext.Response.Headers.TryAdd("X-Synced", "false");
 
-            // A referrer indicates that the user is trying to access the store from a website
-            // we want to redirect them so that the URL includes the storeId in the path
-            var referer = HttpContext.Request.Headers["Referer"].ToString();
-            if (!string.IsNullOrEmpty(referer) && referer.Contains(storeId))
-            {
-                var uri = new Uri(referer);
-                var host = $"{uri.Scheme}://{uri.Host}";
-                if (!uri.IsDefaultPort)
-                {
-                    host += $":{uri.Port}";
-                }
-                var redirectUrl = $"{host}/{storeId}";
-                HttpContext.Response.Headers["Location"] = redirectUrl;
-                return Redirect(redirectUrl);
-            }
-
             // Requesting GetValue only from the last root hash onchain ensures that only
             // nodes that have the latest state will respond to the request
             // This helps prevent a mismatch between the state of the store and
@@ -169,8 +153,8 @@ public partial class StoresController(GatewayService gatewayService,
             // A referrer indicates that the user is trying to access the store from a website
             // we want to redirect them so that the URL includes the storeId in the path
             var referer = HttpContext.Request.Headers["Referer"].ToString();
-            HttpContext.Response.Headers.TryAdd("X-Referer", "sdf");
-            if (!string.IsNullOrEmpty(referer) && referer.Contains(storeId))
+            HttpContext.Response.Headers.TryAdd("X-Referer", referer);
+            if (!string.IsNullOrEmpty(referer) && !referer.Contains(storeId))
             {
                 key = key.TrimStart('/');
                 var uri = new Uri(referer);
