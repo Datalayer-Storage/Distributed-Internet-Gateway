@@ -23,7 +23,20 @@ if (!string.IsNullOrEmpty(args.FirstOrDefault()) && File.Exists(args.First()))
     builder.Configuration.AddJsonFile(args.First(), optional: true);
 }
 
+// Configure CORS to allow Referer header
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowRefererHeader", builder =>
+    {
+        builder.AllowAnyOrigin()
+               .AllowAnyMethod()
+               .AllowAnyHeader()
+               .WithExposedHeaders("Referer");
+    });
+});
+
 builder.ConfigureServices(appStorage);
+
 if (OperatingSystem.IsWindows())
 {
     LoggerProviderOptions.RegisterProviderOptions<EventLogSettings, EventLogLoggerProvider>(builder.Services);
@@ -40,7 +53,7 @@ app.UseStatusCodePagesWithReExecute("/Error", "?statusCode={0}")
     .UseHttpsRedirection()
     .UseStaticFiles()
     .UseRouting()
-    .UseCors()
+    .UseCors("AllowRefererHeader") // Apply the CORS policy
 #pragma warning disable ASP0014
     .UseEndpoints(endpoints =>
     {
