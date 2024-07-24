@@ -49,7 +49,7 @@ public class GatewayService(DataLayerProxy dataLayer,
         using var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(cts.Token, cancellationToken);
         return await _memoryCache.GetOrCreateAsync("known-stores.cache", async (entry) =>
         {
-            entry.SlidingExpiration = TimeSpan.FromMinutes(15);
+            entry.SlidingExpiration = TimeSpan.FromMinutes(1);
             return await _dataLayer.Subscriptions(linkedCts.Token);
         }) ?? [];
     }
