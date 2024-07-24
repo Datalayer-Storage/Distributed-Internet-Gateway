@@ -46,7 +46,7 @@ public partial class StoresController(GatewayService gatewayService,
             if (!string.IsNullOrEmpty(referer) && referer.Contains(storeId))
             {
                 HttpContext.Response.Headers.Location = $"{referer}/{storeId}";
-                return Redirect($"{referer}/{storeId}");
+                return Redirect($"/{referer}/{storeId}");
             }
 
             // Requesting GetValue only from the last root hash onchain ensures that only
@@ -167,7 +167,7 @@ public partial class StoresController(GatewayService gatewayService,
                 key = key.TrimStart('/');
                 HttpContext.Response.Headers.Location = $"{referer}/{storeId}/{key}";
 
-                return Redirect($"{referer}/{storeId}/{key}");
+                return Redirect($"/{referer}/{storeId}/{key}");
             }
 
             // Requesting GetValue only from the last root hash onchain ensures that only
