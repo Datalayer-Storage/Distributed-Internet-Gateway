@@ -55,7 +55,7 @@ public partial class StoresController(GatewayService gatewayService,
                     {
                         host += $":{uri.Port}";
                     }
-                    var redirectUrl = $"{host}/{pathSegments[0]}{requestPath}";
+                    var redirectUrl = $"{referer}/{requestPath}";
                     return Redirect(redirectUrl); // 302 Temporary Redirect
                 }
             }
