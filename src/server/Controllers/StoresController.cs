@@ -45,7 +45,7 @@ public partial class StoresController(GatewayService gatewayService,
                 HttpContext.Response.Headers.TryAdd("X-Referer", referer);
                 var uri = new Uri(referer);
                 var pathSegments = uri.AbsolutePath.Split('/', StringSplitOptions.RemoveEmptyEntries);
-                if (!referer.Contains(storeId) && storeId.Length != 32)
+                if (!referer.Contains(storeId) && storeId.Length != 64)
                 {
                     // Remove trailing slash from referer if it exists
                     referer = HttpContext.Request.Headers["Referer"].ToString();
@@ -176,7 +176,7 @@ public partial class StoresController(GatewayService gatewayService,
                 HttpContext.Response.Headers.TryAdd("X-Referer", referer);
                 var uri = new Uri(referer);
                 var pathSegments = uri.AbsolutePath.Split('/', StringSplitOptions.RemoveEmptyEntries);
-                if (!referer.Contains(storeId) && storeId.Length != 32)
+                if (!referer.Contains(storeId) && storeId.Length != 64)
                 {
                     // Remove trailing slash from referer if it exists
                     referer = HttpContext.Request.Headers["Referer"].ToString();
