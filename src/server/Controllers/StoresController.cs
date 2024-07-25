@@ -152,11 +152,6 @@ public partial class StoresController(GatewayService gatewayService,
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<string>))]
     public async Task<IActionResult> GetStoreCatchAll(string storeId, string catchAll, CancellationToken cancellationToken)
     {
-        if (storeId is null || storeId.Length != 64)
-        {
-            return NotFound();
-        }
-
         try
         {
             var key = catchAll;
@@ -169,14 +164,17 @@ public partial class StoresController(GatewayService gatewayService,
 
             // A referrer indicates that the user is trying to access the store from a website
             // we want to redirect them so that the URL includes the storeId in the path
-            var referer = HttpContext.Request.Headers.Referer.ToString();
-            HttpContext.Response.Headers.TryAdd("X-Referer", referer);
-            if (!string.IsNullOrEmpty(referer) && !referer.Contains(storeId))
+            if (HttpContext.Request.Headers.TryGetValue("Referer", out var refererValues))
             {
-                key = key.TrimStart('/');
-                HttpContext.Response.Headers.Location = $"{referer}/{storeId}/{key}";
-
-                return Redirect($"{referer}/{storeId}/{key}");
+                var referer = refererValues.ToString();
+                HttpContext.Response.Headers.TryAdd("X-Referer", referer);
+                var uri = new Uri(referer);
+                var pathSegments = uri.AbsolutePath.Split('/', StringSplitOptions.RemoveEmptyEntries);
+                if (!referer.Contains(storeId) && storeId.Length != 32)
+                {
+                    var redirectUrl = $"{referer}/{HttpContext.Request.Path}";
+                    return Redirect(redirectUrl); // 302 Temporary Redirect
+                }
             }
 
             // Requesting GetValue only from the last root hash onchain ensures that only
