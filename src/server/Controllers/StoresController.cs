@@ -37,6 +37,8 @@ public partial class StoresController(GatewayService gatewayService,
         {
             storeId = storeId.TrimEnd('/');
 
+            HttpContext.Response.Headers.TryAdd("X-TEST", "123");
+
             // A referrer indicates that the user is trying to access the store from a website
             // we want to redirect them so that the URL includes the storeId in the path
             if (HttpContext.Request.Headers.TryGetValue("Referer", out var refererValues))
