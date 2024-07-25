@@ -3,7 +3,7 @@ param(
 )
 # other runtimes that might work: https://learn.microsoft.com/en-us/dotnet/core/rid-catalog
 
-$version = "0.2.51"
+$version = "0.2.52"
 $fullName = "dig"
 $names = @("dig", "server")
 $src = "src"
