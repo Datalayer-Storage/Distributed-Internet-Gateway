@@ -37,8 +37,6 @@ public partial class StoresController(GatewayService gatewayService,
         {
             storeId = storeId.TrimEnd('/');
 
-            HttpContext.Response.Headers.TryAdd("X-TEST", "123");
-
             // A referrer indicates that the user is trying to access the store from a website
             // we want to redirect them so that the URL includes the storeId in the path
             if (HttpContext.Request.Headers.TryGetValue("Referer", out var refererValues))
@@ -49,7 +47,15 @@ public partial class StoresController(GatewayService gatewayService,
                 var pathSegments = uri.AbsolutePath.Split('/', StringSplitOptions.RemoveEmptyEntries);
                 if (!referer.Contains(storeId) && storeId.Length != 32)
                 {
+                    // Remove trailing slash from referer if it exists
+                    referer = HttpContext.Request.Headers["Referer"].ToString();
+                    if (!string.IsNullOrEmpty(referer) && referer.EndsWith("/"))
+                    {
+                        referer = referer.TrimEnd('/');
+                    }
+
                     var redirectUrl = $"{referer}{HttpContext.Request.Path}";
+
                     return Redirect(redirectUrl); // 302 Temporary Redirect
                 }
             }
@@ -172,7 +178,15 @@ public partial class StoresController(GatewayService gatewayService,
                 var pathSegments = uri.AbsolutePath.Split('/', StringSplitOptions.RemoveEmptyEntries);
                 if (!referer.Contains(storeId) && storeId.Length != 32)
                 {
+                    // Remove trailing slash from referer if it exists
+                    referer = HttpContext.Request.Headers["Referer"].ToString();
+                    if (!string.IsNullOrEmpty(referer) && referer.EndsWith("/"))
+                    {
+                        referer = referer.TrimEnd('/');
+                    }
+
                     var redirectUrl = $"{referer}{HttpContext.Request.Path}";
+
                     return Redirect(redirectUrl); // 302 Temporary Redirect
                 }
             }
