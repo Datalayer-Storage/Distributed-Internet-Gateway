@@ -45,17 +45,9 @@ public partial class StoresController(GatewayService gatewayService,
                 HttpContext.Response.Headers.TryAdd("X-Referer", referer);
                 var uri = new Uri(referer);
                 var pathSegments = uri.AbsolutePath.Split('/', StringSplitOptions.RemoveEmptyEntries);
-                if (!referer.Contains(storeId))
+                if (!referer.Contains(storeId) && storeId.Length != 32)
                 {
-                    var requestUrl = $"{HttpContext.Request.Scheme}://{HttpContext.Request.Host}{HttpContext.Request.Path}{HttpContext.Request.QueryString}";
-                    var requestUri = new Uri(requestUrl);
-                    var requestPath = requestUri.AbsolutePath;
-                    var host = $"{uri.Scheme}://{uri.Host}";
-                    if (!uri.IsDefaultPort)
-                    {
-                        host += $":{uri.Port}";
-                    }
-                    var redirectUrl = $"{referer}/{requestPath}";
+                    var redirectUrl = $"{referer}/{HttpContext.Request.Path}";
                     return Redirect(redirectUrl); // 302 Temporary Redirect
                 }
             }
