@@ -49,7 +49,7 @@ public partial class StoresController(GatewayService gatewayService,
                 var pathSegments = uri.AbsolutePath.Split('/', StringSplitOptions.RemoveEmptyEntries);
                 if (!referer.Contains(storeId) && storeId.Length != 32)
                 {
-                    var redirectUrl = $"{referer}/{HttpContext.Request.Path}";
+                    var redirectUrl = $"{referer}{HttpContext.Request.Path}";
                     return Redirect(redirectUrl); // 302 Temporary Redirect
                 }
             }
@@ -172,7 +172,7 @@ public partial class StoresController(GatewayService gatewayService,
                 var pathSegments = uri.AbsolutePath.Split('/', StringSplitOptions.RemoveEmptyEntries);
                 if (!referer.Contains(storeId) && storeId.Length != 32)
                 {
-                    var redirectUrl = $"{referer}/{HttpContext.Request.Path}";
+                    var redirectUrl = $"{referer}{HttpContext.Request.Path}";
                     return Redirect(redirectUrl); // 302 Temporary Redirect
                 }
             }
