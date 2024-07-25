@@ -45,7 +45,7 @@ public partial class StoresController(GatewayService gatewayService,
                 HttpContext.Response.Headers.TryAdd("X-Referer", referer);
                 var uri = new Uri(referer);
                 var pathSegments = uri.AbsolutePath.Split('/', StringSplitOptions.RemoveEmptyEntries);
-                if (pathSegments.Length > 0 && pathSegments[0].Length == 32 && !referer.Contains(storeId))
+                if (!referer.Contains(storeId))
                 {
                     var requestUrl = $"{HttpContext.Request.Scheme}://{HttpContext.Request.Host}{HttpContext.Request.Path}{HttpContext.Request.QueryString}";
                     var requestUri = new Uri(requestUrl);
