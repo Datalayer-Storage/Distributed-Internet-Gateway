@@ -30,10 +30,10 @@ publish_project() {
     dotnet restore ./$src/$name/$name.csproj -r $runtime
 
     # fully standalone with embedded dotnet framework
-    dotnet publish ./$src/$name/$name.csproj -c Release -r $runtime --no-restore --framework $framework --self-contained true /p:PublishReadyToRunComposite=true /p:Version=$version /p:PublishSingleFile=true /p:PublishTrimmed=false /p:IncludeNativeLibrariesForSelfExtract=True /p:StripSymbols=true /p:PublishDir="bin/Release/$framework/$runtime" --output $outputRoot/standalone/$runtime
+    # dotnet publish ./$src/$name/$name.csproj -c Release -r $runtime --no-restore --framework $framework --self-contained true /p:PublishReadyToRunComposite=true /p:Version=$version /p:PublishSingleFile=true /p:PublishTrimmed=false /p:IncludeNativeLibrariesForSelfExtract=True /p:StripSymbols=true /p:PublishDir="bin/Release/$framework/$runtime" --output $outputRoot/standalone/$runtime
 
     # single file without embedded dotnet framework
-    # dotnet publish ./$src/$name/$name.csproj -c Release -r $runtime --no-restore --framework $framework --self-contained false /p:PublishReadyToRun=false /p:Version=$version /p:PublishSingleFile=true /p:PublishTrimmed=false /p:IncludeNativeLibrariesForSelfExtract=True /p:StripSymbols=true /p:PublishDir="bin/Release/$framework/$runtime" --output $outputRoot/singlefile/$runtime
+    dotnet publish ./$src/$name/$name.csproj -c Release -r $runtime --no-restore --framework $framework --self-contained false /p:PublishReadyToRun=false /p:Version=$version /p:PublishSingleFile=true /p:PublishTrimmed=false /p:IncludeNativeLibrariesForSelfExtract=True /p:StripSymbols=true /p:PublishDir="bin/Release/$framework/$runtime" --output $outputRoot/singlefile/$runtime
 }
 
 for runTime in "${runTimes[@]}"; do
