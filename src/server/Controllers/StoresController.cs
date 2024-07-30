@@ -30,7 +30,13 @@ public partial class StoresController(GatewayService gatewayService,
             HttpContext.Response.Headers.TryAdd("X-Generation-Hash", rootHash);
             var syncStatus = await _gatewayService.GetSyncStatus(storeId, cancellationToken);
 
-            return Ok(syncStatus);
+            return Ok(new { 
+                synced = syncStatus.TargetGeneration == syncStatus.Generation, 
+                current_root_hash = syncStatus.RootHash, 
+                target_root_hash = syncStatus.TargetRootHash, 
+                target_generation = syncStatus.TargetGeneration, 
+                current_generation = syncStatus.Generation 
+            });
         }
         catch
         {
