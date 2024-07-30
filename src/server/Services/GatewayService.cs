@@ -58,12 +58,13 @@ public class GatewayService(DataLayerProxy dataLayer,
     {
         var stores = await GetKnownStores(cancellationToken);
 
+        // this creates a Store object for each store id in stores
         return stores.Select(_storeRegistryService.GetStore);
     }
 
     public Store GetStore(string storeId) => _storeRegistryService.GetStore(storeId);
 
-    public async Task<DataLayerSyncStatus> GetSyncStatus(string storeId, CancellationToken cancellationToken) 
+    public async Task<DataLayerSyncStatus> GetSyncStatus(string storeId, CancellationToken cancellationToken)
     {
         var syncStatus = await _dataLayer.GetSyncStatus(storeId, cancellationToken);
         return syncStatus;

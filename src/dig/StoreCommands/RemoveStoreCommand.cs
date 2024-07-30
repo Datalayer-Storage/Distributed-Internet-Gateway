@@ -1,3 +1,5 @@
+using dig.caching;
+
 namespace dig;
 
 internal sealed class RemoveStoreCommand()
@@ -11,6 +13,7 @@ internal sealed class RemoveStoreCommand()
     [CommandTarget]
     public async Task<int> Execute(StoreService storeService,
                                     ChiaService chiaService,
+                                    IObjectCache objectCacheService,
                                     IConfiguration configuration)
     {
         if (string.IsNullOrEmpty(Store))
@@ -25,6 +28,7 @@ internal sealed class RemoveStoreCommand()
         using var cts = new CancellationTokenSource(10000);
         var fee = await chiaService.ResolveFee(Fee, Math.Max(serverCoinReserve, mirrorCoinReserve), cts.Token);
         await storeService.RemoveStore(Store, fee, cts.Token);
+        objectCacheService.RemoveStore(Store);
         Console.WriteLine($"Removed store.");
 
         return 0;
