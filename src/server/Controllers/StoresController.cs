@@ -20,16 +20,9 @@ public partial class StoresController(GatewayService gatewayService,
     public async Task<IActionResult> GetStoreMeta(string storeId, CancellationToken cancellationToken)
     {
         try
-        {
-            var rootHash = await _gatewayService.GetLastRoot(storeId, cancellationToken);
-            if (rootHash is null)
-            {
-                return NotFound();
-            }
-
-            HttpContext.Response.Headers.TryAdd("X-Generation-Hash", rootHash);
+        {      
             var syncStatus = await _gatewayService.GetSyncStatus(storeId, cancellationToken);
-
+            HttpContext.Response.Headers.TryAdd("X-Generation-Hash", syncStatus.RootHash);
             return Ok(new { 
                 synced = syncStatus.TargetGeneration == syncStatus.Generation, 
                 current_root_hash = syncStatus.RootHash, 
