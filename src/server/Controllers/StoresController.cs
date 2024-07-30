@@ -32,6 +32,11 @@ public partial class StoresController(GatewayService gatewayService,
         }
 
     }
+    [HttpHead("{storeId}/{*catchAll}")]
+    public async Task<IActionResult> GetResourceMeta(string storeId, CancellationToken cancellationToken)
+    {
+        return await GetStoreMeta(storeId, cancellationToken);
+    }
 
     [HttpGet("{storeId}")]
     [ProducesResponseType(StatusCodes.Status307TemporaryRedirect)]
