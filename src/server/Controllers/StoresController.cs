@@ -23,13 +23,8 @@ public partial class StoresController(GatewayService gatewayService,
         {      
             var syncStatus = await _gatewayService.GetSyncStatus(storeId, cancellationToken);
             HttpContext.Response.Headers.TryAdd("X-Generation-Hash", syncStatus.RootHash);
-            return Ok(new { 
-                synced = syncStatus.TargetGeneration == syncStatus.Generation, 
-                current_root_hash = syncStatus.RootHash, 
-                target_root_hash = syncStatus.TargetRootHash, 
-                target_generation = syncStatus.TargetGeneration, 
-                current_generation = syncStatus.Generation 
-            });
+            HttpContext.Response.Headers.TryAdd("X-Synced", syncStatus.TargetGeneration == syncStatus.Generation);
+            return Ok();
         }
         catch
         {
