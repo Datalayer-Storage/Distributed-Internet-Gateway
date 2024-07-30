@@ -16,10 +16,27 @@ public partial class StoresController(GatewayService gatewayService,
     private readonly ILogger<StoresController> _logger = logger;
     private readonly IConfiguration _configuration = configuration;
 
-    [HttpHead]
-    public IActionResult MyAction()
+    [HttpHead("{storeId}")]
+    public async Task<IActionResult> GetStoreMeta(string storeId, CancellationToken cancellationToken)
     {
-        return NoContent(); // Respond with 204 No Content status code
+        try
+        {
+            var rootHash = await _gatewayService.GetLastRoot(storeId, cancellationToken);
+            if (rootHash is null)
+            {
+                return NotFound();
+            }
+
+            HttpContext.Response.Headers.TryAdd("X-Generation-Hash", rootHash);
+            var syncStatus = await _gatewayService.GetSyncStatus(storeId, cancellationToken);
+
+            return Ok(syncStatus);
+        }
+        catch
+        {
+            return NotFound();
+        }
+
     }
 
     [HttpGet("{storeId}")]
