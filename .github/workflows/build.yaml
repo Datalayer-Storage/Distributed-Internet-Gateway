@@ -20,11 +20,11 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - os: Windows
-            architecture: x64
-            runs-on: windows-2019
-            artifact-name: dig-win-x64
-            runtime: win-x64
+          #- os: Windows
+          #  architecture: x64
+          #  runs-on: windows-2019
+          #  artifact-name: dig-win-x64
+          #  runtime: win-x64
           - os: Linux
             architecture: x64
             runs-on: ubuntu-latest
@@ -62,11 +62,11 @@ jobs:
         uses: ./.github/actions/signing-steps
         with:
           ARTIFACT_PATHS: ${{ github.workspace }}\publish\standalone\win-x64\dig.exe,${{ github.workspace }}\publish\standalone\win-x64\dig.server.exe
-          DIGI_CERT_SM_CLIENT_CERT_FILE_B64: ${{ secrets.DIGI_CERT_SM_CLIENT_CERT_FILE_B64 }}
-          DIGI_CERT_SM_HOST: ${{ secrets.DIGI_CERT_SM_HOST }}
-          DIGI_CERT_SM_API_KEY: ${{ secrets.DIGI_CERT_SM_API_KEY }}
-          DIGI_CERT_SM_CLIENT_CERT_PASSWORD: ${{ secrets.DIGI_CERT_SM_CLIENT_CERT_PASSWORD }}
-          DIGI_CERT_SM_CODE_SIGNING_CERT_SHA1_HASH: ${{ secrets.DIGI_CERT_SM_CODE_SIGNING_CERT_SHA1_HASH }}
+          SM_CLIENT_CERT_FILE_B64: ${{ secrets.SM_CLIENT_CERT_FILE_B64 }}
+          SM_HOST: ${{ secrets.SM_HOST }}
+          SM_API_KEY: ${{ secrets.SM_API_KEY }}
+          SM_CLIENT_CERT_PASSWORD: ${{ secrets.SM_CLIENT_CERT_PASSWORD }}
+          SM_CODE_SIGNING_CERT_SHA1_HASH: ${{ secrets.SM_CODE_SIGNING_CERT_SHA1_HASH }}
                 
       - name: Download and Bundle Server Coin Binary
         uses: ./.github/actions/download-server-coin
@@ -209,11 +209,11 @@ jobs:
         uses: ./.github/actions/signing-steps
         with:
           ARTIFACT_PATHS: ${{ github.workspace }}/publish/Distributed-Internet-Gateway-${{matrix.runtime}}.msi
-          DIGI_CERT_SM_CLIENT_CERT_FILE_B64: ${{ secrets.DIGI_CERT_SM_CLIENT_CERT_FILE_B64 }}
-          DIGI_CERT_SM_HOST: ${{ secrets.DIGI_CERT_SM_HOST }}
-          DIGI_CERT_SM_API_KEY: ${{ secrets.DIGI_CERT_SM_API_KEY }}
-          DIGI_CERT_SM_CLIENT_CERT_PASSWORD: ${{ secrets.DIGI_CERT_SM_CLIENT_CERT_PASSWORD }}
-          DIGI_CERT_SM_CODE_SIGNING_CERT_SHA1_HASH: ${{ secrets.DIGI_CERT_SM_CODE_SIGNING_CERT_SHA1_HASH }}
+          SM_CLIENT_CERT_FILE_B64: ${{ secrets.SM_CLIENT_CERT_FILE_B64 }}
+          SM_HOST: ${{ secrets.SM_HOST }}
+          SM_API_KEY: ${{ secrets.SM_API_KEY }}
+          SM_CLIENT_CERT_PASSWORD: ${{ secrets.SM_CLIENT_CERT_PASSWORD }}
+          SM_CODE_SIGNING_CERT_SHA1_HASH: ${{ secrets.SM_CODE_SIGNING_CERT_SHA1_HASH }}
 
       - name: Upload Windows MSI Artifacts
         uses: actions/upload-artifact@v3
