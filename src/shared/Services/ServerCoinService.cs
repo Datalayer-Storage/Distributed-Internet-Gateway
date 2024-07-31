@@ -65,13 +65,18 @@ public class ServerCoinService(ChiaConfig chiaConfig,
 
         if (fullNode.Uri.Host != wallet.Uri.Host)
         {
-            throw new Exception("The full node and wallet must be on the same host for server coin to work.");
+            args.Add("--fullNodeHost");
+            args.Add(fullNode.Uri.Host);
+        } 
+        else
+        {
+            args.Add("--autoFindPeer");
+            args.Add("true");
         }
 
         // server_coin error if passed non-default ports
 
-        args.Add("--fullNodeHost");
-        args.Add(fullNode.Uri.Host);
+        
         // args.Add("--fullNodePort");
         // args.Add(fullNode.Uri.Port.ToString());
 
