@@ -20,11 +20,11 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          #- os: Windows
-          #  architecture: x64
-          #  runs-on: windows-2019
-          #  artifact-name: dig-win-x64
-          #  runtime: win-x64
+          - os: Windows
+            architecture: x64
+            runs-on: windows-2019
+            artifact-name: dig-win-x64
+            runtime: win-x64
           - os: Linux
             architecture: x64
             runs-on: ubuntu-latest
