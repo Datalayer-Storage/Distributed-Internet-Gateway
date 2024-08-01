@@ -1,7 +1,23 @@
 version: '3.8'
 services:
+  chia-init:
+    image: ghcr.io/chia-network/chia:latest
+    environment:
+      CHIA_ROOT: /chia-data
+      service: wallet
+      self_hostname: 0.0.0.0
+      keys: "persistant"
+    volumes:
+      - ~/.dig/chia-data:/chia-data
+      - ~/.dig/chia_keys:/root/.chia_keys
+    command: >
+      /bin/sh -c "chia keys generate -l dig_node"
+
   chia-nodes:
     image: ghcr.io/chia-network/chia:latest
+    depends_on:
+      chia-init:
+        condition: service_completed_successfully
     ports:
       - "8444:8444"
       - "8555:8555"
@@ -12,12 +28,11 @@ services:
       CHIA_ROOT: /chia-data
       service: data data_layer_http
       self_hostname: 0.0.0.0
-      keys: "persistent"
-      # comment out above and uncomment below to run your own full node for your dig server
-      #service: data data_layer_httpnode
+      keys: "persistant"
     volumes:
       - ~/.dig/chia-data:/chia-data
       - ~/.dig/chia_keys:/root/.chia_keys
+
   dig-server:
     image: michaeltaylor3d/dig-server:latest
     depends_on:
@@ -30,11 +45,7 @@ services:
       - ~/.dig/store-cache:/root/.dig/store-cache
     environment:
       - dig__FullNodeHost=chia-proxy.evergreenminer-prod.com
-      # comment out above and uncomment below to run your own full node for your dig server
-      #- dig__FullNodeHost=chia-nodes
       - dig__FullNodePort=443
-      # comment out above and uncomment below to run your own full node for your dig server
-      #- dig__FullNodePort=8555
       - dig__WalletHost=chia-nodes
       - dig__WalletPort=9256
       - dig__DataLayerHost=chia-nodes
@@ -44,6 +55,7 @@ services:
       - dig__ChiaCertDirectory=/chia-data/config/ssl/
       - dig__ActAsCdn=false
       - CHIA_ROOT=/chia-data
+
 networks:
   default:
     name: dig_network
