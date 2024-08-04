@@ -6,7 +6,7 @@ services:
       CHIA_ROOT: /chia-data
       service: wallet
       self_hostname: 0.0.0.0
-      keys: "persistant"
+      keys: "persistent"
     volumes:
       - ~/.dig/chia-data:/chia-data
       - ~/.dig/chia_keys:/root/.chia_keys
@@ -28,7 +28,7 @@ services:
       CHIA_ROOT: /chia-data
       service: data data_layer_http
       self_hostname: 0.0.0.0
-      keys: "persistant"
+      keys: "persistent"
     volumes:
       - ~/.dig/chia-data:/chia-data
       - ~/.dig/chia_keys:/root/.chia_keys

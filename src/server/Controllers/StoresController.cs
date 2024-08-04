@@ -20,18 +20,47 @@ public partial class StoresController(GatewayService gatewayService,
     public async Task<IActionResult> GetStoreMeta(string storeId, CancellationToken cancellationToken)
     {
         try
-        {      
+        {
             var syncStatus = await _gatewayService.GetSyncStatus(storeId, cancellationToken);
             HttpContext.Response.Headers.TryAdd("X-Generation-Hash", syncStatus.RootHash);
-            HttpContext.Response.Headers.TryAdd("X-Synced", (syncStatus.TargetGeneration == syncStatus.Generation).ToString());
+
+            string? rootHashQuery = HttpContext.Request.QueryString.Value?.TrimStart('?');
+            if (string.IsNullOrEmpty(rootHashQuery) || rootHashQuery == "latest" )
+            {
+                HttpContext.Response.Headers.TryAdd("X-Synced", (syncStatus.TargetGeneration == syncStatus.Generation).ToString());
+            }
+            else
+            {
+                if (rootHashQuery.Length != 64 || Regex.IsMatch(rootHashQuery, @"^[a-fA-F0-9]{64}$")) {
+                    return NotFound();
+                }
+
+                var rootHistory = await _gatewayService.GetRootHistory(storeId, default);
+
+                if (rootHistory == null) {
+                    return NotFound();
+                }
+
+                // Convert syncStatus.Generation from uint to int for splicing
+                int generation = (int)syncStatus.Generation;
+
+                // Splice the root history based on the current generation
+                var splicedRootHistory = rootHistory.Take(generation).ToList();
+
+                // Check if the query parameter root hash is in the spliced list
+                bool isSynced = splicedRootHistory.Any(r => r.RootHash.Equals(rootHashQuery, StringComparison.OrdinalIgnoreCase));
+
+                HttpContext.Response.Headers.TryAdd("X-Synced", isSynced.ToString());
+            }
+
             return Ok();
         }
         catch
         {
             return NotFound();
         }
-
     }
+
     [HttpHead("{storeId}/{*catchAll}")]
     public async Task<IActionResult> GetResourceMeta(string storeId, CancellationToken cancellationToken)
     {
@@ -79,10 +108,21 @@ public partial class StoresController(GatewayService gatewayService,
             // nodes that have the latest state will respond to the request
             // This helps prevent a mismatch between the state of the store and
             // the data when pulled across decentralized nodes
-            var rootHash = await _gatewayService.GetLastRoot(storeId, cancellationToken);
-            if (rootHash is null)
+            string? rootHash = null;
+            var query = HttpContext.Request.QueryString.Value?.TrimStart('?');
+            if (!string.IsNullOrEmpty(query) && query.Length == 64 && Regex.IsMatch(query, @"^[a-fA-F0-9]{64}$"))
             {
-                return NotFound();
+                rootHash = query;
+            }
+
+            // If rootHash query parameter is not provided, get the last root hash
+            if (string.IsNullOrEmpty(rootHash) || rootHash == "latest")
+            {
+                rootHash = await _gatewayService.GetLastRoot(storeId, cancellationToken);
+                if (rootHash is null)
+                {
+                    return NotFound();
+                }
             }
 
             HttpContext.Response.Headers.TryAdd("X-Generation-Hash", rootHash);
@@ -207,10 +247,21 @@ public partial class StoresController(GatewayService gatewayService,
             // nodes that have the latest state will respond to the request
             // This helps prevent a mismatch between the state of the store and
             // the data when pulled across decentralized nodes
-            var lastRootHash = await _gatewayService.GetLastRoot(storeId, cancellationToken);
-            if (lastRootHash is null)
+            string? rootHash = null;
+            var query = HttpContext.Request.QueryString.Value?.TrimStart('?');
+            if (!string.IsNullOrEmpty(query) && query.Length == 64 && System.Text.RegularExpressions.Regex.IsMatch(query, @"^[a-fA-F0-9]{64}$"))
             {
-                return NotFound();
+                rootHash = query;
+            }
+
+            // If rootHash query parameter is not provided, get the last root hash
+            if (string.IsNullOrEmpty(rootHash) || rootHash == "latest")
+            {
+                rootHash = await _gatewayService.GetLastRoot(storeId, cancellationToken);
+                if (rootHash is null)
+                {
+                    return NotFound();
+                }
             }
 
             // info.html is a synthetic key that we use to display the store's contents
@@ -218,7 +269,7 @@ public partial class StoresController(GatewayService gatewayService,
             // the user can still get a list of keys at info.html
             if (key == "info.html")
             {
-                var keys = await _gatewayService.GetKeys(storeId, lastRootHash, cancellationToken);
+                var keys = await _gatewayService.GetKeys(storeId, rootHash, cancellationToken);
                 if (keys is not null)
                 {
                     return View("StoreIndex", keys.Select(HexUtils.FromHex));
@@ -227,17 +278,17 @@ public partial class StoresController(GatewayService gatewayService,
 
             // support requesting keys by hex or utf8
             var hexKey = key.StartsWith("0x") ? key : HexUtils.ToHex(key);
-            var proof = await _gatewayService.GetProof(storeId, lastRootHash, hexKey, cancellationToken);
+            var proof = await _gatewayService.GetProof(storeId, rootHash, hexKey, cancellationToken);
             if (proof is not null)
             {
                 HttpContext.Response.Headers.TryAdd("X-Proof-of-Inclusion", Convert.ToBase64String(proof));
             }
 
-            HttpContext.Response.Headers.TryAdd("X-Generation-Hash", lastRootHash);
+            HttpContext.Response.Headers.TryAdd("X-Generation-Hash", rootHash);
 
             var fileExtension = Path.GetExtension(key);
 
-            var rawValue = await _gatewayService.GetValue(storeId, hexKey, lastRootHash, cancellationToken);
+            var rawValue = await _gatewayService.GetValue(storeId, hexKey, rootHash, cancellationToken);
             if (rawValue is null)
             {
                 _logger.LogInformation("couldn't find: {key}", key.SanitizeForLog());
@@ -276,7 +327,7 @@ public partial class StoresController(GatewayService gatewayService,
                 if (expando is not null && expando.TryGetValue("type", out var type) && type?.ToString() == "multipart")
                 {
                     var mimeType = GetMimeType(fileExtension) ?? "application/octet-stream";
-                    var bytes = await _gatewayService.GetValuesAsBytes(storeId, json, lastRootHash, cancellationToken);
+                    var bytes = await _gatewayService.GetValuesAsBytes(storeId, json, rootHash, cancellationToken);
 
                     return Results.File(bytes, mimeType);
                 }

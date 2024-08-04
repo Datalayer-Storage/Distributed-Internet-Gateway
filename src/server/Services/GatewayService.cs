@@ -129,6 +129,24 @@ public class GatewayService(DataLayerProxy dataLayer,
         return null;  // 404 in the api
     }
 
+    public async Task<IEnumerable<RootHistory>?> GetRootHistory(string storeId, CancellationToken cancellationToken)
+    {
+        try
+        {
+            return await _memoryCache.GetOrCreateAsync($"{storeId}-root-history", async (entry) =>
+            {
+                entry.SlidingExpiration = TimeSpan.FromSeconds(15);
+                return await _dataLayer.GetRootHistory(storeId, cancellationToken);
+            });
+        }
+        catch (Exception e)
+        {
+            _logger.LogError(e, "Failed to get keys for {StoreId}", storeId.SanitizeForLog());
+        }
+
+        return null;  // 404 in the api
+    }
+
     public async Task<byte[]?> GetProof(string storeId, string rootHash, string key, CancellationToken cancellationToken)
     {
         if (!_configuration.GetValue("dig:DisableProofOfInclusion", true))
