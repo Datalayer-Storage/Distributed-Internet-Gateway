@@ -22,10 +22,14 @@ public partial class StoresController(GatewayService gatewayService,
         try
         {
             var syncStatus = await _gatewayService.GetSyncStatus(storeId, cancellationToken);
-            
-
             string? rootHashQuery = HttpContext.Request.QueryString.Value?.TrimStart('?');
-            if (string.IsNullOrEmpty(rootHashQuery) || rootHashQuery == "latest" )
+
+            if (rootHashQuery?.StartsWith("0x") == true)
+            {
+                rootHashQuery = rootHashQuery.Substring(2);
+            }
+
+            if (string.IsNullOrEmpty(rootHashQuery) || rootHashQuery == "latest")
             {
                 HttpContext.Response.Headers.TryAdd("X-Generation-Hash", syncStatus.RootHash);
                 HttpContext.Response.Headers.TryAdd("X-Synced", (syncStatus.TargetGeneration == syncStatus.Generation).ToString());
@@ -34,13 +38,15 @@ public partial class StoresController(GatewayService gatewayService,
             {
                 HttpContext.Response.Headers.TryAdd("X-Generation-Hash", rootHashQuery);
 
-                if (rootHashQuery.Length != 64) {
+                if (rootHashQuery.Length != 64)
+                {
                     return NotFound();
                 }
 
                 var rootHistory = await _gatewayService.GetRootHistory(storeId, default);
 
-                if (rootHistory == null) {
+                if (rootHistory == null)
+                {
                     return NotFound();
                 }
 
@@ -51,7 +57,11 @@ public partial class StoresController(GatewayService gatewayService,
                 var splicedRootHistory = rootHistory.Take(generation).ToList();
 
                 // Check if the query parameter root hash is in the spliced list
-                bool isSynced = splicedRootHistory.Any(r => r.RootHash.Equals(rootHashQuery, StringComparison.OrdinalIgnoreCase));
+                bool isSynced = splicedRootHistory.Any(r =>
+                {
+                    string rootHash = r.RootHash.StartsWith("0x") ? r.RootHash.Substring(2) : r.RootHash;
+                    return rootHash.Equals(rootHashQuery, StringComparison.OrdinalIgnoreCase);
+                });
 
                 HttpContext.Response.Headers.TryAdd("X-Synced", isSynced.ToString());
             }
