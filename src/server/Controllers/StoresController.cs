@@ -22,16 +22,19 @@ public partial class StoresController(GatewayService gatewayService,
         try
         {
             var syncStatus = await _gatewayService.GetSyncStatus(storeId, cancellationToken);
-            HttpContext.Response.Headers.TryAdd("X-Generation-Hash", syncStatus.RootHash);
+            
 
             string? rootHashQuery = HttpContext.Request.QueryString.Value?.TrimStart('?');
             if (string.IsNullOrEmpty(rootHashQuery) || rootHashQuery == "latest" )
             {
+                HttpContext.Response.Headers.TryAdd("X-Generation-Hash", syncStatus.RootHash);
                 HttpContext.Response.Headers.TryAdd("X-Synced", (syncStatus.TargetGeneration == syncStatus.Generation).ToString());
             }
             else
             {
-                if (rootHashQuery.Length != 64 || Regex.IsMatch(rootHashQuery, @"^[a-fA-F0-9]{64}$")) {
+                HttpContext.Response.Headers.TryAdd("X-Generation-Hash", rootHashQuery);
+
+                if (rootHashQuery.Length != 64) {
                     return NotFound();
                 }
 
@@ -110,7 +113,7 @@ public partial class StoresController(GatewayService gatewayService,
             // the data when pulled across decentralized nodes
             string? rootHash = null;
             var query = HttpContext.Request.QueryString.Value?.TrimStart('?');
-            if (!string.IsNullOrEmpty(query) && query.Length == 64 && Regex.IsMatch(query, @"^[a-fA-F0-9]{64}$"))
+            if (!string.IsNullOrEmpty(query) && query.Length == 64)
             {
                 rootHash = query;
             }
@@ -249,7 +252,7 @@ public partial class StoresController(GatewayService gatewayService,
             // the data when pulled across decentralized nodes
             string? rootHash = null;
             var query = HttpContext.Request.QueryString.Value?.TrimStart('?');
-            if (!string.IsNullOrEmpty(query) && query.Length == 64 && System.Text.RegularExpressions.Regex.IsMatch(query, @"^[a-fA-F0-9]{64}$"))
+            if (!string.IsNullOrEmpty(query) && query.Length == 64)
             {
                 rootHash = query;
             }
