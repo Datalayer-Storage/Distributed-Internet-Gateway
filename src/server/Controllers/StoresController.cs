@@ -43,7 +43,7 @@ public partial class StoresController(GatewayService gatewayService,
                     return NotFound();
                 }
 
-                var rootHistory = await _gatewayService.GetRootHistory(storeId, default);
+                var rootHistory = await _gatewayService.GetRootHistory(storeId, cancellationToken);
 
                 if (rootHistory == null)
                 {
@@ -54,7 +54,7 @@ public partial class StoresController(GatewayService gatewayService,
                 int generation = (int)syncStatus.Generation;
 
                 // Splice the root history based on the current generation
-                var splicedRootHistory = rootHistory.Take(generation).ToList();
+                var splicedRootHistory = rootHistory.Take(generation + 1).ToList();
 
                 // Check if the query parameter root hash is in the spliced list
                 bool isSynced = splicedRootHistory.Any(r =>
