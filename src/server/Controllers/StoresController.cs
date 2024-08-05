@@ -28,7 +28,7 @@ public partial class StoresController(GatewayService gatewayService,
         string? rootHash = atIndex == -1 ? "latest" : input.Substring(atIndex + 1);
 
         HttpContext.Response.Headers.TryAdd("X-Dig-StoreId", storeId);
-         HttpContext.Response.Headers.TryAdd("X-Dig-RootHash-1", rootHash);
+        HttpContext.Response.Headers.TryAdd("X-Dig-RootHash-1", rootHash);
         
 
         /*if (storeId.Length != StoreIdLength)
@@ -40,11 +40,11 @@ public partial class StoresController(GatewayService gatewayService,
         if (rootHash == "latest")
         {
             rootHash = await _gatewayService.GetLastRoot(storeId, cancellationToken);
-            if (rootHash == null)
+           /* if (rootHash == null)
             {
                 HttpContext.Response.Headers.TryAdd("X-Dig-Message", "Unable to retrieve the last root hash for the provided storeId.");
                 return (null, null);
-            }
+            }*/
         }
 
         HttpContext.Response.Headers.TryAdd("X-Dig-RootHash-2", rootHash);
