@@ -16,39 +16,52 @@ public partial class StoresController(GatewayService gatewayService,
     private readonly ILogger<StoresController> _logger = logger;
     private readonly IConfiguration _configuration = configuration;
 
- private async Task<(string StoreId, string RootHash)> ExtractStoreIdAndRootHashAsync(string input, CancellationToken cancellationToken)
+    private async Task<(string StoreId, string RootHash)> ExtractStoreIdAndRootHashAsync(string input, CancellationToken cancellationToken)
     {
+        const int StoreIdLength = 64;
+        const int LatestHashLength = 71;
+        const int FullHashLength = 129;
+
         input = input.TrimEnd('/');
+        input = Uri.UnescapeDataString(input);
 
-        if (input.Length == 64)
+        if (input.Length != StoreIdLength && input.Length != LatestHashLength && input.Length != FullHashLength)
         {
-            var lastRootHash = await _gatewayService.GetLastRoot(input, cancellationToken);
-            if (lastRootHash == null)
-            {
-                throw new ArgumentException("Unable to retrieve the last root hash for the provided storeId.");
-            }
-            return (input, lastRootHash);
+            throw new ArgumentException("Invalid input format for storeId and rootHash.");
         }
-        else if (input.Length > 64 && input[64] == '@')
+
+        string storeId;
+        string? rootHash;
+
+        if (input.Length == StoreIdLength)
         {
-            var storeId = input.Substring(0, 64);
-            var rootHash = input.Substring(65);
-
-            if (string.IsNullOrEmpty(rootHash) || rootHash == "latest")
-            {
-                rootHash = await _gatewayService.GetLastRoot(storeId, cancellationToken);
-                if (rootHash == null)
-                {
-                    throw new ArgumentException("Unable to retrieve the last root hash for the provided storeId.");
-                }
-            }
-
-            return (storeId, rootHash);
+            storeId = input;
+            rootHash = null; // Handle rootHash later
+        }
+        else if ((input.Length == LatestHashLength || input.Length == FullHashLength) && input[StoreIdLength] == '@')
+        {
+            storeId = input.Substring(0, StoreIdLength);
+            rootHash = input.Substring(StoreIdLength + 1);
         }
         else
         {
             throw new ArgumentException("Invalid input format for storeId and rootHash.");
         }
+
+        if (string.IsNullOrEmpty(rootHash) || rootHash == "latest")
+        {
+            rootHash = await _gatewayService.GetLastRoot(storeId, cancellationToken);
+            if (rootHash == null)
+            {
+                throw new ArgumentException("Unable to retrieve the last root hash for the provided storeId.");
+            }
+        }
+        else if (rootHash.Length != StoreIdLength)
+        {
+            throw new ArgumentException("Invalid rootHash format.");
+        }
+
+        return (storeId, rootHash);
     }
 
     [HttpHead("{storeId}")]
@@ -132,11 +145,10 @@ public partial class StoresController(GatewayService gatewayService,
                 }
             }
 
-            HttpContext.Response.Headers.TryAdd("X-Synced", "false");
-
             HttpContext.Response.Headers.TryAdd("X-Generation-Hash", rootHash);
 
             var keys = await _gatewayService.GetKeys(extractedStoreId, rootHash, cancellationToken);
+            bool isSynced = false;
 
             if (keys is not null)
             {
@@ -153,14 +165,16 @@ public partial class StoresController(GatewayService gatewayService,
                             HttpContext.Response.Headers.TryAdd("X-Proof-of-Inclusion", Convert.ToBase64String(proof));
                         }
 
-                        HttpContext.Response.Headers.TryAdd("X-Synced", "true");
+                        isSynced = true;
+                        HttpContext.Response.Headers.TryAdd("X-Synced", isSynced.ToString());
                         return Content(html, "text/html");
                     }
 
                     return NotFound();
                 }
 
-                HttpContext.Response.Headers.TryAdd("X-Synced", "true");
+                isSynced = true;
+                HttpContext.Response.Headers.TryAdd("X-Synced", isSynced.ToString());
                 return View("StoreIndex", new StoreIndex(_gatewayService.GetStore(extractedStoreId), decodedKeys ?? []));
             }
 
@@ -188,6 +202,8 @@ public partial class StoresController(GatewayService gatewayService,
             try
             {
                 var syncStatus = await _gatewayService.GetSyncStatus(extractedStoreId, cancellationToken);
+                isSynced = syncStatus.TargetGeneration == syncStatus.Generation;
+                HttpContext.Response.Headers.TryAdd("X-Synced", isSynced.ToString());
                 return View("Syncing", new SyncStatus(syncStatus));
             }
             catch
