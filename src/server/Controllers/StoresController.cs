@@ -27,28 +27,16 @@ public partial class StoresController(GatewayService gatewayService,
         string storeId = atIndex == -1 ? input : input.Substring(0, atIndex);
         string? rootHash = atIndex == -1 ? "latest" : input.Substring(atIndex + 1);
 
-        HttpContext.Response.Headers.TryAdd("X-Dig-StoreId", storeId);
-        HttpContext.Response.Headers.TryAdd("X-Dig-RootHash-1", rootHash);
-
-
-        /*if (storeId.Length != StoreIdLength)
-        {
-            HttpContext.Response.Headers.TryAdd("X-Dig-Message", "Invalid input format for storeId and/or rootHash.");
-            return (null, null);
-        }*/
-
         if (rootHash == "latest")
         {
             rootHash = await _gatewayService.GetLastRoot(storeId, cancellationToken);
-             if (String.IsNullOrEmpty(rootHash))
-             {
-                 HttpContext.Response.Headers.TryAdd("X-Dig-Message", "Unable to retrieve the last root hash for the provided storeId.");
-                 return (null, null);
-             }
+            if (String.IsNullOrEmpty(rootHash))
+            {
+                HttpContext.Response.Headers.TryAdd("X-Dig-Message", "Unable to retrieve the last root hash for the provided storeId.");
+                return (null, null);
+            }
         }
-
-        HttpContext.Response.Headers.TryAdd("X-Dig-RootHash-2", rootHash);
-
+        
         return (storeId, rootHash.StartsWith("0x") ? rootHash.Substring(2) : rootHash);
     }
 
@@ -58,9 +46,6 @@ public partial class StoresController(GatewayService gatewayService,
         try
         {
             var (extractedStoreId, rootHashQuery) = await ExtractStoreIdAndRootHashAsync(storeId, cancellationToken);
-
-            HttpContext.Response.Headers.TryAdd("X-test-1", extractedStoreId);
-            HttpContext.Response.Headers.TryAdd("X-test-2", rootHashQuery);
 
             if (String.IsNullOrEmpty(extractedStoreId) || String.IsNullOrEmpty(rootHashQuery))
             {
@@ -75,7 +60,6 @@ public partial class StoresController(GatewayService gatewayService,
 
             if (rootHistory == null)
             {
-                HttpContext.Response.Headers.TryAdd("X-no-root-hisotry", "sddfsf");
                 return NotFound();
             }
 
@@ -90,7 +74,6 @@ public partial class StoresController(GatewayService gatewayService,
 
             HttpContext.Response.Headers.TryAdd("X-Synced", isSynced.ToString());
 
-
             return Ok();
         }
         catch (Exception ex)
@@ -101,9 +84,21 @@ public partial class StoresController(GatewayService gatewayService,
     }
 
     [HttpHead("{storeId}/{*catchAll}")]
-    public async Task<IActionResult> GetResourceMeta(string storeId, CancellationToken cancellationToken)
+    public async Task<IActionResult> GetResourceMeta(string storeId, string catchAll, CancellationToken cancellationToken)
     {
-        return await GetStoreMeta(storeId, cancellationToken);
+        var response = await GetStoreMeta(storeId, cancellationToken);
+
+        if (HttpContext.Response.Headers.TryGetValue("X-Generation-Hash", out var rootHash) && !string.IsNullOrEmpty(rootHash))
+        {
+            var keys = await _gatewayService.GetKeys(storeId, rootHash, cancellationToken);
+            if (keys != null)
+            {
+                var keyExists = keys.Select(HexUtils.FromHex).Contains(catchAll);
+                HttpContext.Response.Headers.TryAdd("X-Key-Exists", keyExists.ToString());
+            }
+        }
+
+        return response;
     }
 
     [HttpGet("{storeId}")]
