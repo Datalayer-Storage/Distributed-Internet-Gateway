@@ -27,7 +27,8 @@ public partial class StoresController(GatewayService gatewayService,
 
         if (input.Length != StoreIdLength && input.Length != LatestHashLength && input.Length != FullHashLength)
         {
-            throw new ArgumentException("Invalid input format for storeId and rootHash.");
+            HttpContext.Response.Headers.TryAdd("X-Dig-Message", "Invalid input format for storeId and rootHash.");
+            return ("", "");
         }
 
         string storeId;
@@ -45,7 +46,8 @@ public partial class StoresController(GatewayService gatewayService,
         }
         else
         {
-            throw new ArgumentException("Invalid input format for storeId and rootHash.");
+            HttpContext.Response.Headers.TryAdd("X-Dig-Message", "Invalid input format for storeId and rootHash.");
+            return ("", "");
         }
 
         if (string.IsNullOrEmpty(rootHash) || rootHash == "latest")
@@ -58,7 +60,7 @@ public partial class StoresController(GatewayService gatewayService,
         }
         else if (rootHash.Length != StoreIdLength)
         {
-            throw new ArgumentException("Invalid rootHash format.");
+            HttpContext.Response.Headers.TryAdd("X-Dig-Message", "Invalid rootHash format.");
         }
 
         return (storeId, rootHash);
