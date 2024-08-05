@@ -40,16 +40,16 @@ public partial class StoresController(GatewayService gatewayService,
         if (rootHash == "latest")
         {
             rootHash = await _gatewayService.GetLastRoot(storeId, cancellationToken);
-            /* if (rootHash == null)
+             if (String.IsNullOrEmpty(rootHash))
              {
                  HttpContext.Response.Headers.TryAdd("X-Dig-Message", "Unable to retrieve the last root hash for the provided storeId.");
                  return (null, null);
-             }*/
+             }
         }
 
         HttpContext.Response.Headers.TryAdd("X-Dig-RootHash-2", rootHash);
 
-        return (storeId, rootHash);
+        return (storeId, rootHash.StartsWith("0x") ? rootHash.Substring(2) : rootHash);
     }
 
     [HttpHead("{storeId}")]
@@ -84,7 +84,8 @@ public partial class StoresController(GatewayService gatewayService,
 
             bool isSynced = splicedRootHistory.Any(r =>
             {
-                return r.RootHash.Equals(rootHashQuery, StringComparison.OrdinalIgnoreCase);
+                string rootHash = r.RootHash.StartsWith("0x") ? r.RootHash.Substring(2) : r.RootHash;
+                return rootHash.Equals(rootHashQuery, StringComparison.OrdinalIgnoreCase);
             });
 
             HttpContext.Response.Headers.TryAdd("X-Synced", isSynced.ToString());
