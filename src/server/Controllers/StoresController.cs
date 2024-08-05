@@ -84,8 +84,7 @@ public partial class StoresController(GatewayService gatewayService,
 
             bool isSynced = splicedRootHistory.Any(r =>
             {
-                string rootHash = r.RootHash.StartsWith("0x") ? r.RootHash.Substring(2) : r.RootHash;
-                return rootHash.Equals(rootHashQuery, StringComparison.OrdinalIgnoreCase);
+                return r.RootHash.Equals(rootHashQuery, StringComparison.OrdinalIgnoreCase);
             });
 
             HttpContext.Response.Headers.TryAdd("X-Synced", isSynced.ToString());
