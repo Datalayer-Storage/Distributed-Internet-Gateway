@@ -42,7 +42,7 @@ public partial class StoresController(GatewayService gatewayService,
 
         HttpContext.Response.Headers.TryAdd("X-Input-1", input.Length.ToString());
 
-        if (input.Length != StoreIdLength && input.Length != LatestHashLength && input.Length != FullHashLength)
+        if (!new[] { StoreIdLength, LatestHashLength, FullHashLength }.Contains(input.Length))
         {
             HttpContext.Response.Headers.TryAdd("X-Dig-Message", "! Invalid input format for storeId and rootHash. " + input);
             return (null, null);
@@ -56,7 +56,7 @@ public partial class StoresController(GatewayService gatewayService,
             storeId = input;
             rootHash = "latest"; // Default to "latest" to handle rootHash later
         }
-        else if (input.Length == LatestHashLength || input.Length == FullHashLength)
+        else if ((input.Length == LatestHashLength || input.Length == FullHashLength) && input[StoreIdLength] == '@')
         {
             storeId = input.Substring(0, StoreIdLength);
             rootHash = input.Substring(StoreIdLength + 1);
