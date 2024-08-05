@@ -19,7 +19,7 @@ public partial class StoresController(GatewayService gatewayService,
 
     private async Task<(string? StoreId, string? RootHash)> ExtractStoreIdAndRootHashAsync(string input, CancellationToken cancellationToken)
     {
-        const int StoreIdLength = 64;
+        int StoreIdLength = 64;
         input = input.TrimEnd('/').TrimStart('/');
         input = input.Contains("%40") ? Uri.UnescapeDataString(input) : input;
         
