@@ -19,17 +19,17 @@ public partial class StoresController(GatewayService gatewayService,
 
     private async Task<(string? StoreId, string? RootHash)> ExtractStoreIdAndRootHashAsync(string input, CancellationToken cancellationToken)
     {
-       // int StoreIdLength = 64;
+        // int StoreIdLength = 64;
         input = input.TrimEnd('/').TrimStart('/');
         input = input.Contains("%40") ? Uri.UnescapeDataString(input) : input;
-        
+
         int atIndex = input.IndexOf('@');
         string storeId = atIndex == -1 ? input : input.Substring(0, atIndex);
         string? rootHash = atIndex == -1 ? "latest" : input.Substring(atIndex + 1);
 
         HttpContext.Response.Headers.TryAdd("X-Dig-StoreId", storeId);
         HttpContext.Response.Headers.TryAdd("X-Dig-RootHash-1", rootHash);
-        
+
 
         /*if (storeId.Length != StoreIdLength)
         {
@@ -40,11 +40,11 @@ public partial class StoresController(GatewayService gatewayService,
         if (rootHash == "latest")
         {
             rootHash = await _gatewayService.GetLastRoot(storeId, cancellationToken);
-           /* if (rootHash == null)
-            {
-                HttpContext.Response.Headers.TryAdd("X-Dig-Message", "Unable to retrieve the last root hash for the provided storeId.");
-                return (null, null);
-            }*/
+            /* if (rootHash == null)
+             {
+                 HttpContext.Response.Headers.TryAdd("X-Dig-Message", "Unable to retrieve the last root hash for the provided storeId.");
+                 return (null, null);
+             }*/
         }
 
         HttpContext.Response.Headers.TryAdd("X-Dig-RootHash-2", rootHash);
@@ -59,50 +59,43 @@ public partial class StoresController(GatewayService gatewayService,
         {
             var (extractedStoreId, rootHashQuery) = await ExtractStoreIdAndRootHashAsync(storeId, cancellationToken);
 
-            if (extractedStoreId == null || rootHashQuery == null)
+            HttpContext.Response.Headers.TryAdd("X-test-1", extractedStoreId);
+            HttpContext.Response.Headers.TryAdd("X-test-2", rootHashQuery);
+
+            if (String.IsNullOrEmpty(extractedStoreId) || String.IsNullOrEmpty(rootHashQuery))
             {
                 return NotFound();
             }
 
             var syncStatus = await _gatewayService.GetSyncStatus(extractedStoreId, cancellationToken);
 
-            if (rootHashQuery == null || rootHashQuery == "latest")
+            HttpContext.Response.Headers.TryAdd("X-Generation-Hash", rootHashQuery);
+
+            var rootHistory = await _gatewayService.GetRootHistory(extractedStoreId, cancellationToken);
+
+            if (rootHistory == null)
             {
-                HttpContext.Response.Headers.TryAdd("X-Generation-Hash", syncStatus.RootHash);
-                HttpContext.Response.Headers.TryAdd("X-Synced", (syncStatus.TargetGeneration == syncStatus.Generation).ToString());
+                HttpContext.Response.Headers.TryAdd("X-no-root-hisotry", "sddfsf");
+                return NotFound();
             }
-            else
+
+            int generation = (int)syncStatus.Generation;
+            var splicedRootHistory = rootHistory.Take(generation + 1).ToList();
+
+            bool isSynced = splicedRootHistory.Any(r =>
             {
-                HttpContext.Response.Headers.TryAdd("X-Generation-Hash", rootHashQuery);
+                string rootHash = r.RootHash.StartsWith("0x") ? r.RootHash.Substring(2) : r.RootHash;
+                return rootHash.Equals(rootHashQuery, StringComparison.OrdinalIgnoreCase);
+            });
 
-                if (rootHashQuery.Length != 64)
-                {
-                    return NotFound();
-                }
+            HttpContext.Response.Headers.TryAdd("X-Synced", isSynced.ToString());
 
-                var rootHistory = await _gatewayService.GetRootHistory(extractedStoreId, cancellationToken);
-
-                if (rootHistory == null)
-                {
-                    return NotFound();
-                }
-
-                int generation = (int)syncStatus.Generation;
-                var splicedRootHistory = rootHistory.Take(generation + 1).ToList();
-
-                bool isSynced = splicedRootHistory.Any(r =>
-                {
-                    string rootHash = r.RootHash.StartsWith("0x") ? r.RootHash.Substring(2) : r.RootHash;
-                    return rootHash.Equals(rootHashQuery, StringComparison.OrdinalIgnoreCase);
-                });
-
-                HttpContext.Response.Headers.TryAdd("X-Synced", isSynced.ToString());
-            }
 
             return Ok();
         }
-        catch
+        catch (Exception ex)
         {
+            HttpContext.Response.Headers.TryAdd("X-error", ex.Message.ToString());
             return NotFound();
         }
     }
