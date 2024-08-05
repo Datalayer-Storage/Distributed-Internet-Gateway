@@ -19,7 +19,7 @@ public partial class StoresController(GatewayService gatewayService,
 
     private async Task<(string? StoreId, string? RootHash)> ExtractStoreIdAndRootHashAsync(string input, CancellationToken cancellationToken)
     {
-        int StoreIdLength = 64;
+       // int StoreIdLength = 64;
         input = input.TrimEnd('/').TrimStart('/');
         input = input.Contains("%40") ? Uri.UnescapeDataString(input) : input;
         
@@ -27,11 +27,15 @@ public partial class StoresController(GatewayService gatewayService,
         string storeId = atIndex == -1 ? input : input.Substring(0, atIndex);
         string? rootHash = atIndex == -1 ? "latest" : input.Substring(atIndex + 1);
 
-        if (storeId.Length != StoreIdLength)
+        HttpContext.Response.Headers.TryAdd("X-Dig-StoreId", storeId);
+         HttpContext.Response.Headers.TryAdd("X-Dig-RootHash-1", rootHash);
+        
+
+        /*if (storeId.Length != StoreIdLength)
         {
             HttpContext.Response.Headers.TryAdd("X-Dig-Message", "Invalid input format for storeId and/or rootHash.");
             return (null, null);
-        }
+        }*/
 
         if (rootHash == "latest")
         {
@@ -42,6 +46,8 @@ public partial class StoresController(GatewayService gatewayService,
                 return (null, null);
             }
         }
+
+        HttpContext.Response.Headers.TryAdd("X-Dig-RootHash-2", rootHash);
 
         return (storeId, rootHash);
     }
