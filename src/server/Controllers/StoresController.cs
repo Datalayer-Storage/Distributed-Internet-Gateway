@@ -27,7 +27,7 @@ public partial class StoresController(GatewayService gatewayService,
         string storeId = atIndex == -1 ? input : input.Substring(0, atIndex);
         string? rootHash = atIndex == -1 ? "latest" : input.Substring(atIndex + 1);
 
-        if (storeId.Length != StoreIdLength || (rootHash != "latest" && rootHash.Length != StoreIdLength))
+        if (storeId.Length != StoreIdLength)
         {
             HttpContext.Response.Headers.TryAdd("X-Dig-Message", "Invalid input format for storeId and/or rootHash.");
             return (null, null);
