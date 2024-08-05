@@ -26,15 +26,21 @@ public partial class StoresController(GatewayService gatewayService,
 
         HttpContext.Response.Headers.TryAdd("X-Input", input);
 
-        try
+        if (input.Contains("%40"))
         {
-            input = Uri.UnescapeDataString(input);
+            try
+            {
+                input = Uri.UnescapeDataString(input);
+            }
+            catch (Exception ex)
+            {
+                HttpContext.Response.Headers.TryAdd("X-Dig-Message", "Error unescaping input string.");
+                _logger.LogError(ex, "Error unescaping input string: {input}", input);
+                return (null, null);
+            }
         }
-        catch
-        {
-            HttpContext.Response.Headers.TryAdd("X-Dig-Message", "Error unescaping input string.");
-            return (null, null);
-        }
+
+        HttpContext.Response.Headers.TryAdd("X-Input-1", input);
 
         if (input.Length != StoreIdLength && input.Length != LatestHashLength && input.Length != FullHashLength)
         {
