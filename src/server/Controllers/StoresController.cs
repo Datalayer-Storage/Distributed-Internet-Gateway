@@ -56,7 +56,7 @@ public partial class StoresController(GatewayService gatewayService,
             storeId = input;
             rootHash = "latest"; // Default to "latest" to handle rootHash later
         }
-        else if ((input.Length == LatestHashLength || input.Length == FullHashLength) && input[StoreIdLength] == '@')
+        else if (input.Length == LatestHashLength || input.Length == FullHashLength)
         {
             storeId = input.Substring(0, StoreIdLength);
             rootHash = input.Substring(StoreIdLength + 1);
