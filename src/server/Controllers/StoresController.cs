@@ -23,12 +23,21 @@ public partial class StoresController(GatewayService gatewayService,
         const int FullHashLength = 129;
 
         input = input.TrimEnd('/');
-        input = Uri.UnescapeDataString(input);
+
+        try
+        {
+            input = Uri.UnescapeDataString(input);
+        }
+        catch
+        {
+            HttpContext.Response.Headers.TryAdd("X-Dig-Message", "Error unescaping input string.");
+            return (null, null);
+        }
 
         if (input.Length != StoreIdLength && input.Length != LatestHashLength && input.Length != FullHashLength)
         {
-            HttpContext.Response.Headers.TryAdd("X-Dig-Message", "Invalid input format for storeId and rootHash. " + input);
-            return ("", "");
+            HttpContext.Response.Headers.TryAdd("X-Dig-Message", "! Invalid input format for storeId and rootHash.");
+            return (null, null);
         }
 
         string storeId;
@@ -37,7 +46,7 @@ public partial class StoresController(GatewayService gatewayService,
         if (input.Length == StoreIdLength)
         {
             storeId = input;
-            rootHash = null; // Handle rootHash later
+            rootHash = "latest"; // Default to "latest" to handle rootHash later
         }
         else if ((input.Length == LatestHashLength || input.Length == FullHashLength) && input[StoreIdLength] == '@')
         {
@@ -46,21 +55,25 @@ public partial class StoresController(GatewayService gatewayService,
         }
         else
         {
-            HttpContext.Response.Headers.TryAdd("X-Dig-Message", "! Invalid input format for storeId and rootHash. " + input);
-            return ("", "");
+            HttpContext.Response.Headers.TryAdd("X-Dig-Message", "Invalid input format for storeId and rootHash.");
+            return (null, null);
         }
+
+        _logger.LogInformation("Extracted storeId: {storeId}, rootHash: {rootHash}", storeId, rootHash);
 
         if (string.IsNullOrEmpty(rootHash) || rootHash == "latest")
         {
             rootHash = await _gatewayService.GetLastRoot(storeId, cancellationToken);
             if (rootHash == null)
             {
-                throw new ArgumentException("Unable to retrieve the last root hash for the provided storeId.");
+                HttpContext.Response.Headers.TryAdd("X-Dig-Message", "Unable to retrieve the last root hash for the provided storeId.");
+                return (null, null);
             }
         }
         else if (rootHash.Length != StoreIdLength)
         {
-            HttpContext.Response.Headers.TryAdd("X-Dig-Message", "Invalid rootHash format. " + input);
+            HttpContext.Response.Headers.TryAdd("X-Dig-Message", "Invalid rootHash format.");
+            return (null, null);
         }
 
         return (storeId, rootHash);
