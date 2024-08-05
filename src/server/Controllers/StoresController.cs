@@ -40,7 +40,7 @@ public partial class StoresController(GatewayService gatewayService,
             }
         }
 
-        HttpContext.Response.Headers.TryAdd("X-Input-1", input);
+        HttpContext.Response.Headers.TryAdd("X-Input-1", input.Length.ToString());
 
         if (input.Length != StoreIdLength && input.Length != LatestHashLength && input.Length != FullHashLength)
         {
