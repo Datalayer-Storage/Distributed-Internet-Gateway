@@ -16,60 +16,24 @@ public partial class StoresController(GatewayService gatewayService,
     private readonly ILogger<StoresController> _logger = logger;
     private readonly IConfiguration _configuration = configuration;
 
-    private async Task<(string StoreId, string RootHash)> ExtractStoreIdAndRootHashAsync(string input, CancellationToken cancellationToken)
+
+    private async Task<(string? StoreId, string? RootHash)> ExtractStoreIdAndRootHashAsync(string input, CancellationToken cancellationToken)
     {
         const int StoreIdLength = 64;
-        const int LatestHashLength = 71;
-        const int FullHashLength = 129;
-
         input = input.TrimEnd('/').TrimStart('/');
+        input = input.Contains("%40") ? Uri.UnescapeDataString(input) : input;
+        
+        int atIndex = input.IndexOf('@');
+        string storeId = atIndex == -1 ? input : input.Substring(0, atIndex);
+        string? rootHash = atIndex == -1 ? "latest" : input.Substring(atIndex + 1);
 
-        HttpContext.Response.Headers.TryAdd("X-Input", input);
-
-        if (input.Contains("%40"))
+        if (storeId.Length != StoreIdLength || (rootHash != "latest" && rootHash.Length != StoreIdLength))
         {
-            try
-            {
-                input = Uri.UnescapeDataString(input);
-            }
-            catch (Exception ex)
-            {
-                HttpContext.Response.Headers.TryAdd("X-Dig-Message", "Error unescaping input string.");
-                _logger.LogError(ex, "Error unescaping input string: {input}", input);
-                return (null, null);
-            }
-        }
-
-        HttpContext.Response.Headers.TryAdd("X-Input-1", input.Length.ToString());
-
-        if (!new[] { StoreIdLength, LatestHashLength, FullHashLength }.Contains(input.Length))
-        {
-            HttpContext.Response.Headers.TryAdd("X-Dig-Message", "! Invalid input format for storeId and rootHash. " + input);
+            HttpContext.Response.Headers.TryAdd("X-Dig-Message", "Invalid input format for storeId and/or rootHash.");
             return (null, null);
         }
 
-        string storeId;
-        string? rootHash;
-
-        if (input.Length == StoreIdLength)
-        {
-            storeId = input;
-            rootHash = "latest"; // Default to "latest" to handle rootHash later
-        }
-        else if ((input.Length == LatestHashLength || input.Length == FullHashLength) && input[StoreIdLength] == '@')
-        {
-            storeId = input.Substring(0, StoreIdLength);
-            rootHash = input.Substring(StoreIdLength + 1);
-        }
-        else
-        {
-            HttpContext.Response.Headers.TryAdd("X-Dig-Message", "Invalid input format for storeId and rootHash.");
-            return (null, null);
-        }
-
-        _logger.LogInformation("Extracted storeId: {storeId}, rootHash: {rootHash}", storeId, rootHash);
-
-        if (string.IsNullOrEmpty(rootHash) || rootHash == "latest")
+        if (rootHash == "latest")
         {
             rootHash = await _gatewayService.GetLastRoot(storeId, cancellationToken);
             if (rootHash == null)
@@ -77,11 +41,6 @@ public partial class StoresController(GatewayService gatewayService,
                 HttpContext.Response.Headers.TryAdd("X-Dig-Message", "Unable to retrieve the last root hash for the provided storeId.");
                 return (null, null);
             }
-        }
-        else if (rootHash.Length != StoreIdLength)
-        {
-            HttpContext.Response.Headers.TryAdd("X-Dig-Message", "Invalid rootHash format.");
-            return (null, null);
         }
 
         return (storeId, rootHash);
@@ -93,6 +52,11 @@ public partial class StoresController(GatewayService gatewayService,
         try
         {
             var (extractedStoreId, rootHashQuery) = await ExtractStoreIdAndRootHashAsync(storeId, cancellationToken);
+
+            if (extractedStoreId == null || rootHashQuery == null)
+            {
+                return NotFound();
+            }
 
             var syncStatus = await _gatewayService.GetSyncStatus(extractedStoreId, cancellationToken);
 
