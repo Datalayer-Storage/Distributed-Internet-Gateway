@@ -380,7 +380,7 @@ public partial class StoresController(GatewayService gatewayService,
         if (pathSegments.Length > 0)
         {
             var storeId = pathSegments[0];
-            if (storeId.Length == 64)
+            if (storeId.Length == 64 || storeId.Length == 129)
             {
                 return storeId;
             }
