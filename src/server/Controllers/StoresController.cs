@@ -118,12 +118,14 @@ public partial class StoresController(GatewayService gatewayService,
                 HttpContext.Response.Headers.TryAdd("X-Referer", referer);
                 var uri = new Uri(referer);
                 // the extracted store will not be a store id always, so we cant rely on that, we need to get the storeId out of the referrer
+                HttpContext.Response.Headers.TryAdd("X-Extracted-StoreId", extractedStoreId);
                 if (!referer.Contains(extractedStoreId) && extractedStoreId.Length != 64)
                 {
                     var refererStore = ExtractStoreIdFromReferrer(referer);
                     if (refererStore != null)
                     {
                         var redirectUrl = $"/{ExtractStoreIdFromReferrer(referer)}@{rootHash}";
+                        HttpContext.Response.Headers.TryAdd("X-Redirect", redirectUrl);
                         return Redirect(redirectUrl); // 302 Temporary Redirect
                     }
                 }
@@ -231,12 +233,14 @@ public partial class StoresController(GatewayService gatewayService,
                 var referer = refererValues.ToString();
                 HttpContext.Response.Headers.TryAdd("X-Referer", referer);
                 var uri = new Uri(referer);
+                HttpContext.Response.Headers.TryAdd("X-Extracted-StoreId", extractedStoreId);
                 if (!referer.Contains(extractedStoreId) && extractedStoreId.Length != 64)
                 {
                     var refererStore = ExtractStoreIdFromReferrer(referer);
                     if (refererStore != null)
                     {
                         var redirectUrl = $"/{ExtractStoreIdFromReferrer(referer)}@{rootHash}";
+                        HttpContext.Response.Headers.TryAdd("X-Redirect", redirectUrl);
                         return Redirect(redirectUrl); // 302 Temporary Redirect
                     }
                 }
@@ -373,17 +377,14 @@ public partial class StoresController(GatewayService gatewayService,
     [GeneratedRegex(@"[^:]\w+\/[\w-+\d.]+(?=;|,)")]
     private static partial Regex MimeTypeRegex();
 
-        private string? ExtractStoreIdFromReferrer(string referer)
+     private string? ExtractStoreIdFromReferrer(string referer)
     {
         var uri = new Uri(referer);
         var pathSegments = uri.AbsolutePath.Split('/', StringSplitOptions.RemoveEmptyEntries);
         if (pathSegments.Length > 0)
         {
             var storeId = pathSegments[0];
-            if (storeId.Length == 64 || storeId.Length == 129)
-            {
-                return storeId;
-            }
+            return storeId;
         }
         return null;
     }
