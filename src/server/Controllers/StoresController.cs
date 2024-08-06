@@ -26,7 +26,7 @@ public partial class StoresController(GatewayService gatewayService,
 
             if (latestRootHashRedirect)
             {
-                var redirectUrl = $"/{extractedStoreId}@{rootHashQuery}";
+                var redirectUrl = $"/{extractedStoreId}:{rootHashQuery}";
                 return Redirect(redirectUrl);
             }
             
@@ -60,7 +60,7 @@ public partial class StoresController(GatewayService gatewayService,
 
             if (latestRootHashRedirect)
             {
-                var redirectUrl = $"/{extractedStoreId}@{rootHashQuery}/{catchAll}";
+                var redirectUrl = $"/{extractedStoreId}:{rootHashQuery}/{catchAll}";
                 return Redirect(redirectUrl);
             }
 
@@ -107,7 +107,7 @@ public partial class StoresController(GatewayService gatewayService,
 
             if (latestRootHashRedirect)
             {
-                var redirectUrl = $"/{extractedStoreId}@{rootHash}";
+                var redirectUrl = $"/{extractedStoreId}:{rootHash}";
                 return Redirect(redirectUrl);
             }
 
@@ -216,7 +216,7 @@ public partial class StoresController(GatewayService gatewayService,
 
             if (latestRootHashRedirect)
             {
-                var redirectUrl = $"/{extractedStoreId}@{rootHash}/{catchAll}";
+                var redirectUrl = $"/{extractedStoreId}:{rootHash}/{catchAll}";
                 return Redirect(redirectUrl);
             }
 
@@ -393,10 +393,10 @@ public partial class StoresController(GatewayService gatewayService,
     {
         // int StoreIdLength = 64;
         input = input.TrimEnd('/').TrimStart('/');
-        input = input.Contains("%40") ? Uri.UnescapeDataString(input) : input;
+        input = input.Contains("%3A") ? Uri.UnescapeDataString(input) : input;
         bool redirect = false;
 
-        int atIndex = input.IndexOf('@');
+        int atIndex = input.IndexOf(':');
         string storeId = atIndex == -1 ? input : input.Substring(0, atIndex);
         string? rootHash = atIndex == -1 ? "latest" : input.Substring(atIndex + 1);
 
