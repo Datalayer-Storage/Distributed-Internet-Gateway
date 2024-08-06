@@ -124,6 +124,7 @@ public partial class StoresController(GatewayService gatewayService,
                     if (refererStore != null)
                     {
                         var redirectUrl = $"/{ExtractStoreIdFromReferrer(referer)}@{rootHash}";
+                        HttpContext.Response.Headers.TryAdd("X-Redirect", redirectUrl);
                         return Redirect(redirectUrl); // 302 Temporary Redirect
                     }
                 }
@@ -237,6 +238,7 @@ public partial class StoresController(GatewayService gatewayService,
                     if (refererStore != null)
                     {
                         var redirectUrl = $"/{ExtractStoreIdFromReferrer(referer)}@{rootHash}";
+                        HttpContext.Response.Headers.TryAdd("X-Redirect", redirectUrl);
                         return Redirect(redirectUrl); // 302 Temporary Redirect
                     }
                 }
@@ -373,7 +375,7 @@ public partial class StoresController(GatewayService gatewayService,
     [GeneratedRegex(@"[^:]\w+\/[\w-+\d.]+(?=;|,)")]
     private static partial Regex MimeTypeRegex();
 
-        private string? ExtractStoreIdFromReferrer(string referer)
+     private string? ExtractStoreIdFromReferrer(string referer)
     {
         var uri = new Uri(referer);
         var pathSegments = uri.AbsolutePath.Split('/', StringSplitOptions.RemoveEmptyEntries);
