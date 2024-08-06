@@ -23,7 +23,7 @@ public partial class StoresController(GatewayService gatewayService,
     {
         try
         {
-            var (extractedStoreId, rootHashQuery) = ExtractStoreIdAndRootHashAsync(storeId, cancellationToken);
+            var (extractedStoreId, rootHashQuery) = await ExtractStoreIdAndRootHashAsync(storeId, cancellationToken);
             
             if (string.IsNullOrEmpty(extractedStoreId) || string.IsNullOrEmpty(rootHashQuery))
             {
@@ -51,7 +51,7 @@ public partial class StoresController(GatewayService gatewayService,
     {
         try
         {
-            var (extractedStoreId, rootHashQuery) = ExtractStoreIdAndRootHashAsync(storeId, cancellationToken);
+            var (extractedStoreId, rootHashQuery) = await ExtractStoreIdAndRootHashAsync(storeId, cancellationToken);
 
             if (string.IsNullOrEmpty(extractedStoreId) || string.IsNullOrEmpty(rootHashQuery))
             {
@@ -92,7 +92,7 @@ public partial class StoresController(GatewayService gatewayService,
     {
         try
         {
-            var (extractedStoreId, rootHash) = ExtractStoreIdAndRootHashAsync(storeId, cancellationToken);
+            var (extractedStoreId, rootHash) = await ExtractStoreIdAndRootHashAsync(storeId, cancellationToken);
 
             HttpContext.Response.Headers.TryAdd("X-Generation-Hash", rootHash);
 
@@ -164,7 +164,7 @@ public partial class StoresController(GatewayService gatewayService,
     {
         try
         {
-            var (extractedStoreId, rootHash) =  ExtractStoreIdAndRootHashAsync(storeId, cancellationToken);
+            var (extractedStoreId, rootHash) =  await ExtractStoreIdAndRootHashAsync(storeId, cancellationToken);
 
             var key = catchAll;
             // Remove everything after the first '#'
@@ -305,7 +305,7 @@ public partial class StoresController(GatewayService gatewayService,
     [GeneratedRegex(@"[^:]\w+\/[\w-+\d.]+(?=;|,)")]
     private static partial Regex MimeTypeRegex();
 
-    private (string? StoreId, string? RootHash) ExtractStoreIdAndRootHashAsync(string input, CancellationToken cancellationToken)
+    private async Task<(string? StoreId, string? RootHash)> ExtractStoreIdAndRootHashAsync(string input, CancellationToken cancellationToken)
     {
         // int StoreIdLength = 64;
         input = input.TrimEnd('/').TrimStart('/');
@@ -316,6 +316,15 @@ public partial class StoresController(GatewayService gatewayService,
         int atIndex = input.IndexOf('$');
         string storeId = atIndex == -1 ? input : input.Substring(0, atIndex);
         string? rootHash = atIndex == -1 ? "latest" : input.Substring(atIndex + 1);
+
+        if (rootHash.Equals("latest"))
+        {
+            rootHash = await _gatewayService.GetLastRoot(storeId, cancellationToken);
+            if (rootHash is null)
+            {
+                return (null, null);
+            }
+        }
 
         return (storeId, rootHash.StartsWith("0x") ? rootHash.Substring(2) : rootHash);
     }

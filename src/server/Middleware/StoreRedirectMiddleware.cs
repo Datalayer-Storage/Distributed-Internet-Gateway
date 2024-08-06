@@ -26,18 +26,19 @@ public class StoreRedirectMiddleware
             // This is a valid storeId + rootHash
             await _next(context); // Proceed to the next middleware
         }
-        else if (maybeStoreId.Length.Equals(64))
+        else if (maybeStoreId.Length.Equals(64) || maybeStoreId.Length.Equals(71))
         {
             // This is a valid storeId but it needs the latest rootHash
-            var lastRoot = await gatewayService.GetLastRoot(maybeStoreId, context.RequestAborted);
-            if (lastRoot == null)
-            {
-                context.Response.StatusCode = StatusCodes.Status404NotFound;
-                return;
-            }
-            var rootHash = lastRoot.StartsWith("0x") ? lastRoot.Substring(2) : lastRoot;
-            var redirectUrl = $"/{maybeStoreId}${rootHash}/{restOfPath}";
-            context.Response.Redirect(redirectUrl);
+           // var lastRoot = await gatewayService.GetLastRoot(maybeStoreId, context.RequestAborted);
+           // if (lastRoot == null)
+           // {
+           //     context.Response.StatusCode = StatusCodes.Status404NotFound;
+           //     return;
+            //}
+           // var rootHash = lastRoot.StartsWith("0x") ? lastRoot.Substring(2) : lastRoot;
+           // var redirectUrl = $"/{maybeStoreId}${rootHash}/{restOfPath}";
+           // context.Response.Redirect(redirectUrl);
+           await _next(context); 
         }
         else
         {
@@ -45,8 +46,14 @@ public class StoreRedirectMiddleware
             {
                 var referer = refererValues.ToString().TrimEnd('/');
                 var (storeId, rootHash) = ExtractStoreIdAndRootHash(ExtractStoreIdFromReferrer(referer));
-                var redirectUrl = $"/{storeId}${rootHash}/{path}";
-                context.Response.Redirect(redirectUrl);
+                if (String.IsNullOrEmpty(rootHash) || rootHash.Equals("latest"))
+                {
+                    context.Response.Redirect($"/{storeId}/{path}");
+                }
+                else 
+                {
+                    context.Response.Redirect($"/{storeId}${rootHash}/{path}");
+                }
             }
             else
             {
