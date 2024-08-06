@@ -118,6 +118,7 @@ public partial class StoresController(GatewayService gatewayService,
                 HttpContext.Response.Headers.TryAdd("X-Referer", referer);
                 var uri = new Uri(referer);
                 // the extracted store will not be a store id always, so we cant rely on that, we need to get the storeId out of the referrer
+                HttpContext.Response.Headers.TryAdd("X-Extracted-StoreId", extractedStoreId);
                 if (!referer.Contains(extractedStoreId) && extractedStoreId.Length != 64)
                 {
                     var refererStore = ExtractStoreIdFromReferrer(referer);
@@ -232,6 +233,7 @@ public partial class StoresController(GatewayService gatewayService,
                 var referer = refererValues.ToString();
                 HttpContext.Response.Headers.TryAdd("X-Referer", referer);
                 var uri = new Uri(referer);
+                HttpContext.Response.Headers.TryAdd("X-Extracted-StoreId", extractedStoreId);
                 if (!referer.Contains(extractedStoreId) && extractedStoreId.Length != 64)
                 {
                     var refererStore = ExtractStoreIdFromReferrer(referer);
@@ -382,10 +384,7 @@ public partial class StoresController(GatewayService gatewayService,
         if (pathSegments.Length > 0)
         {
             var storeId = pathSegments[0];
-            if (storeId.Length == 64 || storeId.Length == 129)
-            {
-                return storeId;
-            }
+            return storeId;
         }
         return null;
     }
