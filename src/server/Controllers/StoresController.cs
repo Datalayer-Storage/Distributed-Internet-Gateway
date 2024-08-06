@@ -16,63 +16,31 @@ public partial class StoresController(GatewayService gatewayService,
     private readonly ILogger<StoresController> _logger = logger;
     private readonly IConfiguration _configuration = configuration;
 
-
-    private async Task<(string? StoreId, string? RootHash)> ExtractStoreIdAndRootHashAsync(string input, CancellationToken cancellationToken)
-    {
-        // int StoreIdLength = 64;
-        input = input.TrimEnd('/').TrimStart('/');
-        input = input.Contains("%40") ? Uri.UnescapeDataString(input) : input;
-
-        int atIndex = input.IndexOf('@');
-        string storeId = atIndex == -1 ? input : input.Substring(0, atIndex);
-        string? rootHash = atIndex == -1 ? "latest" : input.Substring(atIndex + 1);
-
-        if (rootHash == "latest")
-        {
-            rootHash = await _gatewayService.GetLastRoot(storeId, cancellationToken);
-            if (String.IsNullOrEmpty(rootHash))
-            {
-                HttpContext.Response.Headers.TryAdd("X-Dig-Message", "Unable to retrieve the last root hash for the provided storeId.");
-                return (null, null);
-            }
-        }
-        
-        return (storeId, rootHash.StartsWith("0x") ? rootHash.Substring(2) : rootHash);
-    }
-
     [HttpHead("{storeId}")]
+    [ProducesResponseType(StatusCodes.Status307TemporaryRedirect)]
     public async Task<IActionResult> GetStoreMeta(string storeId, CancellationToken cancellationToken)
     {
         try
         {
-            var (extractedStoreId, rootHashQuery) = await ExtractStoreIdAndRootHashAsync(storeId, cancellationToken);
+            var (extractedStoreId, rootHashQuery, latestRootHashRedirect) = await ExtractStoreIdAndRootHashAsync(storeId, cancellationToken);
 
-            if (String.IsNullOrEmpty(extractedStoreId) || String.IsNullOrEmpty(rootHashQuery))
+            if (latestRootHashRedirect)
+            {
+                var redirectUrl = $"/{extractedStoreId}@{rootHashQuery}";
+                return Redirect(redirectUrl);
+            }
+            
+            if (string.IsNullOrEmpty(extractedStoreId) || string.IsNullOrEmpty(rootHashQuery))
             {
                 return NotFound();
             }
 
-            var syncStatus = await _gatewayService.GetSyncStatus(extractedStoreId, cancellationToken);
+            var headersResult = await GenerateStoreHeadersAsync(extractedStoreId, rootHashQuery, cancellationToken);
 
-            HttpContext.Response.Headers.TryAdd("X-Generation-Hash", rootHashQuery);
-
-            var rootHistory = await _gatewayService.GetRootHistory(extractedStoreId, cancellationToken);
-
-            if (rootHistory == null)
+            if (!headersResult)
             {
                 return NotFound();
             }
-
-            int generation = (int)syncStatus.Generation;
-            var splicedRootHistory = rootHistory.Take(generation + 1).ToList();
-
-            bool isSynced = splicedRootHistory.Any(r =>
-            {
-                string rootHash = r.RootHash.StartsWith("0x") ? r.RootHash.Substring(2) : r.RootHash;
-                return rootHash.Equals(rootHashQuery, StringComparison.OrdinalIgnoreCase);
-            });
-
-            HttpContext.Response.Headers.TryAdd("X-Synced", isSynced.ToString());
 
             return Ok();
         }
@@ -86,19 +54,45 @@ public partial class StoresController(GatewayService gatewayService,
     [HttpHead("{storeId}/{*catchAll}")]
     public async Task<IActionResult> GetResourceMeta(string storeId, string catchAll, CancellationToken cancellationToken)
     {
-        var response = await GetStoreMeta(storeId, cancellationToken);
-
-        if (HttpContext.Response.Headers.TryGetValue("X-Generation-Hash", out var rootHash) && !string.IsNullOrEmpty(rootHash))
+        try
         {
-            var keys = await _gatewayService.GetKeys(storeId, rootHash, cancellationToken);
-            if (keys != null)
-            {
-                var keyExists = keys.Select(HexUtils.FromHex).Contains(catchAll);
-                HttpContext.Response.Headers.TryAdd("X-Key-Exists", keyExists.ToString());
-            }
-        }
+            var (extractedStoreId, rootHashQuery, latestRootHashRedirect) = await ExtractStoreIdAndRootHashAsync(storeId, cancellationToken);
 
-        return response;
+            if (latestRootHashRedirect)
+            {
+                var redirectUrl = $"/{extractedStoreId}@{rootHashQuery}/{catchAll}";
+                return Redirect(redirectUrl);
+            }
+
+            if (string.IsNullOrEmpty(extractedStoreId) || string.IsNullOrEmpty(rootHashQuery))
+            {
+                return NotFound();
+            }
+
+            var headersResult = await GenerateStoreHeadersAsync(extractedStoreId, rootHashQuery, cancellationToken);
+
+            if (!headersResult)
+            {
+                return NotFound();
+            }
+
+            if (HttpContext.Response.Headers.TryGetValue("X-Generation-Hash", out var rootHash) && !string.IsNullOrEmpty(rootHash))
+            {
+                var keys = await _gatewayService.GetKeys(storeId, rootHash, cancellationToken);
+                if (keys != null)
+                {
+                    var keyExists = keys.Select(HexUtils.FromHex).Contains(catchAll);
+                    HttpContext.Response.Headers.TryAdd("X-Key-Exists", keyExists.ToString());
+                }
+            }
+
+            return Ok();
+        }
+        catch (Exception ex)
+        {
+            HttpContext.Response.Headers.TryAdd("X-error", ex.Message.ToString());
+            return NotFound();
+        }
     }
 
     [HttpGet("{storeId}")]
@@ -109,7 +103,13 @@ public partial class StoresController(GatewayService gatewayService,
     {
         try
         {
-            var (extractedStoreId, rootHash) = await ExtractStoreIdAndRootHashAsync(storeId, cancellationToken);
+            var (extractedStoreId, rootHash, latestRootHashRedirect) = await ExtractStoreIdAndRootHashAsync(storeId, cancellationToken);
+
+            if (latestRootHashRedirect)
+            {
+                var redirectUrl = $"/{extractedStoreId}@{rootHash}";
+                return Redirect(redirectUrl);
+            }
 
             // Handle referrer for redirect if needed
             if (HttpContext.Request.Headers.TryGetValue("Referer", out var refererValues))
@@ -117,12 +117,15 @@ public partial class StoresController(GatewayService gatewayService,
                 var referer = refererValues.ToString();
                 HttpContext.Response.Headers.TryAdd("X-Referer", referer);
                 var uri = new Uri(referer);
-                var pathSegments = uri.AbsolutePath.Split('/', StringSplitOptions.RemoveEmptyEntries);
+                // the extracted store will not be a store id always, so we cant rely on that, we need to get the storeId out of the referrer
                 if (!referer.Contains(extractedStoreId) && extractedStoreId.Length != 64)
                 {
-                    referer = referer.TrimEnd('/');
-                    var redirectUrl = $"{referer}{HttpContext.Request.Path}";
-                    return Redirect(redirectUrl); // 302 Temporary Redirect
+                    var refererStore = ExtractStoreIdFromReferrer(referer);
+                    if (refererStore != null)
+                    {
+                        var redirectUrl = $"/{ExtractStoreIdFromReferrer(referer)}@{rootHash}";
+                        return Redirect(redirectUrl); // 302 Temporary Redirect
+                    }
                 }
             }
 
@@ -207,6 +210,14 @@ public partial class StoresController(GatewayService gatewayService,
     {
         try
         {
+            var (extractedStoreId, rootHash, latestRootHashRedirect) = await ExtractStoreIdAndRootHashAsync(storeId, cancellationToken);
+
+            if (latestRootHashRedirect)
+            {
+                var redirectUrl = $"/{extractedStoreId}@{rootHash}/{catchAll}";
+                return Redirect(redirectUrl);
+            }
+
             var key = catchAll;
             // Remove everything after the first '#'
             if (key.Contains('#'))
@@ -215,20 +226,19 @@ public partial class StoresController(GatewayService gatewayService,
             }
             key = key.TrimEnd('/');
 
-            var (extractedStoreId, rootHash) = await ExtractStoreIdAndRootHashAsync(storeId, cancellationToken);
-
-            // Handle referrer for redirect if needed
             if (HttpContext.Request.Headers.TryGetValue("Referer", out var refererValues))
             {
                 var referer = refererValues.ToString();
                 HttpContext.Response.Headers.TryAdd("X-Referer", referer);
                 var uri = new Uri(referer);
-                var pathSegments = uri.AbsolutePath.Split('/', StringSplitOptions.RemoveEmptyEntries);
                 if (!referer.Contains(extractedStoreId) && extractedStoreId.Length != 64)
                 {
-                    referer = referer.TrimEnd('/');
-                    var redirectUrl = $"{referer}{HttpContext.Request.Path}";
-                    return Redirect(redirectUrl); // 302 Temporary Redirect
+                    var refererStore = ExtractStoreIdFromReferrer(referer);
+                    if (refererStore != null)
+                    {
+                        var redirectUrl = $"/{ExtractStoreIdFromReferrer(referer)}@{rootHash}";
+                        return Redirect(redirectUrl); // 302 Temporary Redirect
+                    }
                 }
             }
 
@@ -362,4 +372,71 @@ public partial class StoresController(GatewayService gatewayService,
 
     [GeneratedRegex(@"[^:]\w+\/[\w-+\d.]+(?=;|,)")]
     private static partial Regex MimeTypeRegex();
+
+        private string? ExtractStoreIdFromReferrer(string referer)
+    {
+        var uri = new Uri(referer);
+        var pathSegments = uri.AbsolutePath.Split('/', StringSplitOptions.RemoveEmptyEntries);
+        if (pathSegments.Length > 0)
+        {
+            var storeId = pathSegments[0];
+            if (storeId.Length == 64)
+            {
+                return storeId;
+            }
+        }
+        return null;
+    }
+
+    private async Task<(string? StoreId, string? RootHash, bool Redirect)> ExtractStoreIdAndRootHashAsync(string input, CancellationToken cancellationToken)
+    {
+        // int StoreIdLength = 64;
+        input = input.TrimEnd('/').TrimStart('/');
+        input = input.Contains("%40") ? Uri.UnescapeDataString(input) : input;
+        bool redirect = false;
+
+        int atIndex = input.IndexOf('@');
+        string storeId = atIndex == -1 ? input : input.Substring(0, atIndex);
+        string? rootHash = atIndex == -1 ? "latest" : input.Substring(atIndex + 1);
+
+        if (rootHash == "latest")
+        {
+            rootHash = await _gatewayService.GetLastRoot(storeId, cancellationToken);
+            redirect = true;
+            if (String.IsNullOrEmpty(rootHash))
+            {
+                HttpContext.Response.Headers.TryAdd("X-Dig-Message", "Unable to retrieve the last root hash for the provided storeId.");
+                return (null, null, redirect);
+            }
+        }
+
+        return (storeId, rootHash.StartsWith("0x") ? rootHash.Substring(2) : rootHash, redirect);
+    }
+
+    private async Task<bool> GenerateStoreHeadersAsync(string storeId, string rootHashQuery, CancellationToken cancellationToken)
+    {
+        var syncStatus = await _gatewayService.GetSyncStatus(storeId, cancellationToken);
+
+        HttpContext.Response.Headers.TryAdd("X-Generation-Hash", rootHashQuery);
+
+        var rootHistory = await _gatewayService.GetRootHistory(storeId, cancellationToken);
+
+        if (rootHistory == null)
+        {
+            return false;
+        }
+
+        int generation = (int)syncStatus.Generation;
+        var splicedRootHistory = rootHistory.Take(generation + 1).ToList();
+
+        bool isSynced = splicedRootHistory.Any(r =>
+        {
+            string rootHash = r.RootHash.StartsWith("0x") ? r.RootHash.Substring(2) : r.RootHash;
+            return rootHash.Equals(rootHashQuery, StringComparison.OrdinalIgnoreCase);
+        });
+
+        HttpContext.Response.Headers.TryAdd("X-Synced", isSynced.ToString());
+
+        return true;
+    }
 }
