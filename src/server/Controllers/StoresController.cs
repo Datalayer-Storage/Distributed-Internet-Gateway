@@ -4,6 +4,7 @@ using System.Text.RegularExpressions;
 
 namespace dig.server;
 
+[MiddlewareFilter(typeof(StoreRedirectMiddlewarePipeline))]
 public partial class StoresController(GatewayService gatewayService,
                                         MeshNetworkRoutingService meshNetworkRoutingService,
                                         IViewEngine viewEngine,
@@ -22,13 +23,7 @@ public partial class StoresController(GatewayService gatewayService,
     {
         try
         {
-            var (extractedStoreId, rootHashQuery, latestRootHashRedirect) = await ExtractStoreIdAndRootHashAsync(storeId, cancellationToken);
-
-            if (latestRootHashRedirect)
-            {
-                var redirectUrl = $"/{extractedStoreId}:{rootHashQuery}";
-                return Redirect(redirectUrl);
-            }
+            var (extractedStoreId, rootHashQuery) = ExtractStoreIdAndRootHashAsync(storeId, cancellationToken);
             
             if (string.IsNullOrEmpty(extractedStoreId) || string.IsNullOrEmpty(rootHashQuery))
             {
@@ -56,13 +51,7 @@ public partial class StoresController(GatewayService gatewayService,
     {
         try
         {
-            var (extractedStoreId, rootHashQuery, latestRootHashRedirect) = await ExtractStoreIdAndRootHashAsync(storeId, cancellationToken);
-
-            if (latestRootHashRedirect)
-            {
-                var redirectUrl = $"/{extractedStoreId}:{rootHashQuery}/{catchAll}";
-                return Redirect(redirectUrl);
-            }
+            var (extractedStoreId, rootHashQuery) = ExtractStoreIdAndRootHashAsync(storeId, cancellationToken);
 
             if (string.IsNullOrEmpty(extractedStoreId) || string.IsNullOrEmpty(rootHashQuery))
             {
@@ -103,33 +92,7 @@ public partial class StoresController(GatewayService gatewayService,
     {
         try
         {
-            var (extractedStoreId, rootHash, latestRootHashRedirect) = await ExtractStoreIdAndRootHashAsync(storeId, cancellationToken);
-
-            if (latestRootHashRedirect)
-            {
-                var redirectUrl = $"/{extractedStoreId}:{rootHash}";
-                return Redirect(redirectUrl);
-            }
-
-            // Handle referrer for redirect if needed
-            if (HttpContext.Request.Headers.TryGetValue("Referer", out var refererValues))
-            {
-                var referer = refererValues.ToString();
-                HttpContext.Response.Headers.TryAdd("X-Referer", referer);
-                var uri = new Uri(referer);
-                // the extracted store will not be a store id always, so we cant rely on that, we need to get the storeId out of the referrer
-                HttpContext.Response.Headers.TryAdd("X-Extracted-StoreId", extractedStoreId);
-                if (!referer.Contains(extractedStoreId) && extractedStoreId.Length != 64)
-                {
-                    var refererStore = ExtractStoreIdFromReferrer(referer);
-                    if (refererStore != null)
-                    {
-                        var redirectUrl = $"/{ExtractStoreIdFromReferrer(referer)}@{rootHash}";
-                        HttpContext.Response.Headers.TryAdd("X-Redirect", redirectUrl);
-                        return Redirect(redirectUrl); // 302 Temporary Redirect
-                    }
-                }
-            }
+            var (extractedStoreId, rootHash) = ExtractStoreIdAndRootHashAsync(storeId, cancellationToken);
 
             HttpContext.Response.Headers.TryAdd("X-Generation-Hash", rootHash);
 
@@ -166,25 +129,14 @@ public partial class StoresController(GatewayService gatewayService,
 
             var actAsCdn = _configuration.GetValue<bool>("dig:ActAsCdn");
 
-            if (actAsCdn)
+            var redirect = await _meshNetworkRoutingService.GetMeshNetworkLocationAsync(extractedStoreId, null);
+            if (redirect is not null)
             {
-                var content = await _meshNetworkRoutingService.GetMeshNetworkContentsAsync(extractedStoreId, null);
-                if (content is not null)
-                {
-                    return Content(content, "text/html");
-                }
+                _logger.LogInformation("Redirecting to {redirect}", redirect.SanitizeForLog());
+                HttpContext.Response.Headers.Location = redirect;
+                return Redirect(redirect);
             }
-            else
-            {
-                var redirect = await _meshNetworkRoutingService.GetMeshNetworkLocationAsync(extractedStoreId, null);
-                if (redirect is not null)
-                {
-                    _logger.LogInformation("Redirecting to {redirect}", redirect.SanitizeForLog());
-                    HttpContext.Response.Headers.Location = redirect;
-                    return Redirect(redirect);
-                }
-            }
-
+          
             try
             {
                 var syncStatus = await _gatewayService.GetSyncStatus(extractedStoreId, cancellationToken);
@@ -212,13 +164,7 @@ public partial class StoresController(GatewayService gatewayService,
     {
         try
         {
-            var (extractedStoreId, rootHash, latestRootHashRedirect) = await ExtractStoreIdAndRootHashAsync(storeId, cancellationToken);
-
-            if (latestRootHashRedirect)
-            {
-                var redirectUrl = $"/{extractedStoreId}:{rootHash}/{catchAll}";
-                return Redirect(redirectUrl);
-            }
+            var (extractedStoreId, rootHash) =  ExtractStoreIdAndRootHashAsync(storeId, cancellationToken);
 
             var key = catchAll;
             // Remove everything after the first '#'
@@ -227,24 +173,6 @@ public partial class StoresController(GatewayService gatewayService,
                 key = key.Split('#')[0];
             }
             key = key.TrimEnd('/');
-
-            if (HttpContext.Request.Headers.TryGetValue("Referer", out var refererValues))
-            {
-                var referer = refererValues.ToString();
-                HttpContext.Response.Headers.TryAdd("X-Referer", referer);
-                var uri = new Uri(referer);
-                HttpContext.Response.Headers.TryAdd("X-Extracted-StoreId", extractedStoreId);
-                if (!referer.Contains(extractedStoreId) && extractedStoreId.Length != 64)
-                {
-                    var refererStore = ExtractStoreIdFromReferrer(referer);
-                    if (refererStore != null)
-                    {
-                        var redirectUrl = $"/{ExtractStoreIdFromReferrer(referer)}@{rootHash}";
-                        HttpContext.Response.Headers.TryAdd("X-Redirect", redirectUrl);
-                        return Redirect(redirectUrl); // 302 Temporary Redirect
-                    }
-                }
-            }
 
             HttpContext.Response.Headers.TryAdd("X-Generation-Hash", rootHash);
 
@@ -377,41 +305,19 @@ public partial class StoresController(GatewayService gatewayService,
     [GeneratedRegex(@"[^:]\w+\/[\w-+\d.]+(?=;|,)")]
     private static partial Regex MimeTypeRegex();
 
-     private string? ExtractStoreIdFromReferrer(string referer)
-    {
-        var uri = new Uri(referer);
-        var pathSegments = uri.AbsolutePath.Split('/', StringSplitOptions.RemoveEmptyEntries);
-        if (pathSegments.Length > 0)
-        {
-            var storeId = pathSegments[0];
-            return storeId;
-        }
-        return null;
-    }
-
-    private async Task<(string? StoreId, string? RootHash, bool Redirect)> ExtractStoreIdAndRootHashAsync(string input, CancellationToken cancellationToken)
+    private (string? StoreId, string? RootHash) ExtractStoreIdAndRootHashAsync(string input, CancellationToken cancellationToken)
     {
         // int StoreIdLength = 64;
         input = input.TrimEnd('/').TrimStart('/');
-        input = input.Contains("%3A") ? Uri.UnescapeDataString(input) : input;
-        bool redirect = false;
+        input = input.Contains("%24") ? Uri.UnescapeDataString(input) : input;
 
-        int atIndex = input.IndexOf(':');
+        HttpContext.Response.Headers.TryAdd("X-Input", input);
+
+        int atIndex = input.IndexOf('$');
         string storeId = atIndex == -1 ? input : input.Substring(0, atIndex);
         string? rootHash = atIndex == -1 ? "latest" : input.Substring(atIndex + 1);
 
-        if (!String.IsNullOrEmpty(storeId) && rootHash == "latest")
-        {
-            rootHash = await _gatewayService.GetLastRoot(storeId, cancellationToken);
-            redirect = true;
-            if (String.IsNullOrEmpty(rootHash))
-            {
-                HttpContext.Response.Headers.TryAdd("X-Dig-Message", "Unable to retrieve the last root hash for the provided storeId.");
-                return (null, null, redirect);
-            }
-        }
-
-        return (storeId, rootHash.StartsWith("0x") ? rootHash.Substring(2) : rootHash, redirect);
+        return (storeId, rootHash.StartsWith("0x") ? rootHash.Substring(2) : rootHash);
     }
 
     private async Task<bool> GenerateStoreHeadersAsync(string storeId, string rootHashQuery, CancellationToken cancellationToken)
