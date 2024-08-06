@@ -400,7 +400,7 @@ public partial class StoresController(GatewayService gatewayService,
         string storeId = atIndex == -1 ? input : input.Substring(0, atIndex);
         string? rootHash = atIndex == -1 ? "latest" : input.Substring(atIndex + 1);
 
-        if (rootHash == "latest")
+        if (!String.IsNullOrEmpty(storeId) && rootHash == "latest")
         {
             rootHash = await _gatewayService.GetLastRoot(storeId, cancellationToken);
             redirect = true;
