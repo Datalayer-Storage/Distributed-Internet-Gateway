@@ -37,11 +37,20 @@ public partial class StoresController(GatewayService gatewayService,
                 return NotFound();
             }
 
-            return Ok();
+            HttpContext.Response.Headers.TryGetValue("X-Synced", out var isSynced);
+            if (isSynced == "True")
+            {
+                return Ok();
+            }
+            else
+            {
+                return NotFound();
+            }
         }
         catch (Exception ex)
         {
-            HttpContext.Response.Headers.TryAdd("X-error", ex.Message.ToString());
+            HttpContext.Response.Headers.TryAdd("X-Synced", false.ToString());
+            HttpContext.Response.Headers.TryAdd("X-Error", ex.Message.ToString());
             return NotFound();
         }
     }
@@ -75,11 +84,20 @@ public partial class StoresController(GatewayService gatewayService,
                 }
             }
 
-            return Ok();
+            HttpContext.Response.Headers.TryGetValue("X-Synced", out var isSynced);
+            if (isSynced == "True")
+            {
+                return Ok();
+            }
+            else
+            {
+                return NotFound();
+            }
         }
         catch (Exception ex)
         {
-            HttpContext.Response.Headers.TryAdd("X-error", ex.Message.ToString());
+            HttpContext.Response.Headers.TryAdd("X-Synced", false.ToString());
+            HttpContext.Response.Headers.TryAdd("X-Error", ex.Message.ToString());
             return NotFound();
         }
     }
@@ -310,8 +328,6 @@ public partial class StoresController(GatewayService gatewayService,
         // int StoreIdLength = 64;
         input = input.TrimEnd('/').TrimStart('/');
         input = input.Contains("%24") ? Uri.UnescapeDataString(input) : input;
-
-        HttpContext.Response.Headers.TryAdd("X-Input", input);
 
         int atIndex = input.IndexOf('$');
         string storeId = atIndex == -1 ? input : input.Substring(0, atIndex);
