@@ -2,7 +2,7 @@
 
 ## Introduction
 
-DIG (Distributed-Internet-Gateway) serves as a Web 2.0 gateway to content hosted on the Chia datalayer, aiming to integrate into a decentralized, peer-to-peer (P2P), and verifiable content delivery network (CDN). It provides web interface access to the Chia datalayer, facilitates integration into a mesh network for decentralized content hosting, and offers cross-platform compatibility.
+DIG (Distributed-Internet-Gateway) serves as a Web 2.0 gateway to content hosted on the Chia datalayer, aiming to integrate into a decentralized, peer-to-peer (P2P), and verifiable content delivery network (CDN). It provides web interface access to the Chia datalayer, facilitates integration into a mesh network for decentralized content hosting, and offers cross-platform compatibility. This software runs a node to power the DIG Network.
 
 ## Prerequisites
 
